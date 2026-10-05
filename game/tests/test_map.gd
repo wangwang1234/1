@@ -20,7 +20,7 @@ func test_slice_map_builds() -> void:
 	check(m.prop_spots.size() >= 6, "切片物件 %d" % m.prop_spots.size())
 	check(m.pads.size() == 4, "切片弹射装置")
 	# 鼠窝和兵线端点都在可通行区域
-	for team in ["blue", "red"]:
+	for team: String in ["blue", "red"]:
 		var b: Vector2 = m.base_pos[team]
 		check(b.y > m.min_y and b.y < m.max_y, "鼠窝在切片范围内")
 

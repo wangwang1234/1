@@ -107,7 +107,7 @@ func build(mode_: String = "full") -> void:
 		lanes[ln] = pts
 	base_pos = {"blue": Vector2(float(L.base.blue.x), float(L.base.blue.y)), "red": Vector2(float(L.base.red.x), float(L.base.red.y))}
 	turret_pos = {}
-	for team in ["blue", "red"]:
+	for team: String in ["blue", "red"]:
 		var arr: Array = []
 		var idxs: Array = [0, 1, 2]
 		if mode == "slice":

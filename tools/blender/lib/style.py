@@ -128,8 +128,8 @@ _put("snack_green", 2, 8, "#7ccf5a")
 _put("floor_wood", 2, 9, "#6b4e3a")
 _put("floor_wood_dark", 2, 10, "#4d3829")
 _put("floor_wood_light", 2, 11, "#82614a")
-_put("carpet", 2, 12, "#6a4a6e")
-_put("carpet_light", 2, 13, "#866089")
+_put("carpet", 2, 12, "#76674a")
+_put("carpet_light", 2, 13, "#8f7f5a")
 _put("wall_plaster", 2, 14, "#3a3050")
 _put("wall_trim", 2, 15, "#5a4c70")
 _put("can_grey", 1, 8, "#8c8a99")
@@ -251,4 +251,8 @@ def write_palette_png(path):
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
         f.write(png)
+    # 颜色名 -> [行, 列]，给 Godot 端程序生成的网格上色用
+    import json
+    with open(os.path.splitext(path)[0] + ".json", "w", encoding="utf-8") as f:
+        json.dump({k: [v[0], v[1]] for k, v in _P.items()}, f, ensure_ascii=False, indent=0)
     return path

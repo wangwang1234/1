@@ -3,7 +3,7 @@ extends "res://tests/test_case.gd"
 
 
 func test_all_json_load() -> void:
-	for n in ["weapons", "evolutions", "units", "progression", "abilities", "gadgets", "talents", "pets", "skins", "map_layout", "rules"]:
+	for n: String in ["weapons", "evolutions", "units", "progression", "abilities", "gadgets", "talents", "pets", "skins", "map_layout", "rules"]:
 		var d: Variant = Data.load_json(n)
 		check(d is Dictionary and not (d as Dictionary).is_empty(), "%s.json 读取失败或为空" % n)
 
@@ -12,7 +12,7 @@ func test_weapons_have_fields() -> void:
 	eq(Data.weapons().size(), 18, "武器数量")
 	for id in Data.weapons():
 		var W: Dictionary = Data.weapon(id)
-		for k in ["name", "rate", "dmg", "kind"]:
+		for k: String in ["name", "rate", "dmg", "kind"]:
 			check(W.has(k), "武器 %s 缺少 %s" % [id, k])
 
 

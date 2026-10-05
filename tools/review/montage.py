@@ -19,7 +19,10 @@ def main():
     files = [f for f in files if os.path.exists(f)]
     rows = (len(files) + cols - 1) // cols
     lab = 18
-    sheet = Image.new("RGB", (cols * size, rows * (size + lab)), (26, 18, 38))
+    # 格子高度按第一张图的宽高比（宽图不会留一大片空白）
+    w0, h0 = Image.open(files[0]).size
+    th = max(1, round(size * min(1.0, h0 / w0)))
+    sheet = Image.new("RGB", (cols * size, rows * (th + lab)), (26, 18, 38))
     d = ImageDraw.Draw(sheet)
     try:
         font = ImageFont.truetype(os.path.join(os.path.dirname(__file__), "..", "..", "game", "assets", "fonts", "NotoSansSC.ttf"), 12)
@@ -27,11 +30,11 @@ def main():
         font = ImageFont.load_default()
     for i, f in enumerate(files):
         im = Image.open(f).convert("RGB")
-        im.thumbnail((size, size))
+        im.thumbnail((size, th))
         x = (i % cols) * size
-        y = (i // cols) * (size + lab)
-        sheet.paste(im, (x + (size - im.width) // 2, y))
-        d.text((x + 4, y + size + 2), os.path.splitext(os.path.basename(f))[0][-36:], fill=(255, 243, 224), font=font)
+        y = (i // cols) * (th + lab)
+        sheet.paste(im, (x + (size - im.width) // 2, y + (th - im.height) // 2))
+        d.text((x + 4, y + th + 2), os.path.splitext(os.path.basename(f))[0][-36:], fill=(255, 243, 224), font=font)
     os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
     sheet.save(out)
     print(out, sheet.size)

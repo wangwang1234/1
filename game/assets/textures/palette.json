@@ -1,0 +1,426 @@
+{
+"fur_gold": [
+0,
+0
+],
+"cream_gold": [
+1,
+0
+],
+"stripe_gold": [
+2,
+0
+],
+"fur_pudding": [
+0,
+1
+],
+"cream_pudding": [
+1,
+1
+],
+"stripe_pudding": [
+2,
+1
+],
+"fur_silver": [
+0,
+2
+],
+"cream_silver": [
+1,
+2
+],
+"stripe_silver": [
+2,
+2
+],
+"fur_stripe": [
+0,
+3
+],
+"cream_stripe": [
+1,
+3
+],
+"stripe_stripe": [
+2,
+3
+],
+"nose_pink": [
+0,
+4
+],
+"ear_inner": [
+0,
+5
+],
+"blush": [
+0,
+6
+],
+"paw": [
+0,
+7
+],
+"paw_light": [
+0,
+8
+],
+"eye_black": [
+0,
+9
+],
+"eye_white": [
+0,
+10
+],
+"mouth": [
+0,
+11
+],
+"whisker": [
+0,
+12
+],
+"tongue": [
+0,
+13
+],
+"tooth": [
+0,
+14
+],
+"white": [
+0,
+15
+],
+"minion_fur": [
+1,
+4
+],
+"minion_cream": [
+1,
+5
+],
+"gear_navy": [
+1,
+6
+],
+"gear_navy_light": [
+1,
+7
+],
+"gun_metal": [
+3,
+0
+],
+"gun_dark": [
+3,
+1
+],
+"gun_darker": [
+3,
+2
+],
+"gun_light": [
+3,
+3
+],
+"gun_steel": [
+3,
+4
+],
+"gun_chrome": [
+3,
+5
+],
+"wood": [
+3,
+6
+],
+"wood_dark": [
+3,
+7
+],
+"wood_red": [
+3,
+8
+],
+"polymer_olive": [
+3,
+9
+],
+"brass": [
+3,
+10
+],
+"shell_red": [
+3,
+11
+],
+"rubber": [
+3,
+12
+],
+"sticker_yellow": [
+3,
+13
+],
+"sticker_mint": [
+3,
+14
+],
+"lens": [
+3,
+15
+],
+"path_a": [
+4,
+0
+],
+"path_b": [
+4,
+1
+],
+"path_c": [
+4,
+2
+],
+"gold_ring": [
+4,
+3
+],
+"ice": [
+4,
+4
+],
+"torch_glass": [
+4,
+5
+],
+"vest_olive": [
+4,
+6
+],
+"vest_dark": [
+4,
+7
+],
+"headband_red": [
+4,
+8
+],
+"clover": [
+4,
+9
+],
+"clover_dark": [
+4,
+10
+],
+"glasses": [
+4,
+11
+],
+"shoe_red": [
+4,
+12
+],
+"magnet_red": [
+4,
+13
+],
+"magnet_steel": [
+4,
+14
+],
+"regen_green": [
+4,
+15
+],
+"cardboard": [
+5,
+0
+],
+"cardboard_light": [
+5,
+1
+],
+"cardboard_dark": [
+5,
+2
+],
+"label_red": [
+5,
+3
+],
+"book_blue": [
+5,
+4
+],
+"book_red": [
+5,
+5
+],
+"book_green": [
+5,
+6
+],
+"book_yellow": [
+5,
+7
+],
+"book_purple": [
+5,
+8
+],
+"book_orange": [
+5,
+9
+],
+"paper": [
+5,
+10
+],
+"lamp_dark": [
+5,
+11
+],
+"lamp_pole": [
+5,
+12
+],
+"lamp_shade": [
+5,
+13
+],
+"bulb": [
+5,
+14
+],
+"spray_red": [
+5,
+15
+],
+"spray_yellow": [
+2,
+4
+],
+"spring_yellow": [
+2,
+5
+],
+"snack_orange": [
+2,
+6
+],
+"snack_purple": [
+2,
+7
+],
+"snack_green": [
+2,
+8
+],
+"floor_wood": [
+2,
+9
+],
+"floor_wood_dark": [
+2,
+10
+],
+"floor_wood_light": [
+2,
+11
+],
+"carpet": [
+2,
+12
+],
+"carpet_light": [
+2,
+13
+],
+"wall_plaster": [
+2,
+14
+],
+"wall_trim": [
+2,
+15
+],
+"can_grey": [
+1,
+8
+],
+"can_grey_dark": [
+1,
+9
+],
+"towel_cream": [
+1,
+10
+],
+"towel_stripe": [
+1,
+11
+],
+"pencil_yellow": [
+1,
+12
+],
+"eraser_pink": [
+1,
+13
+],
+"seed_shell": [
+1,
+14
+],
+"seed_stripe": [
+1,
+15
+],
+"team_main": [
+6,
+0
+],
+"team_main__red": [
+7,
+0
+],
+"team_dark": [
+6,
+1
+],
+"team_dark__red": [
+7,
+1
+],
+"team_light": [
+6,
+2
+],
+"team_light__red": [
+7,
+2
+],
+"team_glow": [
+6,
+3
+],
+"team_glow__red": [
+7,
+3
+],
+"team_knit": [
+6,
+4
+],
+"team_knit__red": [
+7,
+4
+]
+}

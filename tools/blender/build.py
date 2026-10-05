@@ -97,7 +97,8 @@ def build_one(name, cat, path, args):
     res = mod.build(ctx)
     if not args.get("preview_only"):
         materials.reset_for_export()
-        export.export_glb(ctx.model_path(), res.roots, animations=res.animations)
+        if res.roots:
+            export.export_glb(ctx.model_path(), res.roots, animations=res.animations)
         for (fname, objs) in res.extra_exports:
             export.export_glb(ctx.model_path(fname), objs, animations=False)
     if not args.get("no_preview"):
@@ -128,7 +129,8 @@ def build_one(name, cat, path, args):
                 vis = [o for o in objs if only(o)]
                 for o in objs:
                     o.hide_render = o not in vis
-            preview.render(ctx.preview_path(suffix), [o for o in vis if o.type == "MESH" and not o.hide_render], view=view, **kw)
+            out = kw.pop("out", None)
+            preview.render(out or ctx.preview_path(suffix), [o for o in vis if o.type == "MESH" and not o.hide_render], view=view, **kw)
             for o in objs:
                 o.hide_render = False
     print(f"[build] {cat}/{name} ok ({time.time() - t0:.1f}s)")

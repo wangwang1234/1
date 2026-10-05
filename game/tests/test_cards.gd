@@ -77,7 +77,7 @@ func test_swap_probability() -> void:
 func test_label_hides_level_numbers() -> void:
 	var w := make_world("slice", 15, 1, 0)
 	var h := w.hams[0]
-	for k in ["a", "b", "c"]:
+	for k: String in ["a", "b", "c"]:
 		for lv in range(0, 9):
 			h.evo[k] = lv
 			var L := SimCards.label(h, {"t": "evo", "k": k, "id": h.weapon_id})

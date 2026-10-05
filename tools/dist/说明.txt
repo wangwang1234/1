@@ -1,0 +1,11 @@
+满载而鼠 · 批次 1 试玩版（Windows）
+
+双击 manzai.exe 开始。
+  - 主菜单：开始对战 / 观战（AI 自动对打）/ 设置 / 退出；右下角选皮肤和初始武器（试玩用）。
+  - 操作：WASD 移动，鼠标瞄准，左键射击，空格翻滚，R 换弹，Q 手雷，1/2/3 选升级卡，Esc 暂停。
+  - 手柄：左摇杆移动，右摇杆瞄准，RT 射击，A 翻滚，X 换弹，LB 手雷，X/Y/B 选卡，Start 暂停。
+
+帧率测试.bat：全屏跑 60 秒 AI 对局，结果在 perf 文件夹（perf.json 里 avg_fps = 平均帧率，low1_fps = 1% 低帧）。
+AI观战.bat：直接开一局 AI 对打。
+
+设置保存在 %APPDATA%\Godot\app_userdata\满载而鼠\settings.cfg。

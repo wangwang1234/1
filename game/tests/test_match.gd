@@ -41,8 +41,8 @@ func test_all_weapon_evo_levels() -> void:
 	## 三把枪 × 三条路线 × 0..9 级，每种 AI 打 6 秒
 	var count := 0
 	for wid in Data.rule("scope.weapons"):
-		for k in ["a", "b", "c"]:
-			for lv in [1, 3, 6, 9]:
+		for k: String in ["a", "b", "c"]:
+			for lv: int in [1, 3, 6, 9]:
 				var w := make_world("slice", 100 + count, 2, 2)
 				for h in w.hams:
 					h.weapon_id = String(wid)
@@ -75,3 +75,16 @@ func test_match_can_end() -> void:
 	check(not base.shielded, "炮台被拆后鼠窝护盾消失")
 	w.deal_dmg(base, 99999.0, {"team": "blue", "owner": w.hams[0], "x": base.x, "y": base.y})
 	check(w.over and w.winner == "blue", "打爆鼠窝蓝队获胜")
+
+
+func test_dispose_frees_world() -> void:
+	## 一局结束后 dispose() 要断开实体间的循环引用，否则每开一局都漏内存
+	var w := make_world("slice", 5, 3, 3)
+	run(w, 40.0)
+	var probe: WeakRef = weakref(w.hams[0])
+	var probe2: WeakRef = weakref(w.props[0]) if not w.props.is_empty() else null
+	w.dispose()
+	w = null
+	check(probe.get_ref() == null, "仓鼠对象已释放")
+	if probe2 != null:
+		check(probe2.get_ref() == null, "物件对象已释放")

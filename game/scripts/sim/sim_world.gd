@@ -233,6 +233,39 @@ func drain_events() -> Array:
 	return out
 
 
+func dispose() -> void:
+	## 断开实体之间的互相引用（RefCounted 循环引用不会自动释放），一局结束 / 退出时调用
+	var all: Array = []
+	all.append_array(hams); all.append_array(minions); all.append_array(structs); all.append_array(props); all.append_array(crates)
+	all.append_array(bullets); all.append_array(lobs); all.append_array(items); all.append_array(entities.values())
+	for e in all:
+		if e is SimEntity:
+			(e as SimEntity).burn_by = null
+		if e is SimHamster:
+			var h := e as SimHamster
+			if h.ai != null:
+				h.ai.target = null
+			h.dash_hit.clear()
+		elif e is SimMinion:
+			(e as SimMinion).target = null
+		elif e is SimStructure:
+			(e as SimStructure).target = null
+			(e as SimStructure).owner = null
+		elif e is SimProp:
+			(e as SimProp).solid = null
+		elif e is SimBullet:
+			(e as SimBullet).by = null
+			(e as SimBullet).owner = null
+			(e as SimBullet).in_solid = null
+		elif e is SimLob:
+			(e as SimLob).owner = null
+	for so in map.solids:
+		so.prop = null
+	hams.clear(); minions.clear(); structs.clear(); props.clear(); crates.clear()
+	bullets.clear(); lobs.clear(); items.clear(); fires.clear(); noises.clear(); events.clear()
+	entities.clear(); _hash.clear(); spawn_q.clear(); crate_spots.clear()
+
+
 func toast(h: SimHamster, text: String, color: String = "#ffffff", dur: float = 2.0) -> void:
 	emit({"t": "toast", "id": h.id if h != null else -1, "text": text, "color": color, "dur": dur})
 

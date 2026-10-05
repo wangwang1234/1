@@ -417,7 +417,7 @@ def bake_outline_normals(obj):
     name = "outline"
     if name in me.color_attributes:
         me.color_attributes.remove(me.color_attributes[name])
-    attr = me.color_attributes.new(name=name, type="BYTE_COLOR", domain="CORNER")
+    attr = me.color_attributes.new(name=name, type="FLOAT_COLOR", domain="CORNER")
     for p in me.polygons:
         for li, vi in zip(p.loop_indices, p.vertices):
             n = acc[key(me.vertices[vi].co)]
@@ -468,4 +468,37 @@ def transfer_normals(obj, src):
     m.mix_mode = "REPLACE"
     m.mix_factor = 1.0
     apply_modifiers(obj)
+    return obj
+
+
+def swept_box(name, pts_yz, width, thick, color="white", mat=style.MAT_TOON, bevel=0.0, x=0.0):
+    """沿 YZ 平面折线扫出的方截面条（弧形弹匣等）。pts_yz=[(y,z),...]，width 为 X 向宽度，thick 为法向厚度。"""
+    bm = bmesh.new()
+    rings = []
+    n = len(pts_yz)
+    for i, (y, z) in enumerate(pts_yz):
+        y0, z0 = pts_yz[max(i - 1, 0)]
+        y1, z1 = pts_yz[min(i + 1, n - 1)]
+        ty, tz = y1 - y0, z1 - z0
+        l = math.hypot(ty, tz) or 1.0
+        ny, nz = -tz / l, ty / l
+        ring = []
+        for (sx, sn) in ((-1, -1), (1, -1), (1, 1), (-1, 1)):
+            ring.append(bm.verts.new((x + sx * width / 2, y + ny * sn * thick / 2, z + nz * sn * thick / 2)))
+        rings.append(ring)
+    for i in range(n - 1):
+        A, B = rings[i], rings[i + 1]
+        for k in range(4):
+            j = (k + 1) % 4
+            bm.faces.new((A[k], A[j], B[j], B[k]))
+    bm.faces.new(list(reversed(rings[0])))
+    bm.faces.new(rings[-1])
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    if bevel > 1e-5:
+        edges = [e for e in bm.edges]
+        bmesh.ops.bevel(bm, geom=edges, offset=bevel, segments=2, profile=0.5, affect="EDGES", clamp_overlap=True)
+    obj = obj_from_bmesh(name, bm)
+    set_material(obj, mat)
+    paint(obj, color)
+    smooth(obj, 35)
     return obj
