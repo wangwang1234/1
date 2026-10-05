@@ -1,0 +1,23 @@
+{
+ "gold": {
+  "name": "金丝熊",
+  "fur": "#f2a54a",
+  "cream": "#fff3e0"
+ },
+ "pudding": {
+  "name": "布丁",
+  "fur": "#f7d37c",
+  "cream": "#fff8e6"
+ },
+ "silver": {
+  "name": "银狐",
+  "fur": "#e4e1ea",
+  "cream": "#ffffff"
+ },
+ "stripe": {
+  "name": "三线",
+  "fur": "#b2adbd",
+  "cream": "#f6f3f9",
+  "stripe": "#5e5868"
+ }
+}

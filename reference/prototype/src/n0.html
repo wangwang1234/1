@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>满载而鼠：红蓝对战</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&display=swap">
+<style>
+:root{
+  --bg:#efe6d4; --panel:rgba(255,250,240,.96); --ink:#2a2234; --sub:#6d6177; --accent:#f0862a; --accent-ink:#ffffff;
+  --chip:#f3e8d6; --line:rgba(42,34,52,.12); --stage:#1d1830; --shadow:0 20px 60px rgba(25,15,40,.35);
+  --font-display:"ZCOOL KuaiLe","PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  --font-ui:"PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:env(safe-area-inset-left,0px);
+  padding-right:env(safe-area-inset-right,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){--bg:#15121f;--panel:rgba(32,27,48,.96);--ink:#f5ede0;--sub:#b4a7c4;--accent:#ff9440;--accent-ink:#1d1424;--chip:#2b2540;--line:rgba(255,255,255,.1);--shadow:0 20px 60px rgba(0,0,0,.55);}
+}
+:root[data-theme="dark"]{--bg:#15121f;--panel:rgba(32,27,48,.96);--ink:#f5ede0;--sub:#b4a7c4;--accent:#ff9440;--accent-ink:#1d1424;--chip:#2b2540;--line:rgba(255,255,255,.1);--shadow:0 20px 60px rgba(0,0,0,.55);}
+html{height:100%;scroll-padding-top:env(safe-area-inset-top,0px);background:var(--stage);}
+body{height:100%;margin:0;background:var(--stage);color:var(--ink);font-family:var(--font-ui);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+#wrap{position:relative;width:100%;height:100%;overflow:hidden;background:var(--stage);}
+#gl,#game{position:absolute;inset:0;display:block;width:100%;height:100%;}
+#gl{pointer-events:none;}
+#game{touch-action:none;outline:none;}
+#game.nocursor{cursor:none;}
+.overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:14px;box-sizing:border-box;background:radial-gradient(ellipse at center,rgba(20,14,34,.2),rgba(12,8,22,.62));z-index:5;overflow:auto;}
+.overlay.hidden{display:none;}
+.card{background:var(--panel);color:var(--ink);border-radius:26px;box-shadow:var(--shadow);border:1px solid var(--line);padding:18px 24px 22px;width:100%;max-width:500px;box-sizing:border-box;text-align:center;margin:auto;}
+.hero{display:block;margin:0 auto 2px;width:170px;height:auto;}
+h1{font-family:var(--font-display);font-weight:400;font-size:clamp(40px,8vw,60px);line-height:1.02;margin:0 0 6px;letter-spacing:4px;}
+h2{font-family:var(--font-display);font-weight:400;font-size:32px;margin:2px 0 4px;}
+.tag{display:inline-block;font-size:13px;color:var(--sub);background:var(--chip);border-radius:999px;padding:3px 12px;margin:0 0 10px;}
+.pitch{font-size:15px;line-height:1.7;margin:0 0 12px;}
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:6px 12px;text-align:left;font-size:13px;line-height:1.5;color:var(--sub);background:var(--chip);border-radius:16px;padding:10px 14px;margin:0 0 16px;}
+.k{display:inline-block;min-width:16px;padding:0 6px;border-radius:6px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-size:12px;text-align:center;margin-right:5px;font-weight:600;}
+.btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center;}
+button{font:inherit;}
+button.big{font-family:var(--font-display);font-size:22px;background:var(--accent);color:var(--accent-ink);border:none;border-radius:999px;padding:11px 36px;cursor:pointer;box-shadow:0 5px 0 rgba(0,0,0,.22);}
+button.big:active{transform:translateY(3px);box-shadow:0 2px 0 rgba(0,0,0,.22);}
+button.ghost{font-size:15px;background:transparent;color:var(--ink);border:1.5px solid var(--line);border-radius:999px;padding:9px 20px;cursor:pointer;}
+button:focus-visible{outline:3px solid var(--accent);outline-offset:3px;}
+.err{font-size:13px;color:#d64545;margin:10px 0 0;line-height:1.5;}
+button.big:disabled{opacity:.45;cursor:not-allowed;}
+.best{font-size:12px;color:var(--sub);margin-top:10px;min-height:16px;}
+.rank{font-family:var(--font-display);font-size:76px;line-height:1;margin:0;}
+.sub{color:var(--sub);font-size:14px;margin:0 0 12px;line-height:1.6;}
+.loot{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:0 0 10px;}
+.li{display:flex;align-items:center;gap:6px;background:var(--chip);border-radius:12px;padding:5px 10px;font-size:14px;}
+.li img{width:26px;height:26px;}
+.li.lost{opacity:.5;text-decoration:line-through;}
+.ctrl .wide{grid-column:1/-1;color:var(--accent);}
+.total{font-family:var(--font-display);font-size:24px;margin:2px 0 6px;}
+.stats{font-size:13px;color:var(--sub);margin:0 0 14px;}
+@media (max-height:520px){
+  .hero{width:84px;margin-bottom:-4px;}
+  h1{font-size:34px;margin-bottom:2px;}
+  .tag{margin-bottom:6px;}
+  .pitch{font-size:13px;margin-bottom:8px;line-height:1.5;}
+  .ctrl{font-size:12px;padding:8px 10px;margin-bottom:10px;}
+  .card{padding:12px 18px 14px;}
+  .rank{font-size:50px;}
+  h2{font-size:26px;}
+}
+@media (prefers-reduced-motion: reduce){button.big:active{transform:none;}}
+.lobby{display:grid;gap:8px;text-align:left;margin:0 0 12px;}
+.lobby .row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.lobby .lab{font-size:13px;color:var(--sub);min-width:56px;}
+.seg{display:inline-flex;background:var(--chip);border-radius:999px;padding:3px;gap:2px;}
+.seg button{font:inherit;font-size:13px;border:none;background:transparent;color:var(--ink);padding:5px 12px;border-radius:999px;cursor:pointer;}
+.seg button.on{background:var(--accent);color:var(--accent-ink);}
+.seg button[data-v="blue"].on{background:#3a7bd5;color:#fff;}
+.seg button[data-v="red"].on{background:#e04848;color:#fff;}
+.step{display:inline-flex;align-items:center;gap:6px;background:var(--chip);border-radius:999px;padding:3px 6px;}
+.step button{font:inherit;border:none;background:var(--panel);color:var(--ink);width:26px;height:26px;border-radius:50%;cursor:pointer;font-size:15px;line-height:1;}
+.step b{min-width:16px;text-align:center;font-size:14px;}
+.tm{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;color:#fff;}
+.tm.b{background:#3a7bd5;}.tm.r{background:#e04848;}
+#rStats table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px;}
+#rStats td,#rStats th{padding:4px 6px;text-align:center;border-bottom:1px solid var(--line);}
+#rStats th{color:var(--sub);font-weight:600;}
+.card{max-width:540px;}
+.mcard{max-width:400px;width:calc(100% - 32px);display:flex;flex-direction:column;align-items:center;gap:8px;}
+.mhero{width:min(230px,62%);height:auto;max-height:170px;object-fit:contain;}
+.mtitle{font-size:44px;margin:0;letter-spacing:2px;}
+.msub{font-size:14px;color:var(--sub);margin-bottom:6px;}
+.mbtns{display:flex;flex-direction:column;gap:10px;width:100%;}
+.mbtns .big,.mbtns .wide{width:100%;}
+.mrow{display:flex;gap:8px;width:100%;}.mrow .ghost{flex:1;}
+.mfoot{font-size:12px;color:var(--sub);margin-top:4px;}
+@media (max-height:540px){.mhero{max-height:84px;}.mtitle{font-size:30px;}}
+.codex{max-width:1040px;width:calc(100% - 20px);height:calc(100% - 20px);max-height:700px;display:flex;flex-direction:column;text-align:left;padding:14px 16px;}
+.chead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px;}
+.chead h2{margin:0;}
+.ctabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+.ctabs button{font:inherit;font-size:13px;border:none;background:var(--chip);color:var(--ink);padding:6px 13px;border-radius:999px;cursor:pointer;}
+.ctabs button.on{background:var(--accent);color:var(--accent-ink);}
+.cgrid{flex:1;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:10px;align-content:start;padding-right:4px;}
+.ccard{display:flex;gap:10px;background:var(--chip);border-radius:14px;padding:10px;align-items:flex-start;}
+.ccard img{width:76px;height:76px;flex:none;object-fit:contain;background:#1d1530;border-radius:12px;}
+.cinfo{min-width:0;}
+.cname{font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.crar{font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;color:#1a1226;}
+.cdesc{font-size:12.5px;margin:3px 0 4px;line-height:1.45;}
+.cstat{font-size:12px;color:var(--sub);line-height:1.5;}
+.cload{grid-column:1/-1;text-align:center;color:var(--sub);padding:40px 0;}
+.overlay{overflow-y:auto;}
+.card.wide{max-width:900px;width:calc(100% - 28px);display:grid;grid-template-columns:minmax(190px,0.75fr) 1.25fr;gap:6px 26px;align-items:center;}
+.card.wide .colL{text-align:center;min-width:0;}
+.card.wide .colR{text-align:left;min-width:0;}
+.card.wide .hero{width:min(230px,100%);height:auto;max-height:150px;object-fit:contain;}
+.card.wide .pitch{margin-bottom:0;}
+.card.wide .ctrl{margin:0 0 12px;}
+@media (max-height:560px){.card.wide .hero{max-height:92px;}.card.wide h1{font-size:30px;margin:2px 0;}.card.wide .pitch{font-size:13px;}}
+@media (max-width:640px){.card.wide{grid-template-columns:1fr;}.card.wide .colR{text-align:center;}}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="gl" aria-hidden="true"></canvas>
+  <canvas id="game" tabindex="0" aria-label="满载而鼠 游戏画面"></canvas>
+  <div id="menu" class="overlay">
+    <div class="card mcard">
+      <img id="menuHero" class="mhero" alt="满载而鼠的仓鼠">
+      <h1 class="mtitle">满载而鼠</h1>
+      <div class="msub">红蓝对战 · 肉鸽升级 · 黑暗视野</div>
+      <div class="mbtns">
+        <button class="big" id="mPlay">开始游戏</button>
+        <button class="ghost wide" id="mCodex">图鉴</button>
+        <div class="mrow"><button class="ghost" id="mMute">音效：开</button><button class="ghost" id="mFx">特效：强烈</button></div>
+      </div>
+      <div class="mfoot">键盘鼠标、手柄、触屏都能玩</div>
+    </div>
+  </div>
+  <div id="codex" class="overlay hidden">
+    <div class="card codex">
+      <div class="chead"><h2>图鉴</h2><button class="ghost" id="codexClose">返回</button></div>
+      <div class="ctabs" id="codexTabs"><button type="button" data-t="weapon" class="on">武器</button><button type="button" data-t="gadget">道具</button><button type="button" data-t="abil">强化</button><button type="button" data-t="talent">天赋</button><button type="button" data-t="pet">宠物</button><button type="button" data-t="mob">怪物</button><button type="button" data-t="scene">场景</button><button type="button" data-t="skin">形象</button></div>
+      <div class="cgrid" id="codexGrid"></div>
+    </div>
+  </div>
+  <div id="title" class="overlay hidden">
+    <div class="card wide">
+      <div class="colL">
+        <img id="heroImg" class="hero" alt="满载而鼠的仓鼠">
+        <h1>满载而鼠</h1>
+        <div class="tag">红蓝对战（第一批内容）</div>
+        <p class="pitch">打爆对方的仓鼠窝就赢。打怪、拆零食箱、击败对手攒经验，腮帮子塞满就升级，从武器、能力、宠物里三选一。</p>
+      </div>
+      <div class="colR">
+        <div class="lobby">
+          <div class="row"><span class="lab">模式</span><div class="seg" id="segMode"><button type="button" data-v="solo" class="on">单人</button><button type="button" data-v="duo">双人同屏</button></div></div>
+          <div class="row"><span class="lab">玩家1</span><div class="seg" id="segP1"><button type="button" data-v="blue" class="on">蓝队</button><button type="button" data-v="red">红队</button></div></div>
+          <div class="row"><span class="lab">形象</span><div class="seg" id="segS1"><button type="button" data-v="gold" class="on">金丝熊</button><button type="button" data-v="pudding">布丁</button><button type="button" data-v="silver">银狐</button><button type="button" data-v="stripe">三线</button></div></div>
+          <div class="row" id="rowP2"><span class="lab">玩家2</span><div class="seg" id="segP2"><button type="button" data-v="blue">蓝队</button><button type="button" data-v="red" class="on">红队</button></div><div class="seg" id="segP2c"><button type="button" data-v="pad" class="on">手柄</button><button type="button" data-v="keys">方向键</button></div></div>
+          <div class="row" id="rowS2"><span class="lab">玩家2形象</span><div class="seg" id="segS2"><button type="button" data-v="gold">金丝熊</button><button type="button" data-v="pudding" class="on">布丁</button><button type="button" data-v="silver">银狐</button><button type="button" data-v="stripe">三线</button></div></div>
+          <div class="row"><span class="lab">AI 补位</span><span class="tm b">蓝</span><div class="step" data-t="blue"><button type="button" data-d="-1" aria-label="减少蓝队AI">−</button><b id="aiBlue">2</b><button type="button" data-d="1" aria-label="增加蓝队AI">+</button></div><span class="tm r">红</span><div class="step" data-t="red"><button type="button" data-d="-1" aria-label="减少红队AI">−</button><b id="aiRed">3</b><button type="button" data-d="1" aria-label="增加红队AI">+</button></div></div>
+        </div>
+        <div class="ctrl" id="ctrlText"></div>
+        <div class="btns"><button class="big" id="startBtn">开始对局</button><button class="ghost" id="backMenu">返回</button></div>
+        <p class="err" id="errText" hidden></p>
+      </div>
+    </div>
+  </div>
+  <div id="pause" class="overlay hidden">
+    <div class="card">
+      <h2>暂停</h2>
+      <p class="sub">对局还在等你。</p>
+      <div class="btns">
+        <button class="big" id="resumeBtn">继续</button>
+        <button class="ghost" id="restartBtn">重新开始</button>
+        <button class="ghost" id="lobbyBtn2">返回大厅</button>
+        <button class="ghost" id="muteBtn">音效：开</button>
+        <button class="ghost" id="fxBtn">特效：强烈</button>
+      </div>
+    </div>
+  </div>
+  <div id="result" class="overlay hidden">
+    <div class="card">
+      <div class="rank" id="rRank">蓝</div>
+      <h2 id="rTitle">蓝队胜利！</h2>
+      <p class="sub" id="rSub"></p>
+      <div id="rStats"></div>
+      <div class="btns" style="margin-top:12px"><button class="big" id="againBtn">再来一局</button><button class="ghost" id="lobbyBtn">返回大厅</button></div>
+    </div>
+  </div>
+</div>
+<script>

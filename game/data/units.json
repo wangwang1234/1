@@ -1,0 +1,121 @@
+{
+ "hamster": {
+  "radius": 16,
+  "maxHp": 100,
+  "hpPerLevel": 8,
+  "speed": 230,
+  "dashCd": 1.15,
+  "magnet": 95,
+  "respawn": "min(14, 4 + 0.6*level) 秒"
+ },
+ "mobs": {
+  "roach": {
+   "r": 11,
+   "hp": 28,
+   "spd": 178
+  },
+  "rat": {
+   "r": 19,
+   "hp": 95,
+   "spd": 128
+  },
+  "boss": {
+   "r": 46,
+   "hp": 2600,
+   "spd": 112
+  }
+ },
+ "minion": {
+  "radius": 12,
+  "hp": 70,
+  "dmg": 6,
+  "note": "后期整体加强（原型 G.minMul）"
+ },
+ "structures": [
+  {
+   "kind": "base",
+   "team": "blue",
+   "x": 432,
+   "y": 1548,
+   "r": 110,
+   "hp": 5200,
+   "range": 560,
+   "dmg": 40
+  },
+  {
+   "kind": "turret",
+   "team": "blue",
+   "x": 1365,
+   "y": 361,
+   "r": 34,
+   "hp": 1700,
+   "range": 480,
+   "dmg": 30
+  },
+  {
+   "kind": "turret",
+   "team": "blue",
+   "x": 1505,
+   "y": 1419,
+   "r": 34,
+   "hp": 1700,
+   "range": 480,
+   "dmg": 30
+  },
+  {
+   "kind": "turret",
+   "team": "blue",
+   "x": 1365,
+   "y": 2735,
+   "r": 34,
+   "hp": 1700,
+   "range": 480,
+   "dmg": 30
+  },
+  {
+   "kind": "base",
+   "team": "red",
+   "x": 4608,
+   "y": 1548,
+   "r": 110,
+   "hp": 5200,
+   "range": 560,
+   "dmg": 40
+  },
+  {
+   "kind": "turret",
+   "team": "red",
+   "x": 3675,
+   "y": 361,
+   "r": 34,
+   "hp": 1700,
+   "range": 480,
+   "dmg": 30
+  },
+  {
+   "kind": "turret",
+   "team": "red",
+   "x": 3535,
+   "y": 1677,
+   "r": 34,
+   "hp": 1700,
+   "range": 480,
+   "dmg": 30
+  },
+  {
+   "kind": "turret",
+   "team": "red",
+   "x": 3675,
+   "y": 2735,
+   "r": 34,
+   "hp": 1700,
+   "range": 480,
+   "dmg": 30
+  }
+ ],
+ "teamColors": {
+  "blue": "#4fa3ff",
+  "red": "#ff5b5b",
+  "neutral": "#ffd166"
+ }
+}
