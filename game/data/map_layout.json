@@ -1308,5 +1308,50 @@
    "resp": 60,
    "ht": 60
   }
+ },
+ "pads": [
+  {
+   "x": 700,
+   "y": 1161,
+   "tx": 1890,
+   "ty": 946
+  },
+  {
+   "x": 4340,
+   "y": 1161,
+   "tx": 3150,
+   "ty": 946
+  },
+  {
+   "x": 700,
+   "y": 1935,
+   "tx": 1890,
+   "ty": 2150
+  },
+  {
+   "x": 4340,
+   "y": 1935,
+   "tx": 3150,
+   "ty": 2150
+  }
+ ],
+ "solidHeights": {
+  "wall": 160,
+  "counter": 64,
+  "books": 58,
+  "box": 54,
+  "bottles": 78,
+  "can": 52,
+  "pot": 58,
+  "pbox": 60,
+  "plamp": 70,
+  "pbarrel": 44
+ },
+ "protoTransform": {
+  "SX": 0.7,
+  "SY": 0.86,
+  "OW": 7200,
+  "OH": 3600,
+  "_doc": "crates / camps / lamps / obstacles / circles 是原型单象限原始坐标：先按 OW/OH 四象限镜像，再乘 SX/SY；solids / props / lanes / turrets 等已是最终坐标。"
  }
 }

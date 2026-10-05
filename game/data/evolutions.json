@@ -130,7 +130,26 @@
     "perLevel": "射速 +7%",
     "lv3": "子弹飞得更快",
     "lv6": "弹匣 +4",
-    "lv9": "扇射：每次扣扳机连发 3 枪"
+    "lv9": "扇射：每次扣扳机连发 3 枪",
+    "effects": {
+     "perLevel": {
+      "rate": 0.07
+     },
+     "at": {
+      "3": {
+       "spdMul": 1.25
+      },
+      "6": {
+       "magAdd": 4
+      },
+      "9": {
+       "special": {
+        "burst": 2,
+        "burstGap": 0.07
+       }
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -138,7 +157,23 @@
     "perLevel": "伤害 +7%",
     "lv3": "穿透 +1",
     "lv6": "穿透再 +1",
-    "lv9": "暴击率 +25%"
+    "lv9": "暴击率 +25%",
+    "effects": {
+     "perLevel": {
+      "dmg": 0.07
+     },
+     "at": {
+      "3": {
+       "pierce": 1
+      },
+      "6": {
+       "pierce": 1
+      },
+      "9": {
+       "crit": 0.25
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -146,7 +181,32 @@
     "perLevel": "手电更远 +10%",
     "lv3": "光束更宽",
     "lv6": "照到的敌人受伤 +10%",
-    "lv9": "光里 200 内的敌人被晃瞎"
+    "lv9": "光里 200 内的敌人被晃瞎",
+    "effects": {
+     "perLevel": {
+      "lightRange": 0.1
+     },
+     "at": {
+      "3": {
+       "lightCos": -0.06
+      },
+      "6": {
+       "special": {
+        "litDmg": 0.1
+       }
+      },
+      "9": {
+       "special": {
+        "dazzle": 200,
+        "dazzleCos": 0.8,
+        "dazzleEvery": 0.3,
+        "dazzleCd": 2,
+        "dazzleStun": 0.5,
+        "dazzleBlind": 0.7
+       }
+      }
+     }
+    }
    }
   ],
   "deagle": [
@@ -182,7 +242,31 @@
     "perLevel": "伤害 +4%",
     "lv3": "燃烧弹：15% 几率点燃",
     "lv6": "穿甲弹：穿透 +1，打建筑 +30%",
-    "lv9": "三种弹轮流装填：燃烧、穿甲、爆裂"
+    "lv9": "三种弹轮流装填：燃烧、穿甲、爆裂",
+    "effects": {
+     "perLevel": {
+      "dmg": 0.04
+     },
+     "at": {
+      "3": {
+       "ign": 0.15
+      },
+      "6": {
+       "pierce": 1,
+       "special": {
+        "structDmg": 0.3
+       }
+      },
+      "9": {
+       "special": {
+        "ammoCycle": 3,
+        "cyclePierce": 2,
+        "blastR": 45,
+        "blastDmg": 0.5
+       }
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -190,7 +274,26 @@
     "perLevel": "弹匣 +12%",
     "lv3": "换弹快 15%",
     "lv6": "弹匣再 +20%",
-    "lv9": "压制火力：连射时伤害逐渐升高，最多 +40%"
+    "lv9": "压制火力：连射时伤害逐渐升高，最多 +40%",
+    "effects": {
+     "perLevel": {
+      "magMul": 0.12
+     },
+     "at": {
+      "3": {
+       "rlMul": 0.85
+      },
+      "6": {
+       "magMul": 0.2
+      },
+      "9": {
+       "special": {
+        "rampDmg": 0.02,
+        "rampMax": 0.4
+       }
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -198,7 +301,29 @@
     "perLevel": "散布 -7%、有效射程 +8%",
     "lv3": "子弹更快",
     "lv6": "暴击率 +10%",
-    "lv9": "停顿后的第一枪伤害翻倍并穿透"
+    "lv9": "停顿后的第一枪伤害翻倍并穿透",
+    "effects": {
+     "perLevel": {
+      "spreadMul": -0.07,
+      "eff": 0.08
+     },
+     "spreadFloor": 0.3,
+     "at": {
+      "3": {
+       "spdMul": 1.2
+      },
+      "6": {
+       "crit": 0.1
+      },
+      "9": {
+       "special": {
+        "firstShot": 0.5,
+        "firstDmg": 2,
+        "firstPierce": 2
+       }
+      }
+     }
+    }
    }
   ],
   "smg": [
@@ -234,7 +359,25 @@
     "perLevel": "弹丸更集中、伤害 +3%",
     "lv3": "+1 弹丸",
     "lv6": "再 +1 弹丸",
-    "lv9": "弹丸穿透 1 个敌人"
+    "lv9": "弹丸穿透 1 个敌人",
+    "effects": {
+     "perLevel": {
+      "spreadMul": -0.04,
+      "dmg": 0.03
+     },
+     "spreadFloor": 0.5,
+     "at": {
+      "3": {
+       "n": 1
+      },
+      "6": {
+       "n": 1
+      },
+      "9": {
+       "pierce": 1
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -242,7 +385,33 @@
     "perLevel": "点燃几率 +7%",
     "lv3": "燃烧伤害 +50%",
     "lv6": "被点燃的敌人减速",
-    "lv9": "每一枪都在前方留下一片火海"
+    "lv9": "每一枪都在前方留下一片火海",
+    "effects": {
+     "perLevel": {
+      "ign": 0.07
+     },
+     "base": {
+      "ign": 0.15
+     },
+     "at": {
+      "3": {
+       "ignK": 1.5
+      },
+      "6": {
+       "special": {
+        "burnSlow": 1
+       }
+      },
+      "9": {
+       "special": {
+        "fireField": 170,
+        "fieldR": 70,
+        "fieldLife": 2.5,
+        "fieldDps": 16
+       }
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -250,7 +419,27 @@
     "perLevel": "击退 +15%",
     "lv3": "命中短暂眩晕",
     "lv6": "击退再 +30%",
-    "lv9": "贴脸一枪把人轰飞并眩晕"
+    "lv9": "贴脸一枪把人轰飞并眩晕",
+    "effects": {
+     "perLevel": {
+      "kb": 0.15
+     },
+     "at": {
+      "3": {
+       "stun": 0.25
+      },
+      "6": {
+       "kb": 0.3
+      },
+      "9": {
+       "special": {
+        "pointBlank": 90,
+        "pbKb": 520,
+        "pbStun": 0.8
+       }
+      }
+     }
+    }
    }
   ],
   "sniper": [
@@ -591,5 +780,6 @@
     "lv9": "每 15 秒有 3 秒零耗能且伤害 +30%"
    }
   ]
- }
+ },
+ "_effectsDoc": "effects：进化数值（批次 1 只填了手枪/AK-47/霰弹枪，其余武器在批次 2 补）。perLevel 每级累加：rate/dmg/kb/range/eff/magMul/aoe/aoeDmg/lightRange/ign 为加到倍率上的增量；spreadMul/rlMul 为乘法（1+v×级，spreadFloor 为下限）。at：达到该级时一次性生效；spdMul/rlMul 相乘，magAdd/n/pierce/crit/ign/stun/lightCos 相加，ignK 覆盖；special 为特殊行为参数。base：路线≥1级时的初始值。"
 }

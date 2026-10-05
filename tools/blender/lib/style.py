@@ -1,0 +1,254 @@
+"""全局风格参数：调色板、材质命名、描边、比例常量。
+
+改这里一处，重新运行 build.py --all 就能整批更新所有资产。
+
+调色板贴图 palette.png：256×256，16×16 格，每格一个颜色。
+- 第 0～7 行：固有色（albedo）
+- 第 8～15 行：对应格子的自发光色（同一列、行号 +8）；不发光的格子是黑色
+- 皮肤色（第 0～2 行的第 0～3 列）：M_skin 材质在运行时按皮肤编号横向偏移 U
+- 队伍色（第 6 行=蓝队，第 7 行=红队）：M_team 材质在运行时按队伍纵向偏移 V
+"""
+
+PALETTE_SIZE = 256
+CELLS = 16
+CELL_PX = PALETTE_SIZE // CELLS
+
+
+def _hex(h):
+    h = h.lstrip("#")
+    return (int(h[0:2], 16) / 255.0, int(h[2:4], 16) / 255.0, int(h[4:6], 16) / 255.0)
+
+
+# ---------------------------------------------------------------------------
+# 调色板：名字 -> (行, 列, 固有色, 自发光色或 None)
+# ---------------------------------------------------------------------------
+_P = {}
+
+
+def _put(name, row, col, albedo, emissive=None):
+    assert 0 <= row < 8 and 0 <= col < CELLS, name
+    for k, v in _P.items():
+        assert (v[0], v[1]) != (row, col), f"palette cell clash {name} vs {k}"
+    _P[name] = (row, col, albedo, emissive)
+
+
+# 皮肤（列 = 皮肤编号：0 金丝熊、1 布丁、2 银狐、3 三线）
+SKINS = ["gold", "pudding", "silver", "stripe"]
+_SKIN_FUR = ["#f2a54a", "#f7d37c", "#e4e1ea", "#b2adbd"]
+_SKIN_CREAM = ["#fff3e0", "#fff8e6", "#ffffff", "#f6f3f9"]
+# 背部条纹：非三线皮肤用略深一点的毛色，三线用深色条纹
+_SKIN_STRIPE = ["#e8963c", "#efc56a", "#d6d2df", "#5e5868"]
+for i in range(4):
+    _put(f"fur_{SKINS[i]}", 0, i, _SKIN_FUR[i])
+    _put(f"cream_{SKINS[i]}", 1, i, _SKIN_CREAM[i])
+    _put(f"stripe_{SKINS[i]}", 2, i, _SKIN_STRIPE[i])
+# 资产脚本里统一用这三个名字，运行时按皮肤偏移
+SKIN_FUR = "fur_gold"
+SKIN_CREAM = "cream_gold"
+SKIN_STRIPE = "stripe_gold"
+
+# 仓鼠固定色
+_put("nose_pink", 0, 4, "#ff7f96")
+_put("ear_inner", 0, 5, "#ffb3c1")
+_put("blush", 0, 6, "#ff8fa3")
+_put("paw", 0, 7, "#f7b2a8")
+_put("paw_light", 0, 8, "#ffd9c0")
+_put("eye_black", 0, 9, "#2a1d24")
+_put("eye_white", 0, 10, "#ffffff", "#ffffff")
+_put("mouth", 0, 11, "#3a2730")
+_put("whisker", 0, 12, "#7a4a3a")
+_put("tongue", 0, 13, "#ff6f86")
+_put("tooth", 0, 14, "#fffaf0")
+_put("white", 0, 15, "#ffffff")
+
+# 小兵（敌我共用身体，头盔走队伍色）
+_put("minion_fur", 1, 4, "#d9a066")
+_put("minion_cream", 1, 5, "#fff2df")
+_put("gear_navy", 1, 6, "#2d3846")
+_put("gear_navy_light", 1, 7, "#45536a")
+
+# 武器材质
+_put("gun_metal", 3, 0, "#3a3d45")
+_put("gun_dark", 3, 1, "#2b2d33")
+_put("gun_darker", 3, 2, "#24262b")
+_put("gun_light", 3, 3, "#5a5d66")
+_put("gun_steel", 3, 4, "#8f939b")
+_put("gun_chrome", 3, 5, "#c9ced6")
+_put("wood", 3, 6, "#8a5a32")
+_put("wood_dark", 3, 7, "#5a3a22")
+_put("wood_red", 3, 8, "#7a4a2a")
+_put("polymer_olive", 3, 9, "#4b5530")
+_put("brass", 3, 10, "#e8c45a")
+_put("shell_red", 3, 11, "#d8423f")
+_put("rubber", 3, 12, "#1d2229")
+_put("sticker_yellow", 3, 13, "#ffcf3a")
+_put("sticker_mint", 3, 14, "#7fe3c8")
+_put("lens", 3, 15, "#7fe3ff", "#7fe3ff")
+
+# 进化路线色（A 橙、B 蓝、C 紫）；自发光版用于第 9 级发光
+_put("path_a", 4, 0, "#ff9a3c", "#ff9a3c")
+_put("path_b", 4, 1, "#5fb0ff", "#5fb0ff")
+_put("path_c", 4, 2, "#c77dff", "#c77dff")
+_put("gold_ring", 4, 3, "#ffcf3a", "#7a5a10")
+_put("ice", 4, 4, "#cfefff", "#204050")
+_put("torch_glass", 4, 5, "#fff6c2", "#fff6c2")
+_put("vest_olive", 4, 6, "#4b5530")
+_put("vest_dark", 4, 7, "#3a4228")
+_put("headband_red", 4, 8, "#e0443f")
+_put("clover", 4, 9, "#4caf50")
+_put("clover_dark", 4, 10, "#2e7d32")
+_put("glasses", 4, 11, "#2b1d24")
+_put("shoe_red", 4, 12, "#e0443f")
+_put("magnet_red", 4, 13, "#e0443f")
+_put("magnet_steel", 4, 14, "#c9ced6")
+_put("regen_green", 4, 15, "#8de0a6", "#8de0a6")
+
+# 场景：纸箱、书、台灯、喷漆罐、弹簧板、零食盒、地板
+_put("cardboard", 5, 0, "#c89359")
+_put("cardboard_light", 5, 1, "#e6c58a")
+_put("cardboard_dark", 5, 2, "#9a6a3c")
+_put("label_red", 5, 3, "#d84a3a")
+_put("book_blue", 5, 4, "#3d6fb5")
+_put("book_red", 5, 5, "#c0392b")
+_put("book_green", 5, 6, "#2e8b57")
+_put("book_yellow", 5, 7, "#d4a017")
+_put("book_purple", 5, 8, "#7d3c98")
+_put("book_orange", 5, 9, "#e67e22")
+_put("paper", 5, 10, "#f4ead8")
+_put("lamp_dark", 5, 11, "#3a3f48")
+_put("lamp_pole", 5, 12, "#55585f")
+_put("lamp_shade", 5, 13, "#f2e2c0", "#5a4a20")
+_put("bulb", 5, 14, "#fff1c0", "#fff1c0")
+_put("spray_red", 5, 15, "#d8423f")
+_put("spray_yellow", 2, 4, "#ffd23f")
+_put("spring_yellow", 2, 5, "#ffd23f")
+_put("snack_orange", 2, 6, "#ff8a3d")
+_put("snack_purple", 2, 7, "#8f5bd6")
+_put("snack_green", 2, 8, "#7ccf5a")
+_put("floor_wood", 2, 9, "#6b4e3a")
+_put("floor_wood_dark", 2, 10, "#4d3829")
+_put("floor_wood_light", 2, 11, "#82614a")
+_put("carpet", 2, 12, "#6a4a6e")
+_put("carpet_light", 2, 13, "#866089")
+_put("wall_plaster", 2, 14, "#3a3050")
+_put("wall_trim", 2, 15, "#5a4c70")
+_put("can_grey", 1, 8, "#8c8a99")
+_put("can_grey_dark", 1, 9, "#6e6c7c")
+_put("towel_cream", 1, 10, "#e9dcc3")
+_put("towel_stripe", 1, 11, "#c9b18a")
+_put("pencil_yellow", 1, 12, "#f2c230")
+_put("eraser_pink", 1, 13, "#f59ab0")
+_put("seed_shell", 1, 14, "#3a3236")
+_put("seed_stripe", 1, 15, "#e8e0d0")
+
+# 队伍色：第 6 行蓝、第 7 行红（列对应）
+TEAM_ROWS = {"blue": 6, "red": 7}
+_TEAM = [
+    ("team_main", "#3d8bff", "#e0443f", None, None),
+    ("team_dark", "#2a62c9", "#b8302c", None, None),
+    ("team_light", "#9cc8ff", "#ffb0b0", None, None),
+    ("team_glow", "#4fa3ff", "#ff5b5b", "#4fa3ff", "#ff5b5b"),
+    ("team_knit", "#3577e0", "#cf3b37", None, None),
+]
+for i, (n, cb, cr, eb, er) in enumerate(_TEAM):
+    _put(n, 6, i, cb, eb)
+    _put(n + "__red", 7, i, cr, er)
+
+
+def color(name):
+    """名字 -> 固有色 RGB（0..1 sRGB）。"""
+    return _hex(_P[name][2])
+
+
+def cell(name):
+    r, c, _, _ = _P[name]
+    return r, c
+
+
+def uv(name):
+    """名字 -> Blender UV（左下角原点）。glTF 导出时会翻转为左上角原点。"""
+    r, c = cell(name)
+    return ((c + 0.5) / CELLS, 1.0 - (r + 0.5) / CELLS)
+
+
+def palette_names():
+    return list(_P.keys())
+
+
+def palette_pixels():
+    """返回 256×256 RGBA（sRGB，0..1）像素列表，行从上到下。"""
+    px = [[(0.0, 0.0, 0.0, 1.0)] * PALETTE_SIZE for _ in range(PALETTE_SIZE)]
+    grey = (0.5, 0.5, 0.5, 1.0)
+    for row in range(8):
+        for col in range(CELLS):
+            for y in range(CELL_PX):
+                for x in range(CELL_PX):
+                    px[row * CELL_PX + y][col * CELL_PX + x] = grey
+    for name, (r, c, alb, emi) in _P.items():
+        a = _hex(alb) + (1.0,)
+        e = (_hex(emi) + (1.0,)) if emi else (0.0, 0.0, 0.0, 1.0)
+        for y in range(CELL_PX):
+            for x in range(CELL_PX):
+                px[r * CELL_PX + y][c * CELL_PX + x] = a
+                px[(r + 8) * CELL_PX + y][c * CELL_PX + x] = e
+    return px
+
+
+# ---------------------------------------------------------------------------
+# 材质槽（Godot 运行时按名字前缀换成 toon 着色器，见 game/scripts/view/toon_materials.gd）
+# ---------------------------------------------------------------------------
+MAT_TOON = "M_toon_base"      # 普通平涂
+MAT_SKIN = "M_skin"           # 仓鼠毛色，运行时按皮肤偏移
+MAT_TEAM = "M_team"           # 队伍色，运行时按队伍偏移
+MAT_METAL = "M_metal"         # 金属：卡通硬高光
+MAT_GLASS = "M_glass"         # 玻璃/镜片：高光 + 少量自发光
+MAT_EMISSIVE = "M_emissive"   # 发光件（灯泡、指示灯）
+MAT_EYE = "M_eye"             # 眼睛：无描边、硬高光
+MAT_FLAT = "M_flat"           # 贴在表面的小件（嘴、胡须、贴纸）：不描边
+
+MATERIALS = [MAT_TOON, MAT_SKIN, MAT_TEAM, MAT_METAL, MAT_GLASS, MAT_EMISSIVE, MAT_EYE, MAT_FLAT]
+
+# 描边（Godot 端读取同名常量的拷贝，见 toon_outline.gdshader）
+OUTLINE_PX_CHARACTER = 2.0
+OUTLINE_PX_PROP = 1.5
+OUTLINE_LIGHTNESS = 0.35
+
+# ---------------------------------------------------------------------------
+# 比例（米）。数据里 1 单位 = 1 厘米。
+# ---------------------------------------------------------------------------
+HAMSTER_R = 0.16            # 碰撞半径
+HAMSTER_UNIT = 0.15         # 原型 R=15 的造型基准
+WEAPON_THICKEN = 1.3        # 玩具化加粗倍数
+
+# 武器握把约定（武器局部坐标，原点 = 右手握把；+Y 为枪口方向，+Z 向上）
+# 动作脚本按武器类别把手放到这些位置
+GRIP = {
+    "pistol": {"R": (0.0, 0.0, 0.0), "L": (-0.014, 0.004, -0.006)},
+    "rifle": {"R": (0.0, 0.0, 0.0), "L": (0.0, 0.07, 0.0)},
+    "shotgun": {"R": (0.0, 0.0, 0.0), "L": (0.0, 0.072, 0.0)},
+}
+
+
+def write_palette_png(path):
+    """用标准库写 PNG（不依赖 Blender 图像 API）。"""
+    import os
+    import struct
+    import zlib
+
+    rows = palette_pixels()
+    raw = bytearray()
+    for row in rows:
+        raw.append(0)
+        for (r, g, b, a) in row:
+            raw.extend((int(round(r * 255)), int(round(g * 255)), int(round(b * 255)), int(round(a * 255))))
+
+    def chunk(tag, data):
+        c = struct.pack(">I", len(data)) + tag + data
+        return c + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
+
+    n = PALETTE_SIZE
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", n, n, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "wb") as f:
+        f.write(png)
+    return path
