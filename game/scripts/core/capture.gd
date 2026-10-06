@@ -229,6 +229,8 @@ func _arsenal() -> void:
 	var h := mv.local
 	h.ctl = "player"
 	h.ai = null
+	h.inp.mx = 0.0
+	h.inp.my = 0.0
 	for e in w.mobs:
 		e.dead = true
 	for o in w.hams:
@@ -306,6 +308,9 @@ func _b2world() -> void:
 	var h := mv.local
 	h.ctl = "player"
 	h.ai = null
+	h.inp.mx = 0.0    # 清掉 AI 留下的移动输入，否则会一直朝最后的方向走
+	h.inp.my = 0.0
+	h.inp.fire = false
 	for o in w.hams:
 		if o != h:
 			o.alive = false
@@ -685,6 +690,7 @@ func _perf() -> void:
 	var last := Time.get_ticks_usec()
 	var sim_acc := 0.0
 	var sim_n := 0
+	var last_row := 0.0
 	# 单独测一下逻辑耗时：每帧多跑一份影子世界（同种子），不影响画面
 	var shadow := SimWorld.new()
 	shadow.setup(main.make_cfg(main.opts))
@@ -702,7 +708,8 @@ func _perf() -> void:
 		sim_ms.append(sm)
 		sim_acc += sm
 		sim_n += 1
-		if frames.size() % 30 == 0:
+		if frames.size() % 30 == 0 or t - last_row >= 1.0:    # 每 30 帧或每秒记一行（软件渲染很慢时也有数据）
+			last_row = t
 			csv.append("%.2f,%.2f,%.1f,%d,%d,%d,%.3f" % [t, ft, Engine.get_frames_per_second(),
 				Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME),
 				Performance.get_monitor(Performance.RENDER_TOTAL_PRIMITIVES_IN_FRAME),

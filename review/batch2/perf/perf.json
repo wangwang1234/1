@@ -1,0 +1,21 @@
+{
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "api": "1.4.318",
+  "avg_fps": 0.574415131873036,
+  "avg_ms": 1740.90121327276,
+  "cpu": "Intel(R) Xeon(R) Processor @ 2.10GHz",
+  "frames": 23,
+  "hams": 10,
+  "low1_fps": 0.456671863315971,
+  "match_t": 4.58333333333332,
+  "max_ms": 2189.75610351562,
+  "minions_end": 0,
+  "os": "Linux",
+  "p99_ms": 2189.75610351562,
+  "resolution": "1920x1080",
+  "seconds": 40.040728,
+  "sim_avg_ms": 5.30169561116592,
+  "sim_p99_ms": 44.5519981384277,
+  "threads": 4,
+  "vendor": "Unknown"
+}
