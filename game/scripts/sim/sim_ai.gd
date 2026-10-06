@@ -24,9 +24,15 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 	for e in w.hams:
 		if e.alive and e.team != h.team and sees.call(e):
 			consider.call(e, float(WT.ham), float(A.get("suddenHamRange", RG.ham)) if objective else float(RG.ham))
+	for e in w.decoys:
+		if not e.dead and e.team != h.team and sees.call(e):
+			consider.call(e, float(WT.decoy), float(RG.decoy))
 	for e in w.minions:
 		if not e.dead and e.team != h.team and sees.call(e):
 			consider.call(e, float(WT.minion), float(RG.minion))
+	for e in w.mobs:
+		if not e.dead and (e.target == h or (h.ai.state == "jungle" and sees.call(e))):
+			consider.call(e, float(WT.mob), float(RG.mob))
 	# 人数占优（对面有人在等复活）或进入加速决战时，没有小兵掩护也去拆建筑
 	var alive_diff := 0
 	for e in w.hams:
@@ -41,7 +47,9 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 			if not m.dead and m.team == h.team and Vector2(m.x - s.x, m.y - s.y).length() < s.range_:
 				allies = true
 				break
-		if objective:
+		if s.kind == "sentry":
+			consider.call(s, float(WT.struct), s.range_ + float(RG.structExtra))
+		elif objective:
 			consider.call(s, float(WT.struct) * float(A.get("suddenStructWeight", 1.0)), 1e9)
 		elif allies or s.hp < s.max_hp * float(A.structLowHp):
 			consider.call(s, float(WT.struct), s.range_ + float(RG.structExtra))
@@ -49,7 +57,7 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 		if not c.dead:
 			consider.call(c, float(WT.crate), float(RG.crate))
 	var best: SimEntity = acc.best
-	if best != null and not w.map.has_los(h.x, h.y, best.x, best.y):
+	if best != null and (not w.map.has_los(h.x, h.y, best.x, best.y) or SimGadgets.smoke_blocks(w, h.x, h.y, best.x, best.y)):
 		return null
 	return best
 
@@ -68,11 +76,7 @@ static func _aim_at(w: SimWorld, h: SimHamster, tg: SimEntity) -> void:
 
 
 static func _want_gadget(w: SimWorld, h: SimHamster, tg: SimEntity) -> bool:
-	if tg == null:
-		return false
-	var gr: Array = w.R.ai.gadgetRange
-	var d := Vector2(tg.x - h.x, tg.y - h.y).length()
-	return d > float(gr[0]) and d < float(gr[1])
+	return SimGadgets.ai_want(w, h, tg)
 
 
 static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
@@ -108,7 +112,15 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 	if tg != null and (tg.dead or (tg is SimHamster and not (tg as SimHamster).alive)):
 		tg = null
 	var W := h.weapon()
+	var wkind := String(W.get("kind", "bullet"))
 	var rng_ := minf(float(W.get("range", 560)) * maxf(0.45, float(W.get("eff", 1.0))) * 0.95, float(A.maxRange))
+	if wkind == "melee":
+		rng_ = float(W.get("reach", 88)) * float(A.meleeRangeK)
+		var wr := float(SimWeapons.params(h).waveRange)
+		if wr > 0.0:
+			rng_ = maxf(rng_, wr * 0.8)
+	elif wkind == "flame":
+		rng_ = float(W.get("range", 300)) * float(A.flameRangeK)
 	var low := h.hp < h.max_hp * float(A.lowHp)
 	var gx := 0.0
 	var gy := 0.0
@@ -133,6 +145,8 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 			has_goal = true
 		else:
 			var want := rng_ * float(A.buildingRatio) if (tg.kind == "base" or tg.kind == "turret") else rng_ * float(A.keepRatio)
+			if wkind == "melee":
+				want = tg.r + float(A.meleeKeep)
 			ai.strafe_t -= dt
 			if ai.strafe_t <= 0.0:
 				ai.strafe_t = w.rand(float(A.strafe[0]), float(A.strafe[1]))
@@ -152,13 +166,29 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 			ai.inv.t = float(ai.inv.t) - dt
 			if float(ai.inv.t) <= 0.0 or Vector2(float(ai.inv.x) - h.x, float(ai.inv.y) - h.y).length() < 80.0:
 				ai.inv = {}
+		ai.jungle_t -= dt
+		if ai.state == "push" and ai.jungle_t <= 0.0 and h.lvl < int(A.jungle.maxLevel):
+			var ev: Array = A.jungle.every
+			ai.jungle_t = w.rand(float(ev[0]), float(ev[1]))
+			var mid := (w.map.min_x + w.map.max_x) * 0.5
+			var own: Array = w.camps.filter(func(c): return int(c.alive) > 0 and ((h.team == "blue" and float(c.x) < mid) or (h.team == "red" and float(c.x) > mid)))
+			if not own.is_empty():
+				ai.camp = own[int(w.rnd() * own.size()) % own.size()]
+				ai.state = "jungle"
+		if ai.state == "jungle":
+			if ai.camp.is_empty() or int(ai.camp.alive) <= 0:
+				ai.state = "push"
+				ai.camp = {}
+			else:
+				gx = float(ai.camp.x)
+				gy = float(ai.camp.y)
+				has_goal = true
 		if ai.state == "retreat":
 			var b: Vector2 = w.map.base_pos[h.team]
 			gx = b.x
 			gy = b.y
 			has_goal = true
-		if ai.state == "push" or ai.state == "jungle":
-			ai.state = "push"
+		if ai.state == "push":
 			var path := w.lane_path(h.team, ai.lane) if w.map.lanes.has(ai.lane) else w.lane_path(h.team, String(w.map.lanes.keys()[0]))
 			var wp := path[mini(ai.wp, path.size() - 1)]
 			gx = wp.x
@@ -184,6 +214,9 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 		inp.fire = false
 	if float(h.gadget.cd) <= 0.0 and w.rnd() < dt * float(A.gadgetRate) and _want_gadget(w, h, tg):
 		inp.gadget = true
+	# 左轮神枪手：对建筑 / 箱子这类不能标记的目标改成点射（按住不放永远不会开火）
+	if inp.fire and tg != null and SimWeapons.special(h, "deadeye") != null and not (tg is SimHamster or tg is SimMinion or tg is SimMob or tg is SimDecoy):
+		inp.fire = h.mark_hold <= 0.0
 	if tg == null and int(W.get("mag", 0)) > 0 and h.reload_t <= 0.0 and h.ammo < SimWeapons.mag_size(h) * 0.5:
 		inp.reload = true
 	inp.ml = Vector2(inp.mx, inp.my).length()

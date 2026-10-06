@@ -58,7 +58,8 @@
   "eff": 0.65,
   "minF": 0.6,
   "desc": "大口径手枪，威力大、后坐力强",
-  "selfKb": 60
+  "selfKb": 60,
+  "flipKMin": 0.3
  },
  "ak47": {
   "name": "AK-47",
@@ -120,7 +121,8 @@
   },
   "eff": 0.55,
   "minF": 0.5,
-  "desc": "射速极快，近中距离压制"
+  "desc": "射速极快，近中距离压制",
+  "extraDmg": 0.85
  },
  "shotgun": {
   "name": "霰弹枪",
@@ -183,7 +185,9 @@
   "eff": 1,
   "minF": 1,
   "desc": "超远射程，一枪穿透多个敌人",
-  "selfKb": 70
+  "selfKb": 70,
+  "trailMax": 2400,
+  "bolt": 1
  },
  "lmg": {
   "name": "轻机枪",
@@ -201,21 +205,12 @@
   "bmax": 0.1,
   "slow": 0.72,
   "snd": "lmg",
-  "fx": {
-   "fl": 20,
-   "cone": 2.8,
-   "side": 1,
-   "sm": 1,
-   "sp": 4,
-   "li": 2,
-   "sh": "brass",
-   "shk": 0.08,
-   "kick": 4,
-   "gk": 5
-  },
+  "fx": {"fl": 20, "cone": 2.8, "side": 1, "sm": 1, "sp": 4, "li": 2, "sh": "brass", "shk": 0.08, "kick": 4, "gk": 5},
   "eff": 0.6,
   "minF": 0.6,
-  "desc": "100 发弹链火力压制，开火时会变慢"
+  "desc": "100 发弹链火力压制，开火时会变慢",
+  "deploy": 0.4,
+  "deploySpread": 0.6
  },
  "rocket": {
   "name": "火箭筒",
@@ -230,20 +225,19 @@
   "mag": 1,
   "rl": 1.5,
   "snd": "rocket",
-  "fx": {
-   "fl": 22,
-   "cone": 3,
-   "side": 0,
-   "sm": 6,
-   "sp": 6,
-   "li": 2.4,
-   "sh": null,
-   "shk": 0.22,
-   "kick": 8,
-   "gk": 7
-  },
+  "fx": {"fl": 22, "cone": 3, "side": 0, "sm": 6, "sp": 6, "li": 2.4, "sh": null, "shk": 0.22, "kick": 8, "gk": 7},
   "desc": "爆炸范围伤害，拆塔利器",
-  "selfKb": 90
+  "selfKb": 90,
+  "bulletR": 7,
+  "cluster": {
+   "sp": 300,
+   "fuse": 0.55,
+   "aoe": 55,
+   "kb": 120,
+   "dist": [70, 130],
+   "jitter": 0.3,
+   "throwR": 6
+  }
  },
  "katana": {
   "name": "武士刀",
@@ -254,7 +248,14 @@
   "reach": 88,
   "kb": 260,
   "mag": 0,
-  "desc": "近战斩击，还能把子弹弹回去"
+  "desc": "近战斩击，还能把子弹弹回去",
+  "swingTime": 0.22,
+  "deflectReach": 12,
+  "deflectSpeed": 1.1,
+  "deflectLife": 0.9,
+  "deflectBase": 1.2,
+  "wave": {"speed": 720, "r": 14, "kb": 120},
+  "iaido": {"pad": 10, "scan": 40}
  },
  "flame": {
   "name": "喷火器",
@@ -268,7 +269,14 @@
   "kb": 10,
   "mag": 120,
   "rl": 2,
-  "desc": "持续喷火，点燃敌人"
+  "desc": "持续喷火，点燃敌人",
+  "bulletR": 11,
+  "drag": 1.8,
+  "grow": 22,
+  "wallR": 2,
+  "spdJitter": [0.85, 1.1],
+  "burnBase": 2.5,
+  "heatCone": 0.5
  },
  "minigun": {
   "name": "加特林",
@@ -299,7 +307,14 @@
   },
   "eff": 0.5,
   "minF": 0.5,
-  "desc": "先转管预热，转起来射速极高，开火时几乎走不动"
+  "desc": "先转管预热，转起来射速极高，开火时几乎走不动",
+  "spinBase": 6,
+  "spinDown": 0.9,
+  "spinFire": 0.3,
+  "spinIdleMove": 0.8,
+  "spinIdleMin": 0.2,
+  "slowCap": 0.95,
+  "spinMulMin": 0.3
  },
  "autoshot": {
   "name": "自动霰弹枪",
@@ -314,18 +329,7 @@
   "mag": 20,
   "rl": 2.4,
   "snd": "autoshot",
-  "fx": {
-   "fl": 22,
-   "cone": 3.2,
-   "side": 0,
-   "sm": 2,
-   "sp": 6,
-   "li": 2.4,
-   "sh": "red",
-   "shk": 0.12,
-   "kick": 5,
-   "gk": 6
-  },
+  "fx": {"fl": 22, "cone": 3.2, "side": 0, "sm": 2, "sp": 6, "li": 2.4, "sh": "red", "shk": 0.12, "kick": 5, "gk": 6},
   "eff": 0.35,
   "minF": 0.25,
   "desc": "全自动连喷，近距离清场"
@@ -361,7 +365,9 @@
   },
   "eff": 1,
   "minF": 1,
-  "desc": "能打穿障碍物，后坐力会把自己往后推"
+  "desc": "能打穿障碍物，后坐力会把自己往后推",
+  "trailMax": 2400,
+  "bolt": 1
  },
  "dual": {
   "name": "双持手枪",
@@ -391,7 +397,8 @@
   },
   "eff": 0.55,
   "minF": 0.5,
-  "desc": "左右手交替开火，射速翻倍"
+  "desc": "左右手交替开火，射速翻倍",
+  "dualSide": 0.42
  },
  "revolver": {
   "name": "左轮手枪",
@@ -437,19 +444,18 @@
   "rl": 2.2,
   "fuse": 1.1,
   "snd": "gl",
-  "fx": {
-   "fl": 16,
-   "cone": 2,
-   "side": 0,
-   "sm": 4,
-   "sp": 3,
-   "li": 1.8,
-   "sh": null,
-   "shk": 0.12,
-   "kick": 6,
-   "gk": 6
-  },
-  "desc": "抛射榴弹，落地弹跳后爆炸，能越过障碍"
+  "fx": {"fl": 16, "cone": 2, "side": 0, "sm": 4, "sp": 3, "li": 1.8, "sh": null, "shk": 0.12, "kick": 6, "gk": 6},
+  "desc": "抛射榴弹，落地弹跳后爆炸，能越过障碍",
+  "lobSpeed": 560,
+  "minDist": 90,
+  "aimDefault": 360,
+  "autoAim": 560,
+  "bounceVz": 220,
+  "bounceBoost": 1.4,
+  "rounds": {
+   "smoke": {"r": 120, "life": 6},
+   "fire": {"r": 80, "life": 3, "dps": 14}
+  }
  },
  "rail": {
   "name": "电磁炮",
@@ -461,7 +467,22 @@
   "rl": 2.4,
   "kb": 350,
   "charge": 1,
-  "desc": "按住蓄力，松开射出贯穿一条线的光束"
+  "desc": "按住蓄力，松开射出贯穿一条线的光束",
+  "chargeDmg": 140,
+  "minCharge": 0.15,
+  "holdMax": 0.45,
+  "fireCd": 0.3,
+  "chargeFloor": 0.4,
+  "muzzleR": 2.4,
+  "step": 10,
+  "maxSegs": 4,
+  "hitPad": 10,
+  "edgeMargin": 80,
+  "reflectBack": 12,
+  "propPassDmg": 0.5,
+  "propPad": 12,
+  "recoil": [80, 180],
+  "beamW": [3, 6]
  },
  "laser": {
   "name": "激光枪",
@@ -471,6 +492,13 @@
   "range": 540,
   "mag": 100,
   "rl": 2.5,
-  "desc": "持续光束，照到的敌人持续掉血"
+  "desc": "持续光束，照到的敌人持续掉血",
+  "tick": 0.1,
+  "step": 8,
+  "muzzleR": 2.3,
+  "reveal": 0.3,
+  "noiseChance": 0.3,
+  "noise": 0.55,
+  "costFloor": 0.2
  }
 }

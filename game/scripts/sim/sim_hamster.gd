@@ -33,6 +33,8 @@ class AiState:
 	var last_x := 0.0
 	var last_y := 0.0
 	var inv := {}            # 听到声音去侦察：{x, y, t}
+	var jungle_t := 20.0     # 下次考虑去打野的时间
+	var camp := {}           # 要去打的营地
 
 
 var ctl := "ai"               # player / ai
@@ -100,6 +102,40 @@ var ai: AiState = null
 var kill_streak := 0
 var evo_key := ""             # 进化参数缓存
 var evo_params := {}
+# 批次 2：武器状态
+var spin := 0.0               # 加特林转速 0..1
+var dual_side := 1            # 双持：+1 右手 / -1 左手
+var haste_t := 0.0            # 冲锋枪 B9 急速
+var marks: Array = []         # 左轮神枪手标记的目标 id
+var mark_hold := 0.0
+var mark_acc := 0.0
+var deadeye_shot := false
+var swing_t := 0.0            # 武士刀
+var swing_dir := 1.0
+var swing_n := 0
+var iaido_hit := {}
+var iaido_on := false
+var dash_spd := 1.0
+var flame_t := 0.0            # 喷火器连喷计时 / 火洼计时
+var puddle_t := -9.0
+var gl_n := 0                 # 榴弹特种弹计数
+var charge := 0.0             # 电磁炮蓄力
+var ch_hold := 0.0
+var beam_t := 0.0             # 激光
+var beams: Array = []         # [{x0,y0,x1,y1,h,hit,side}]
+var beam_tick_t := -9.0
+var focus_id := -1
+var focus_n := 0
+var ammo_f := 0.0
+# 批次 2：道具 / 天赋 / 宠物
+var eshield := 0.0            # 能量护盾剩余吸收量
+var eshield_t := 0.0
+var med_t := 0.0
+var med_rate := 0.0
+var jet_t := 0.0
+var beacon := {}              # {x, y, until}
+var squad_t := 20.0
+var pet_list: Array = []      # SimPet
 
 
 func is_alive() -> bool:

@@ -9,6 +9,7 @@ extends Node
 ##   loadout    游戏内武器进化配件对比（每把枪：基础 / A9 / B9 / C9）
 ##   lineup     游戏内皮肤 × 队伍一排
 ##   screens    暂停菜单 + 设置面板 + 结算界面
+##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
 ## 建议配合 --fixed-fps 60（截图确定性，每帧 = 一步逻辑）；perf 不要加 --fixed-fps。
 
@@ -58,6 +59,8 @@ func _run() -> void:
 			await _menu()
 		"style":
 			await _style()
+		"codex":
+			await _codex()
 		"gameplay":
 			await _gameplay()
 		"cards":
@@ -139,6 +142,26 @@ func _menu() -> void:
 	main.menu._refresh_hero()
 	await _wait(1.2)
 	await shot("menu_silver_ak47")
+
+
+func _codex() -> void:
+	main.show_menu(true)
+	await _wait(1.0)
+	main.menu._open_codex()
+	var cx: Codex = null
+	for c in main.menu.root.get_children():
+		if c is Codex:
+			cx = c
+	for t in Codex.TABS:
+		cx.show_tab(String(t[0]))
+		await _wait(0.5)
+		# 等这一页的快照拍完
+		var guard := 0
+		while Snapshot._busy and guard < 600:
+			await get_tree().process_frame
+			guard += 1
+		await _wait(0.3)
+		await shot("codex_" + String(t[0]))
 
 
 func _style() -> void:

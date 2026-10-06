@@ -26,7 +26,20 @@ var crates: Array[SimCrate] = []
 var bullets: Array[SimBullet] = []
 var lobs: Array[SimLob] = []
 var items: Array[SimItem] = []
-var fires: Array = []            # {x, y, r, t, life, team, owner, dps, tick}
+var fires: Array = []            # {x, y, r, t, life, team, owner, dps, tick, id, src}
+var mobs: Array[SimMob] = []
+var pets: Array[SimPet] = []
+var decoys: Array[SimDecoy] = []
+var mines: Array = []            # {id, x, y, team, owner, arm, lvl, t, r}
+var smokes: Array = []           # {id, x, y, r, t, life}
+var flares: Array = []           # {id, x, y, h, t, life, team}
+var zones: Array = []            # 毒气 / 电流带：{id, x, y, r | seg, w, until, team, owner, dps, tick, gas, slow, kind}
+var corrs: Array = []            # 反器材 C 的侦察弹道：{x0, y0, x1, y1, w, until, team}
+var det_q: Array = []            # 天赋“殉爆”：{x, y, team, owner, t}
+var camps: Array = []            # {type, x, y, alive, resp}
+var boss: SimMob = null
+var boss_next := 120.0
+var boom := {"x": 0.0, "y": 0.0, "t": 0.0}   # 最近一次大爆炸的闪光（照亮周围，参与视野）
 var noises: Array = []           # {x, y, type, loud, team, src, t, life}
 var events: Array = []           # 给表现层的事件
 var feed: Array = []             # 击杀播报 {text, color, t}
@@ -64,6 +77,10 @@ func setup(cfg: Dictionary) -> void:
 	uid = 1
 	hams.clear(); minions.clear(); structs.clear(); props.clear(); crates.clear()
 	bullets.clear(); lobs.clear(); items.clear(); fires.clear(); noises.clear(); events.clear(); feed.clear()
+	mobs.clear(); pets.clear(); decoys.clear(); mines.clear(); smokes.clear(); flares.clear(); zones.clear(); corrs.clear(); det_q.clear()
+	boss = null
+	boss_next = float(Data.progression().get("bossFirst", 120))
+	boom = {"x": 0.0, "y": 0.0, "t": 0.0}
 	entities.clear()
 	vis = {"blue": {}, "red": {}}
 	spawn_q.clear()
@@ -72,7 +89,7 @@ func setup(cfg: Dictionary) -> void:
 	winner = ""
 	sudden = false
 	min_mul = 1.0
-	shield_turrets = int(Data.rule("match.slice.shieldTurrets", 1)) if mode == "slice" else 3
+	shield_turrets = int(Data.rule("match.slice.shieldTurrets", 1)) if mode == "slice" else map.turret_pos.blue.size()
 	for team in TEAMS:
 		_add_struct("base", team, map.base_pos[team])
 		for p in map.turret_pos[team]:
@@ -86,6 +103,12 @@ func setup(cfg: Dictionary) -> void:
 		var first: Variant = C.first
 		var resp := float(first) if not (first is Array) else rand(float(first[0]), float(first[1]))
 		crate_spots.append({"x": float(c.x), "y": float(c.y), "big": bool(c.big), "resp": resp, "cur": null})
+	# 野区
+	camps.clear()
+	for c in map.camps:
+		var cd := {"type": String(c.type), "x": float(c.x), "y": float(c.y), "alive": 0, "resp": 0.0}
+		camps.append(cd)
+		SimMobs.spawn_camp(self, cd)
 	# 仓鼠
 	var idx := 0
 	var names_used := {}
@@ -120,7 +143,16 @@ func _new_id() -> int:
 	return uid
 
 
+func new_uid() -> int:
+	uid += 1
+	return uid
+
+
 func _register(e: Object) -> void:
+	entities[e.id] = e
+
+
+func register(e: Object) -> void:
 	entities[e.id] = e
 
 
@@ -196,6 +228,7 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 		var lanes := map.lanes.keys()
 		h.ai.lane = String(lanes[idx % lanes.size()]) if not lanes.is_empty() else "mid"
 		h.ai.dash_t = rand(1.0, 3.0)
+		h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
 	SimHamsterLogic.calc_stats(h)
 	h.hp = h.max_hp
 	h.ammo = SimWeapons.mag_size(h)
@@ -242,6 +275,7 @@ func dispose() -> void:
 	var all: Array = []
 	all.append_array(hams); all.append_array(minions); all.append_array(structs); all.append_array(props); all.append_array(crates)
 	all.append_array(bullets); all.append_array(lobs); all.append_array(items); all.append_array(entities.values())
+	all.append_array(mobs); all.append_array(pets); all.append_array(decoys)
 	for e in all:
 		if e is SimEntity:
 			(e as SimEntity).burn_by = null
@@ -263,10 +297,34 @@ func dispose() -> void:
 			(e as SimBullet).in_solid = null
 		elif e is SimLob:
 			(e as SimLob).owner = null
+			(e as SimLob).att = null
+		elif e is SimMob:
+			(e as SimMob).target = null
+			(e as SimMob).camp = {}
+		elif e is SimPet:
+			(e as SimPet).owner = null
+			(e as SimPet).target = null
+		elif e is SimDecoy:
+			(e as SimDecoy).owner = null
+	for h in hams:
+		h.pet_list.clear()
+	for p in pets:
+		p.owner = null
+		p.target = null
+	for m in mines:
+		m.owner = null
+	for z in zones:
+		z.owner = null
+	for f in fires:
+		f.owner = null
+	for d in det_q:
+		d.owner = null
 	for so in map.solids:
 		so.prop = null
 	hams.clear(); minions.clear(); structs.clear(); props.clear(); crates.clear()
 	bullets.clear(); lobs.clear(); items.clear(); fires.clear(); noises.clear(); events.clear()
+	mobs.clear(); pets.clear(); decoys.clear(); mines.clear(); smokes.clear(); flares.clear(); zones.clear(); corrs.clear(); det_q.clear(); camps.clear()
+	boss = null
 	entities.clear(); _hash.clear(); spawn_q.clear(); crate_spots.clear()
 
 
@@ -306,6 +364,7 @@ func step(dt: float) -> void:
 			var q: Dictionary = spawn_q.pop_front()
 			if minions.size() < int(R.minion.maxMinions):
 				_spawn_minion(String(q.team), String(q.lane))
+		SimMobs.update_spawns(self)
 		for s in crate_spots:
 			if s.cur == null and t >= float(s.resp):
 				var c := _make_crate(s)
@@ -326,8 +385,12 @@ func step(dt: float) -> void:
 			SimAI.think(self, h, dt)
 	for h in hams:
 		SimHamsterLogic.update(self, h, dt)
+	for p in pets:
+		SimMobs.update_pet(self, p, dt)
 	for m in minions:
 		_upd_minion(m, dt)
+	for e in mobs:
+		SimMobs.update(self, e, dt)
 	for s in structs:
 		_upd_struct(s, dt)
 	_upd_pads(dt)
@@ -336,8 +399,13 @@ func step(dt: float) -> void:
 	_upd_bullets(dt)
 	_upd_lobs(dt)
 	_upd_fires(dt)
+	SimGadgets.update_mines(self, dt)
+	_upd_zones(dt)
+	SimGadgets.update_world(self, dt)
+	_upd_evo_world(dt)
 	_upd_items(dt)
 	_upd_noises(dt)
+	boom.t = maxf(0.0, float(boom.t) - dt)
 	for f in feed:
 		f.t += dt
 	while not feed.is_empty() and float(feed[0].t) > 6.0:
@@ -351,6 +419,42 @@ func step(dt: float) -> void:
 			else:
 				keep.append(m)
 		minions = keep
+	if mobs.any(func(e): return e.dead):
+		var keep3: Array[SimMob] = []
+		for e in mobs:
+			if e.dead:
+				entities.erase(e.id)
+				e.target = null
+			else:
+				keep3.append(e)
+		mobs = keep3
+	if pets.any(func(p): return p.dead):
+		var keep4: Array[SimPet] = []
+		for p in pets:
+			if not p.dead:
+				keep4.append(p)
+			else:
+				p.target = null
+		pets = keep4
+	if decoys.any(func(d): return d.dead):
+		var keep5: Array[SimDecoy] = []
+		for d in decoys:
+			if d.dead:
+				entities.erase(d.id)
+				d.owner = null
+			else:
+				keep5.append(d)
+		decoys = keep5
+	if structs.any(func(q): return q.dead and q.kind == "sentry"):
+		var keep6: Array[SimStructure] = []
+		for q in structs:
+			if q.dead and q.kind == "sentry":
+				entities.erase(q.id)
+				q.owner = null
+				q.target = null
+			else:
+				keep6.append(q)
+		structs = keep6
 	if crates.any(func(c): return c.dead):
 		var keep2: Array[SimCrate] = []
 		for c in crates:
@@ -390,12 +494,18 @@ func _hash_all() -> void:
 	for p in props:
 		if not p.dead:
 			_hash_add(p)
+	for d in decoys:
+		if not d.dead:
+			_hash_add(d)
 	for h in hams:
 		if h.alive:
 			_hash_add(h)
 	for m in minions:
 		if not m.dead:
 			_hash_add(m)
+	for e in mobs:
+		if not e.dead:
+			_hash_add(e)
 	for s in structs:
 		if not s.dead:
 			_hash_add(s)
@@ -461,6 +571,36 @@ func all_targets() -> Array:
 	return out
 
 
+func foe_candidates(with_decoys: bool = true) -> Array:
+	## 会动的可攻击单位：仓鼠、小兵、野怪（+ 诱饵）
+	var out: Array = []
+	for h in hams:
+		if h.alive:
+			out.append(h)
+	for m in minions:
+		if not m.dead:
+			out.append(m)
+	for e in mobs:
+		if not e.dead:
+			out.append(e)
+	if with_decoys:
+		for d in decoys:
+			if not d.dead:
+				out.append(d)
+	return out
+
+
+func rail_candidates() -> Array:
+	var out := foe_candidates(true)
+	for s in structs:
+		if not s.dead:
+			out.append(s)
+	for c in crates:
+		if not c.dead:
+			out.append(c)
+	return out
+
+
 func is_visible_to(team: String, e: SimEntity) -> bool:
 	return e.team == team or vis[team].has(e.id)
 
@@ -495,11 +635,14 @@ func mark_e(e: SimEntity, team: String, d: float) -> void:
 
 
 func knock(e: SimEntity, dx: float, dy: float, kb: float) -> void:
-	if kb <= 0.0 or e.kind == "base" or e.kind == "turret" or e.kind == "crate" or e.is_prop:
+	if kb <= 0.0 or e.kind == "base" or e.kind == "turret" or e.kind == "sentry" or e.kind == "crate" or e.kind == "decoy" or e.is_prop:
 		return
 	if e is SimHamster:
 		var h := e as SimHamster
 		if h.tal.has("giant"):
+			return
+		var nk: Variant = SimWeapons.special(h, "noKnockFiring")
+		if nk != null and t - h.last_shot_t < float(nk):
 			return
 	var l := sqrt(dx * dx + dy * dy)
 	if l < 1e-6:
@@ -521,7 +664,8 @@ func burn_tick(e: SimEntity, dt: float) -> void:
 	if e.burn_acc >= float(R.combat.burnTick):
 		e.burn_acc = 0.0
 		var team := e.burn_by.team if e.burn_by != null else "neutral"
-		deal_dmg(e, float(R.combat.burnDmg) * e.burn_k, {"team": team, "owner": e.burn_by as SimHamster if e.burn_by is SimHamster else null, "x": e.x, "y": e.y}, true)
+		var bo: SimHamster = e.burn_by as SimHamster if e.burn_by is SimHamster else null
+		deal_dmg(e, float(R.combat.burnDmg) * e.burn_k, {"team": team, "owner": bo, "x": e.x, "y": e.y}, true)
 
 
 # ---------------------------------------------------------------------------
@@ -540,6 +684,13 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 	if th != null:
 		if th.iframes > 0.0:
 			return 0.0
+		if th.eshield_t > 0.0 and th.eshield > 0.0:
+			var ab := minf(th.eshield, dmg)
+			th.eshield -= ab
+			dmg -= ab
+			emit({"t": "eshield_hit", "id": th.id})
+			if dmg <= 0.01:
+				return 0.0
 		if th.shield > 0:
 			th.shield -= 1
 			th.shield_t = 8.0
@@ -558,10 +709,15 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 		if not quiet and (bool(src.get("forceCrit", false)) or (cc > 0.0 and rnd() < cc)):
 			dmg *= float(o.st.get("critDmg", 2.0))
 			crit = true
+		if quiet and o.tal.has("berserk") and o.hp < o.max_hp * 0.4:
+			dmg *= 1.4
 		dmg *= o.banner_k
 	if tg.supp_until > t:
-		dmg *= 1.2
+		dmg *= float(R.combat.get("suppDmg", 1.2))
 	if th != null:
+		var fa: Variant = SimWeapons.special(th, "firingArmor")
+		if fa != null and t - th.last_shot_t < float(SimWeapons.special(th, "firingWindow")):
+			dmg *= 1.0 - float(fa)
 		if o != null:
 			dmg = minf(dmg, th.max_hp * float(Data.progression().get("pvpHitCap", 0.55)))
 		dmg *= 1.0 - float(th.st.get("armor", 0.0))
@@ -584,6 +740,12 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 		var vamp := float(o.st.get("vamp", 0.0))
 		if vamp > 0.0 and o.alive:
 			o.hp = minf(o.max_hp, o.hp + dmg * vamp)
+	if tg is SimMob:
+		var att: SimEntity = o
+		if att == null and src.get("by") is SimMinion:
+			att = src.get("by")
+		if att != null:
+			SimMobs.aggro(self, tg as SimMob, att)
 	emit({"t": "damage", "id": tg.id, "amount": dmg, "crit": crit, "x": tg.x, "y": tg.y, "r": tg.r, "kind": tg.kind, "team": tg.team, "quiet": quiet and not crit, "by": o.id if o != null else -1})
 	if tg.hp <= 0.0:
 		kill_ent(tg, src)
@@ -606,12 +768,19 @@ func xp_near(o: SimEntity, tg: SimEntity, n: float) -> void:
 
 
 func kill_ent(tg: SimEntity, src: Dictionary) -> void:
+	if tg.kind == "decoy":
+		tg.dead = true
+		emit({"t": "kill", "id": tg.id, "kind": "decoy", "x": tg.x, "y": tg.y, "team": tg.team, "killer": -1})
+		return
+	SimWeapons.on_kill(self, tg, src)
 	var killer: SimHamster = src.get("owner") as SimHamster if src.get("owner") is SimHamster else null
 	var by: Variant = src.get("by")
 	var o: SimEntity = killer if killer != null else (by as SimEntity if by is SimEntity else null)
 	if killer != null and killer.alive and tg.kind != "crate" and tg.team != killer.team:
 		if killer.tal.has("vampire"):
-			killer.hp = minf(killer.max_hp, killer.hp + 25.0)
+			killer.hp = minf(killer.max_hp, killer.hp + float(R.talents.vampireHeal))
+		if killer.tal.has("detonate") and tg.kind in ["ham", "minion", "roach", "rat"]:
+			det_q.append({"x": tg.x, "y": tg.y, "team": killer.team, "owner": killer, "t": float(R.talents.detonate.delay)})
 		var scav := float(killer.st.get("scav", 0.0))
 		if scav > 0.0 and int(killer.weapon().get("mag", 0)) > 0:
 			var m := SimWeapons.mag_size(killer)
@@ -659,6 +828,11 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 			emit({"t": "explode", "x": tg.x, "y": tg.y, "r": 220.0, "big": true})
 			emit({"t": "match_over", "winner": winner})
 			match_over.emit(winner)
+		"roach", "rat", "boss":
+			SimMobs.on_kill(self, tg as SimMob, src)
+		"sentry":
+			tg.dead = true
+			emit({"t": "kill", "id": tg.id, "kind": "sentry", "x": tg.x, "y": tg.y, "team": tg.team, "killer": killer.id if killer != null else -1})
 		"crate":
 			tg.dead = true
 			var cr := tg as SimCrate
@@ -682,6 +856,10 @@ func _tname(team: String) -> String:
 	return "蓝队" if team == "blue" else "红队"
 
 
+func tname(team: String) -> String:
+	return _tname(team)
+
+
 func _tcol(team: String) -> String:
 	return "#4fa3ff" if team == "blue" else "#ff5b5b"
 
@@ -690,10 +868,12 @@ func _tcol(team: String) -> String:
 # 爆炸
 # ---------------------------------------------------------------------------
 
-func blast(x: float, y: float, rr: float, dmg: float, team: String, owner: SimHamster, kb: float) -> void:
-	emit({"t": "explode", "x": x, "y": y, "r": rr, "big": false})
+func blast(x: float, y: float, rr: float, dmg: float, team: String, owner: SimHamster, kb: float, opts: Dictionary = {}) -> void:
+	emit({"t": "explode", "x": x, "y": y, "r": rr, "big": false, "h": float(opts.get("h", 12.0)), "src": String(opts.get("src", ""))})
 	noise(x, y, "boom", 1.2, null)
+	boom_light(x, y)
 	var fo := float(R.combat.blastFalloff)
+	var slow := float(opts.get("slow", 0.0))
 	var hit: SimEntity = null
 	for e: SimEntity in hash_range(x, y, rr + 60.0):
 		if not can_hit(team, e):
@@ -702,20 +882,28 @@ func blast(x: float, y: float, rr: float, dmg: float, team: String, owner: SimHa
 		if d > rr:
 			continue
 		var f := 1.0 - maxf(0.0, d) / rr * fo
-		if deal_dmg(e, dmg * f, {"team": team, "owner": owner, "x": x, "y": y}) > 0.0:
+		if deal_dmg(e, dmg * f, {"team": team, "owner": owner, "by": opts.get("by"), "x": x, "y": y}) > 0.0:
 			hit = e
 		knock(e, e.x - x, e.y - y, kb * f)
+		if slow > 0.0:
+			slow_e(e, slow)
 	if hit != null and owner != null:
 		emit({"t": "hitmark", "id": owner.id, "target": hit.id, "kill": hit.dead})
+
+
+func boom_light(x: float, y: float) -> void:
+	## 爆炸闪光：短时间照亮周围（敌人在闪光里会被看见）
+	boom = {"x": x, "y": y, "t": float(R.vision.get("boomTime", 0.4))}
 
 
 func blast_all(x: float, y: float, rr: float, dmg: float, owner: SimHamster, kb: float) -> void:
 	## 爆炸罐：不分敌我
 	emit({"t": "explode", "x": x, "y": y, "r": rr, "big": true})
 	noise(x, y, "boom", 1.4, null)
+	boom_light(x, y)
 	var fo := float(R.combat.blastFalloff)
 	for e: SimEntity in hash_range(x, y, rr + 60.0):
-		if e.kind == "base" or e.kind == "turret" or e.dead:
+		if e.kind == "base" or e.kind == "turret" or e.dead or e.is_prop:
 			continue
 		if e is SimHamster and not (e as SimHamster).alive:
 			continue
@@ -760,8 +948,10 @@ func chain_lightning(e: SimEntity, dmg: float, o: SimHamster) -> void:
 		cur = nx
 
 
-func add_fire(x: float, y: float, rr: float, life: float, team: String, owner: SimHamster, dps: float) -> void:
-	fires.append({"x": x, "y": y, "r": rr, "t": 0.0, "life": life, "team": team, "owner": owner, "dps": dps, "tick": 0.0, "id": _new_id()})
+func add_fire(x: float, y: float, rr: float, life: float, team: String, owner: SimHamster, dps: float, src: String = "") -> void:
+	var f := {"x": x, "y": y, "r": rr, "t": 0.0, "life": life, "team": team, "owner": owner, "dps": dps, "tick": 0.0, "id": _new_id(), "src": src}
+	fires.append(f)
+	emit({"t": "fire_add", "fid": f.id, "x": x, "y": y, "r": rr, "life": life, "team": team, "src": src})
 
 
 func _upd_fires(dt: float) -> void:
@@ -807,10 +997,30 @@ func new_bullet(kind: String, by: SimEntity, x: float, y: float, h: float, a: fl
 
 func _upd_bullets(dt: float) -> void:
 	var sub := float(R.combat.bulletSubstep)
+	var cull := float(R.combat.get("bulletCullMargin", 300))
 	var i := bullets.size() - 1
 	while i >= 0:
+		if i >= bullets.size():
+			i = bullets.size() - 1
+			continue
 		var b := bullets[i]
 		var dead := false
+		if b.home > 0.0:
+			SimWeapons.home_step(self, b, dt)
+		if b.split_at > 0.0 and Vector2(b.x - b.x0, b.y - b.y0).length() > b.split_at:
+			SimWeapons.split_bullet(self, b)
+			b.dead = true
+			bullets[i] = bullets[bullets.size() - 1]
+			bullets.pop_back()
+			i -= 1
+			continue
+		var flame := b.kind == "flame"
+		if flame:
+			var FW := Data.weapon("flame")
+			var fk := exp(-float(FW.get("drag", 1.8)) * dt)
+			b.vx *= fk
+			b.vy *= fk
+			b.r += dt * float(FW.get("grow", 22))
 		var sp := sqrt(b.vx * b.vx + b.vy * b.vy)
 		var steps := maxi(1, ceili(sp * dt / sub))
 		var sdt := dt / steps
@@ -821,14 +1031,15 @@ func _upd_bullets(dt: float) -> void:
 			b.py = b.y
 			b.x += b.vx * sdt
 			b.y += b.vy * sdt
-			var sd := map.solid_at(b.x, b.y, b.r * 0.5)
+			var sd := map.solid_at(b.x, b.y, 2.0 if flame else b.r * 0.5)
 			if sd != null:
 				var fresh := b.in_solid != sd
 				b.in_solid = sd
 				if fresh and sd.prop != null:
 					_prop_hit(sd.prop as SimProp, b.dmg, b.owner)
 				if b.wall_pierce > 0 and (sd.kind != "wall" or b.wall_pierce > 1):
-					pass
+					if fresh:
+						emit({"t": "wall_pierce", "x": b.x, "y": b.y, "h": b.h, "kind": b.kind})
 				elif b.bounce > 0:
 					b.bounce -= 1
 					var hx := map.solid_at(b.px + b.vx * sdt, b.py, b.r * 0.5)
@@ -841,6 +1052,8 @@ func _upd_bullets(dt: float) -> void:
 					b.y = b.py
 					b.hit.clear()
 					b.dmg *= b.bounce_k
+					if b.home_after > 0.0:
+						b.home = b.home_after
 					b.in_solid = null
 					emit({"t": "ricochet", "x": b.x, "y": b.y, "h": b.h})
 					continue
@@ -858,6 +1071,11 @@ func _upd_bullets(dt: float) -> void:
 					continue
 				b.hit[e.id] = true
 				_on_bullet_hit(b, e)
+				if b.kind == "rocket":
+					dead = true
+					break
+				if flame:
+					continue
 				if b.pierce > 0:
 					b.pierce -= 1
 					continue
@@ -868,10 +1086,18 @@ func _upd_bullets(dt: float) -> void:
 			if b.life <= 0.0:
 				dead = true
 				_bullet_end(b, false)
-		if dead:
+			elif b.x < map.min_x - cull or b.x > map.max_x + cull or b.y < map.min_y - cull or b.y > map.max_y + cull:
+				dead = true
+		if dead and i < bullets.size() and bullets[i] == b:
 			b.dead = true
 			bullets[i] = bullets[bullets.size() - 1]
 			bullets.pop_back()
+		elif dead:
+			b.dead = true
+			var j := bullets.find(b)
+			if j >= 0:
+				bullets[j] = bullets[bullets.size() - 1]
+				bullets.pop_back()
 		i -= 1
 
 
@@ -887,6 +1113,14 @@ func _on_bullet_hit(b: SimBullet, e: SimEntity) -> void:
 
 
 func _bullet_end(b: SimBullet, wall: bool) -> void:
+	if b.kind == "rocket":
+		var bk := float(R.combat.wallHitBack)
+		b.x -= b.vx * bk
+		b.y -= b.vy * bk
+		SimWeaponModes.explode_rocket(self, b)
+		return
+	if b.kind == "flame":
+		return
 	if wall:
 		emit({"t": "wall_hit", "x": b.x - b.vx * float(R.combat.wallHitBack), "y": b.y - b.vy * float(R.combat.wallHitBack), "h": b.h, "team": b.team, "kind": b.kind})
 
@@ -896,19 +1130,24 @@ func _bullet_end(b: SimBullet, wall: bool) -> void:
 # ---------------------------------------------------------------------------
 
 func throw_lob(h: SimHamster, kind: String, tx: float, ty: float, o: Dictionary) -> SimLob:
-	var dx := tx - h.x
-	var dy := ty - h.y
+	var L := throw_lob_from(h.x, h.y, h.r, h.team, h, kind, tx, ty, o)
+	return L
+
+
+func throw_lob_from(x: float, y: float, r: float, team: String, owner: SimHamster, kind: String, tx: float, ty: float, o: Dictionary) -> SimLob:
+	var dx := tx - x
+	var dy := ty - y
 	var d := maxf(40.0, sqrt(dx * dx + dy * dy))
 	var sp := float(o.get("sp", 520))
 	var tt := d / sp
 	var L := SimLob.new()
 	L.id = _new_id()
 	L.kind = kind
-	L.team = h.team
-	L.owner = h
-	L.x = h.x + dx / d * h.r
-	L.y = h.y + dy / d * h.r
-	L.z = h.r * 1.2
+	L.team = team
+	L.owner = owner
+	L.x = x + dx / d * r
+	L.y = y + dy / d * r
+	L.z = r * 1.2
 	L.vx = dx / d * sp
 	L.vy = dy / d * sp
 	L.vz = float(R.lob.launchVz) * tt
@@ -917,65 +1156,243 @@ func throw_lob(h: SimHamster, kind: String, tx: float, ty: float, o: Dictionary)
 	L.dmg = float(o.get("dmg", 0))
 	L.kb = float(o.get("kb", 0))
 	L.impact = bool(o.get("impact", false))
+	L.lvl = int(o.get("lvl", 1))
 	lobs.append(L)
 	if lobs.size() > 40:
-		lobs.pop_front()
-	emit({"t": "throw", "id": h.id, "lob": L.id, "kind": kind})
+		var old: SimLob = lobs.pop_front()
+		old.dead = true
+		old.att = null
+	if not bool(o.get("silent", false)) and owner != null:
+		emit({"t": "throw", "id": owner.id, "lob": L.id, "kind": kind})
 	return L
 
 
 func _upd_lobs(dt: float) -> void:
 	var G := float(R.lob.gravity)
+	var LB: Dictionary = R.lob
 	var i := lobs.size() - 1
 	while i >= 0:
+		if i >= lobs.size():
+			i = lobs.size() - 1
+			continue
 		var b := lobs[i]
 		b.t += dt
 		b.rot += dt * 12.0
-		var boom := false
-		var nx := b.x + b.vx * dt
-		var ny := b.y + b.vy * dt
-		if map.solid_at(nx, ny, 5.0) != null:
-			var hx := map.solid_at(nx, b.y, 5.0)
-			var hy := map.solid_at(b.x, ny, 5.0)
-			if hx != null or hy == null:
-				b.vx *= -0.5
-			if hy != null or hx == null:
-				b.vy *= -0.5
-		else:
-			b.x = nx
-			b.y = ny
-		b.vz -= G * dt
-		b.z += b.vz * dt
-		if b.z <= 2.0:
-			b.z = 2.0
-			if b.vz < -float(R.lob.bounceMinVz):
-				b.vz = -b.vz * float(R.lob.bounce)
-				b.vx *= float(R.lob.friction)
-				b.vy *= float(R.lob.friction)
-				emit({"t": "lob_bounce", "x": b.x, "y": b.y})
+		var boom_ := false
+		if b.att != null:
+			if b.att.dead or (b.att is SimHamster and not (b.att as SimHamster).alive):
+				b.att = null
 			else:
-				b.vz = 0.0
-				var f := exp(-6.0 * dt)
-				b.vx *= f
-				b.vy *= f
-		if b.impact and b.z < 40.0:
+				b.x = b.att.x + b.ox
+				b.y = b.att.y + b.oy
+				b.z = b.att.r
+				if b.slow_stick > 0.0:
+					slow_e(b.att, b.slow_stick)
+		elif not b.stuck:
+			var nx := b.x + b.vx * dt
+			var ny := b.y + b.vy * dt
+			if map.solid_at(nx, ny, 5.0) != null:
+				if b.sticky:
+					b.stuck = true
+					b.vx = 0.0
+					b.vy = 0.0
+				else:
+					var hx := map.solid_at(nx, b.y, 5.0)
+					var hy := map.solid_at(b.x, ny, 5.0)
+					if hx != null or hy == null:
+						b.vx *= -float(LB.get("wallBounce", 0.5))
+					if hy != null or hx == null:
+						b.vy *= -float(LB.get("wallBounce", 0.5))
+					if b.kind == "molo":
+						boom_ = true
+			else:
+				b.x = nx
+				b.y = ny
+			b.vz -= G * dt
+			b.z += b.vz * dt
+			if b.kind == "flr" and b.vz < 0.0 and b.t > float(R.gadgets.flare.armT):
+				var F: Dictionary = R.gadgets.flare
+				var fl := {"id": _new_id(), "x": b.x, "y": b.y, "h": maxf(float(F.minH), b.z + 40.0), "t": 0.0, "life": float(F.life) + float(F.lifePerLevel) * (b.lvl - 1), "team": b.team}
+				flares.append(fl)
+				emit({"t": "flare", "fid": fl.id, "x": fl.x, "y": fl.y, "h": fl.h, "life": fl.life, "team": b.team})
+				b.dead = true
+				lobs.remove_at(i)
+				i -= 1
+				continue
+			if b.z <= 2.0:
+				b.z = 2.0
+				if b.kind == "molo" or b.kind == "smk":
+					boom_ = true
+				elif b.sticky:
+					b.stuck = true
+					b.vx = 0.0
+					b.vy = 0.0
+					b.vz = 0.0
+				elif b.vz < -float(LB.bounceMinVz):
+					if b.split_on_bounce:
+						b.split_on_bounce = false
+						for k in [-1, 1]:
+							var nb := b.clone()
+							nb.id = _new_id()
+							var spd := Vector2(b.vx, b.vy).length()
+							var an: float = atan2(b.vy, b.vx) + float(k) * b.split_ang
+							nb.vx = cos(an) * spd
+							nb.vy = sin(an) * spd
+							nb.vz = -b.vz * b.split_vz
+							lobs.append(nb)
+					b.vz = -b.vz * float(LB.bounce)
+					b.vx *= float(LB.friction)
+					b.vy *= float(LB.friction)
+					emit({"t": "lob_bounce", "x": b.x, "y": b.y})
+					if b.bounce_n > 0:
+						b.bounce_n -= 1
+						b.vz = maxf(b.vz, float(Data.weapon("gl").get("bounceVz", 220)))
+						b.vx *= float(Data.weapon("gl").get("bounceBoost", 1.4))
+						b.vy *= float(Data.weapon("gl").get("bounceBoost", 1.4))
+				else:
+					b.vz = 0.0
+					var f := exp(-6.0 * dt)
+					b.vx *= f
+					b.vy *= f
+		var iz := float(LB.get("impactZ", 40))
+		var ir := float(LB.get("impactR", 8))
+		if b.impact and b.att == null and b.z < iz:
 			for e: SimEntity in hash_at(b.x, b.y):
 				if not can_hit(b.team, e) or e.is_prop:
 					continue
-				if SimUtil.d2(b.x, b.y, e.x, e.y) < (e.r + 8.0) * (e.r + 8.0):
-					boom = true
+				if SimUtil.d2(b.x, b.y, e.x, e.y) < (e.r + ir) * (e.r + ir):
+					boom_ = true
+					break
+		if b.sticky and b.att == null and not b.stuck and b.z < float(LB.get("stickZ", 50)):
+			for e: SimEntity in hash_at(b.x, b.y):
+				if not can_hit(b.team, e) or e.is_prop or e.kind == "crate":
+					continue
+				var sr := float(LB.get("stickR", 8))
+				if SimUtil.d2(b.x, b.y, e.x, e.y) < (e.r + sr) * (e.r + sr):
+					b.att = e
+					b.ox = b.x - e.x
+					b.oy = b.y - e.y
+					b.vx = 0.0
+					b.vy = 0.0
+					emit({"t": "lob_stick", "x": e.x, "y": e.y, "target": e.id})
+					emit({"t": "pop", "x": e.x, "y": e.y, "h": e.r * 2.6, "text": "黏住！", "color": "#c9ff8a", "size": 13})
 					break
 		if b.fuse >= 0.0:
 			b.fuse -= dt
 			if b.fuse <= 0.0:
-				boom = true
-		if b.t > float(R.lob.maxLife):
-			boom = true
-		if boom:
+				boom_ = true
+		if b.t > float(LB.maxLife):
+			boom_ = true
+		if boom_:
 			b.dead = true
 			lobs.remove_at(i)
-			blast(b.x, b.y, b.aoe, b.dmg, b.team, b.owner, b.kb)
+			lob_boom(b)
+			b.att = null
 		i -= 1
+
+
+func lob_boom(b: SimLob) -> void:
+	if b.kind in ["gnade", "frag", "bomb"]:
+		blast(b.x, b.y, b.aoe, b.dmg, b.team, b.owner, b.kb, {"src": b.kind})
+		var GR: Dictionary = Data.weapon("gl").get("rounds", {})
+		match b.special:
+			"smoke":
+				SimGadgets.add_smoke(self, b.x, b.y, float(GR.get("smoke", {}).get("r", 120)), float(GR.get("smoke", {}).get("life", 6)))
+			"flash":
+				SimGadgets.flash_bang(self, b.x, b.y, b.team)
+			"fire":
+				add_fire(b.x, b.y, float(GR.get("fire", {}).get("r", 80)), float(GR.get("fire", {}).get("life", 3)), b.team, b.owner, float(GR.get("fire", {}).get("dps", 14)), "gl")
+		if b.gas_r > 0.0:
+			add_zone({"x": b.x, "y": b.y, "r": b.gas_r, "until": t + b.gas_life, "team": b.team, "owner": b.owner, "dps": b.gas_dps, "gas": true, "slow": b.gas_slow, "kind": "gas"})
+	else:
+		SimGadgets.lob_boom(self, b)
+
+
+# ---------------------------------------------------------------------------
+# 区域伤害（毒气、电流带）、殉爆、燃烧传染、旗帜光环（原型 updEvoWorld）
+# ---------------------------------------------------------------------------
+
+func add_zone(z: Dictionary) -> void:
+	z.id = _new_id()
+	z.tick = 0.0
+	if not z.has("kind"):
+		z.kind = "gas" if bool(z.get("gas", false)) else "arc"
+	zones.append(z)
+	emit({"t": "zone_add", "zid": z.id, "kind": z.kind, "x": float(z.get("x", 0.0)), "y": float(z.get("y", 0.0)), "r": float(z.get("r", 0.0)),
+		"seg": z.get("seg", []), "w": float(z.get("w", 0.0)), "until": float(z.until), "team": z.team})
+
+
+static func zone_dist(z: Dictionary, e: SimEntity) -> float:
+	if z.has("seg"):
+		var g: Array = z.seg
+		return SimUtil.seg_point_dist(e.x, e.y, float(g[0]), float(g[1]), float(g[2]), float(g[3])) - float(z.w)
+	return Vector2(e.x - float(z.x), e.y - float(z.y)).length() - float(z.r)
+
+
+func _upd_zones(dt: float) -> void:
+	var tick_len := float(R.zones.tick)
+	var i := zones.size() - 1
+	while i >= 0:
+		var z: Dictionary = zones[i]
+		z.tick -= dt
+		if z.tick <= 0.0:
+			z.tick = tick_len
+			var zo: SimHamster = z.owner if is_instance_valid(z.owner) else null
+			for e: SimEntity in foe_candidates(false):
+				if not can_hit(String(z.team), e):
+					continue
+				if zone_dist(z, e) < e.r:
+					deal_dmg(e, float(z.dps) * tick_len, {"team": z.team, "owner": zo, "x": e.x, "y": e.y}, true)
+					if bool(z.get("gas", false)):
+						slow_e(e, float(z.get("slow", 0.5)))
+		if t >= float(z.until):
+			zones.remove_at(i)
+			emit({"t": "zone_end", "zid": z.id})
+		i -= 1
+
+
+func _upd_evo_world(dt: float) -> void:
+	var i := corrs.size() - 1
+	while i >= 0:
+		if t >= float(corrs[i].until):
+			corrs.remove_at(i)
+		i -= 1
+	# 旗帜：附近队友伤害加成
+	var br := float(R.abilities.banner.get("bannerRadius", 260))
+	for h in hams:
+		h.banner_k = 1.0
+	for h in hams:
+		if h.alive and float(h.st.get("banner", 0.0)) > 0.0:
+			for o in hams:
+				if o.alive and o.team == h.team and Vector2(o.x - h.x, o.y - h.y).length() < br:
+					o.banner_k = maxf(o.banner_k, 1.0 + float(h.st.banner))
+	# 殉爆
+	var D: Dictionary = R.talents.detonate
+	i = det_q.size() - 1
+	while i >= 0:
+		var d: Dictionary = det_q[i]
+		d.t -= dt
+		if d.t <= 0.0:
+			det_q.remove_at(i)
+			var dow: SimHamster = d.owner if is_instance_valid(d.owner) else null
+			blast(float(d.x), float(d.y), float(D.r), float(D.dmg), String(d.team), dow, float(D.kb), {"src": "detonate"})
+		i -= 1
+	# 燃烧传染（喷火器 B9）
+	var BR := float(R.burnSpread.radius)
+	for e: SimEntity in foe_candidates(false):
+		if not (e.burn_spread_until > t) or not (e.burn_t > 0.0):
+			continue
+		if rnd() >= dt:
+			continue
+		var bt := e.burn_by.team if e.burn_by != null else ""
+		for q: SimEntity in hash_range(e.x, e.y, BR):
+			if q == e or q.is_prop or q.kind in ["crate", "base", "turret", "sentry", "decoy"]:
+				continue
+			if bt != "" and not can_hit(bt, q):
+				continue
+			if Vector2(q.x - e.x, q.y - e.y).length() < 80.0 + q.r:
+				q.burn_t = maxf(q.burn_t, 1.5)
+				q.burn_by = e.burn_by
 
 
 # ---------------------------------------------------------------------------
@@ -1002,6 +1419,10 @@ func lane_path(team: String, lane: String) -> PackedVector2Array:
 	for i in range(p.size() - 1, -1, -1):
 		rev.append(p[i])
 	return rev
+
+
+func spawn_minion(team: String, lane: String) -> SimMinion:
+	return _spawn_minion(team, lane)
 
 
 func _spawn_minion(team: String, lane: String) -> SimMinion:
@@ -1119,12 +1540,16 @@ func _upd_minion(m: SimMinion, dt: float) -> void:
 # 建筑（原型 updStruct）
 # ---------------------------------------------------------------------------
 
+func struct_target(s: SimStructure) -> SimEntity:
+	return _struct_target(s)
+
+
 func _struct_target(s: SimStructure) -> SimEntity:
 	var S: Dictionary = R.structure
 	var best: SimEntity = null
 	var bs := 1e9
 	for e: SimEntity in hash_range(s.x, s.y, s.range_):
-		if e.team == s.team or e.team == "neutral" or e.kind == "base" or e.kind == "turret":
+		if e.team == s.team or e.team == "neutral" or e.kind == "base" or e.kind == "turret" or e.is_prop:
 			continue
 		if e is SimHamster and not (e as SimHamster).alive:
 			continue
@@ -1150,6 +1575,9 @@ func _upd_struct(s: SimStructure, dt: float) -> void:
 	s.shield_hit = maxf(0.0, s.shield_hit - dt)
 	s.cd -= dt
 	s.t_t -= dt
+	if s.kind == "sentry":
+		SimGadgets.update_sentry(self, s, dt)
+		return
 	if s.kind == "base":
 		var n := 0
 		for o in structs:
@@ -1183,6 +1611,10 @@ func _upd_struct(s: SimStructure, dt: float) -> void:
 # ---------------------------------------------------------------------------
 # 物件（台灯 / 爆炸罐 / 纸箱）、弹射装置
 # ---------------------------------------------------------------------------
+
+func prop_hit(p: SimProp, dmg: float, owner: Variant) -> void:
+	_prop_hit(p, dmg, owner)
+
 
 func _prop_hit(p: SimProp, dmg: float, owner: Variant) -> void:
 	if p.dead:
@@ -1395,6 +1827,9 @@ func _separate() -> void:
 	for m in minions:
 		if not m.dead:
 			mv.append(m)
+	for e in mobs:
+		if not e.dead:
+			mv.append(e)
 	var C := 64.0
 	var grid := {}
 	for a: SimEntity in mv:
@@ -1497,5 +1932,7 @@ func state_hash() -> int:
 		parts.append("m%d:%.3f,%.3f,%.2f" % [m.id, m.x, m.y, m.hp])
 	for s in structs:
 		parts.append("s%d:%.2f" % [s.id, s.hp])
+	for e in mobs:
+		parts.append("e%d:%.3f,%.3f,%.2f" % [e.id, e.x, e.y, e.hp])
 	parts.append("b%d,i%d" % [bullets.size(), items.size()])
 	return "|".join(parts).hash()

@@ -73,7 +73,11 @@
   "bulletSubstep": 12,
   "bulletRadius": 4.5,
   "wallHitBack": 0.012,
-  "sudden": {"time": 720, "minionMul": 1.5, "structMul": 2}
+  "sudden": {"time": 720, "minionMul": 1.5, "structMul": 2},
+  "hasteRate": 1.3,
+  "suppDmg": 1.2,
+  "foeHamWeight": 0.7,
+  "bulletCullMargin": 300
  },
  "vision": {
   "interval": 0.08,
@@ -92,7 +96,8 @@
   "minionRadius": 120,
   "coneMinDist": 24,
   "losMinDist": 30,
-  "aiNearSee": 90
+  "aiNearSee": 90,
+  "boomTime": 0.4
  },
  "hearing": {
   "aiRadius": 900,
@@ -148,8 +153,24 @@
   "respawnBlock": 20
  },
  "crates": {
-  "small": {"r": 22, "hp": 42, "gems": [3, 5], "gemXp": 6, "cheese": 0.35, "resp": 40, "first": [0, 6]},
-  "big": {"r": 32, "hp": 170, "gems": [12, 12], "gemXp": 9, "cheese": 1.0, "resp": 90, "first": 45}
+  "small": {
+   "r": 22,
+   "hp": 42,
+   "gems": [3, 5],
+   "gemXp": 6,
+   "cheese": 0.35,
+   "resp": 40,
+   "first": [0, 6]
+  },
+  "big": {
+   "r": 32,
+   "hp": 170,
+   "gems": [12, 12],
+   "gemXp": 9,
+   "cheese": 1.0,
+   "resp": 90,
+   "first": 45
+  }
  },
  "items": {
   "gemDelay": 0.35,
@@ -163,14 +184,88 @@
   "cheeseLife": 60,
   "gravity": 1100
  },
- "pads": {"triggerR": 30, "dur": 1.15, "height": 170, "cooldown": 1.6, "jitter": 25, "landR": 90, "landDmg": 25, "landKb": 260},
+ "pads": {
+  "triggerR": 30,
+  "dur": 1.15,
+  "height": 170,
+  "cooldown": 1.6,
+  "jitter": 25,
+  "landR": 90,
+  "landDmg": 25,
+  "landKb": 260
+ },
  "gadgets": {
   "throwMin": 80,
   "throwMax": 520,
   "cdPerLevel": -0.15,
-  "frag": {"speed": 420, "fuse": 1.5, "aoe": 130, "dmg": 70, "dmgPerLevel": 0.2, "kb": 380}
+  "frag": {"speed": 420, "fuse": 1.5, "aoe": 130, "dmg": 70, "dmgPerLevel": 0.2, "kb": 380},
+  "maxLevel": 4,
+  "molotov": {"speed": 420, "r": 95, "rPerLevel": 10, "life": 4.5, "lifePerLevel": 0.5, "dps": 12, "dpsPerLevel": 0.25},
+  "flash": {"speed": 460, "fuse": 1.0, "r": 290, "blind": 2.0, "blindAi": 2.2, "kBase": 1.2, "kMin": 0.4, "stun": 1.6},
+  "mine": {
+   "max": 3,
+   "arm": 0.8,
+   "scanR": 60,
+   "trigR": 30,
+   "blastR": 110,
+   "dmg": 90,
+   "dmgPerLevel": 0.25,
+   "kb": 360,
+   "visR": 10
+  },
+  "sentry": {
+   "dist": 34,
+   "r": 16,
+   "hp": 140,
+   "hpPerLevel": 0.25,
+   "range": 380,
+   "dmg": 7,
+   "dmgPerLevel": 0.2,
+   "life": 16,
+   "lifePerLevel": 2,
+   "cd": 0.22,
+   "turn": 10,
+   "fireAngle": 0.25,
+   "bulletSpeed": 1100,
+   "bulletR": 4,
+   "kb": 30,
+   "spread": 0.05,
+   "muzzle": 20,
+   "muzzleH": 24,
+   "retarget": 0.25
+  },
+  "eshield": {"hpK": 1.0, "hpPerLevel": 0.25, "dur": 5},
+  "smoke": {"speed": 440, "r": 150, "rPerLevel": 0.1, "life": 8, "lifePerLevel": 1, "block": 0.8},
+  "flare": {"speed": 380, "life": 10, "lifePerLevel": 2, "radius": 470, "minH": 120, "sink": 18, "armT": 0.3},
+  "decoy": {"dist": 40, "r": 16, "hp": 80, "hpPerLevel": 0.25, "life": 8, "lifePerLevel": 1, "stepInterval": 0.45},
+  "jetpack": {"min": 120, "max": 360, "maxPerLevel": 40, "dur": 0.55, "hgt": 70, "jetT": 0.6},
+  "medkit": {"dur": 3, "heal": 0.4, "healPerLevel": 0.2},
+  "freeze": {
+   "speed": 440,
+   "fuse": 1.0,
+   "r": 140,
+   "rPerLevel": 10,
+   "stun": 1.5,
+   "frozenHam": 0.75,
+   "frozen": 1.5,
+   "dmg": 20
+  },
+  "beacon": {"life": 30, "armCd": 1.5, "iframes": 0.5},
+  "flashBang": {"r": 290}
  },
- "lob": {"gravity": 900, "launchVz": 450, "bounce": 0.38, "bounceMinVz": 60, "friction": 0.6, "maxLife": 8},
+ "lob": {
+  "gravity": 900,
+  "launchVz": 450,
+  "bounce": 0.38,
+  "bounceMinVz": 60,
+  "friction": 0.6,
+  "maxLife": 8,
+  "wallBounce": 0.5,
+  "impactZ": 40,
+  "impactR": 8,
+  "stickZ": 50,
+  "stickR": 8
+ },
  "ai": {
   "cardDelay": 0.9,
   "retarget": [0.25, 0.45],
@@ -188,10 +283,22 @@
   "maxRange": 560,
   "keepRatio": 0.62,
   "buildingRatio": 0.85,
-  "weights": {"ham": 0.7, "minion": 1.0, "struct": 1.1, "crate": 2.4},
-  "ranges": {"ham": 560, "minion": 440, "crate": 230, "structExtra": 60},
-  "structLowHp": 0.35, "pushAhead": 1, "pushInSudden": true, "suddenHamRange": 260, "suddenStructWeight": 0.15,
-  "pickWeights": {"evo": 3, "abil": 2, "glvl": 1.6, "gad": 1.1, "pet": 1.3, "weapFresh": 1.2, "weap": 0.3, "random": 1.5}
+  "weights": {"ham": 0.7, "minion": 1.0, "struct": 1.1, "crate": 2.4, "decoy": 0.55, "mob": 0.9},
+  "ranges": {"ham": 560, "minion": 440, "crate": 230, "structExtra": 60, "decoy": 560, "mob": 430},
+  "structLowHp": 0.35,
+  "pushAhead": 1,
+  "pushInSudden": true,
+  "suddenHamRange": 260,
+  "suddenStructWeight": 0.15,
+  "pickWeights": {"evo": 3, "abil": 2, "glvl": 1.8, "gad": 1.9, "pet": 2.3, "weapFresh": 1.2, "weap": 0.3, "random": 1.5},
+  "jungle": {
+   "every": [25, 45],
+   "maxLevel": 9,
+   "first": [12, 30]
+  },
+  "meleeRangeK": 0.85,
+  "flameRangeK": 0.8,
+  "meleeKeep": 18
  },
  "cards": {
   "evoWeightPerLevel": 0.35,
@@ -201,24 +308,138 @@
   "visionAbilities": ["torch", "wide", "ears", "nvg", "recon"]
  },
  "scope": {
-  "_doc": "批次 1 开放的内容（卡池只开这三把枪的进化和部分通用强化）",
-  "weapons": ["pistol", "ak47", "shotgun"],
-  "abilities": ["strong", "armor", "regen", "vamp", "speed", "dash", "magnet", "torch", "wide", "ears", "rage", "crit", "rate", "scholar"],
-  "gadgets": ["frag"],
-  "talents": false,
-  "pets": false,
-  "gadgetCards": false
+  "_doc": "批次 2：卡池全部开放",
+  "weapons": ["pistol", "deagle", "ak47", "smg", "shotgun", "sniper", "lmg", "rocket", "katana", "flame", "minigun", "autoshot", "amr", "dual", "revolver", "gl", "rail", "laser"],
+  "abilities": ["strong", "armor", "regen", "vamp", "speed", "dash", "magnet", "torch", "wide", "ears", "nvg", "recon", "rage", "crit", "rate", "frost", "chain", "scholar", "scav", "gcd", "aura", "banner"],
+  "gadgets": ["frag", "molotov", "flash", "mine", "sentry", "eshield", "smoke", "flare", "decoy", "jetpack", "medkit", "freeze", "beacon"],
+  "talents": true,
+  "pets": true,
+  "gadgetCards": true
  },
  "match": {
   "slice": {
    "_doc": "批次 1 小局：只用中路一条带状区域（全宽），每队鼠窝 + 中路炮台；中路炮台在时鼠窝有护盾。只有一条兵线，建筑血量按 structHpMul 缩小、suddenTime 秒进入加速决战，AI 对 AI 约 10～20 分钟分出胜负（有玩家主动推进会更快）。",
    "bounds": [0, 1020, 5040, 2076],
    "lanes": ["mid"],
-   "turrets": {"blue": [1], "red": [1]},
+   "turrets": {
+    "blue": [1],
+    "red": [1]
+   },
    "shieldTurrets": 1,
-  "structHpMul": {"base": 0.4, "turret": 0.6},
-  "suddenTime": 300,
+   "structHpMul": {"base": 0.4, "turret": 0.6},
+   "suddenTime": 300,
    "padTargets": [[1890, 1150], [3150, 1150], [1890, 1946], [3150, 1946]]
   }
+ },
+ "homing": {
+  "retarget": 0.15,
+  "range": 520,
+  "cone": 1.3
+ },
+ "zones": {
+  "tick": 0.25
+ },
+ "burnSpread": {
+  "radius": 90
+ },
+ "mobs": {
+  "_doc": "野区：蟑螂窝（6 只）和鼠帮枪手（3 只），被打光后 resp 秒重生；被惹到后整窝追击，离家超过 leash 或目标太远就回家回血",
+  "roach": {
+   "camp": 6,
+   "xp": 6,
+   "gemChance": 0.3,
+   "gemXp": 5,
+   "aggroR": 190,
+   "wander": 50,
+   "bite": 5,
+   "biteCd": 0.8,
+   "biteKb": 140,
+   "zigzag": 0.5,
+   "resp": 50
+  },
+  "rat": {
+   "camp": 3,
+   "xp": 16,
+   "gemChance": 0.8,
+   "gemXp": 8,
+   "aggroR": 260,
+   "wander": 110,
+   "keep": 250,
+   "engage": 470,
+   "tele": 0.45,
+   "burst": 3,
+   "burstGap": 0.1,
+   "cd": [1.2, 2.0],
+   "shotSpd": 430,
+   "shotDmg": 7,
+   "shotR": 5,
+   "spread": 0.06,
+   "resp": 70
+  },
+  "leash": 520,
+  "dropTarget": 760,
+  "losCheck": 0.3,
+  "returnHeal": 0.3,
+  "shotRange": 700,
+  "shotKb": 30,
+  "spawnJitter": 40,
+  "campJitter": 40
+ },
+ "boss": {
+  "_doc": "鼠王：出现时间 / 重生 / 奖励见 progression.json 的 bossFirst / bossRespawn / bossReward",
+  "leash": 700,
+  "aggroR": 320,
+  "keep": 260,
+  "fanCd": 1.8,
+  "fanN": 5,
+  "fanStep": 0.16,
+  "fanSpd": 430,
+  "fanDmg": 9,
+  "ringFirst": 4,
+  "ringCd": 5.2,
+  "ringN": 18,
+  "ringSpd": 300,
+  "ringDmg": 8,
+  "orbR": 7,
+  "sumFirst": 9,
+  "sumCd": 11,
+  "sumMax": 4,
+  "sumN": 2,
+  "killXp": 160,
+  "gems": 10,
+  "gemXp": 10
+ },
+ "pets": {
+  "maxLevel": 3,
+  "firefly": {
+   "orbit": 46,
+   "spin": 2.2,
+   "h": 34,
+   "range": 210,
+   "cdBase": 0.85,
+   "cdPer": 0.12,
+   "cdMin": 0.35,
+   "dmg": 5,
+   "dmgPer": 3
+  },
+  "chick": {"range": 260, "leash": 330, "speed": 330, "follow": 320, "reach": 12, "cd": 0.55, "dmg": 6, "dmgPer": 4},
+  "hedgehog": {
+   "range": 380,
+   "cdBase": 1.3,
+   "cdPer": 0.15,
+   "cdMin": 0.6,
+   "dmg": 5,
+   "dmgPer": 3,
+   "spread": 0.18,
+   "spd": 600,
+   "bulletRange": 420,
+   "r": 4,
+   "kb": 40
+  }
+ },
+ "talents": {
+  "squad": {"every": 20, "n": 3},
+  "detonate": {"delay": 0.08, "r": 90, "dmg": 45, "kb": 220},
+  "vampireHeal": 25
  }
 }

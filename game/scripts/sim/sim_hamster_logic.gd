@@ -83,6 +83,21 @@ static func respawn(w: SimWorld, h: SimHamster) -> void:
 	h.stun_t = 0.0
 	h.ramp = 0.0
 	h.burst_n = 0
+	h.spin = 0.0
+	h.marks.clear()
+	h.mark_hold = 0.0
+	h.mark_acc = 0.0
+	h.deadeye_shot = false
+	h.steady_t = 0.0
+	h.haste_t = 0.0
+	h.charge = 0.0
+	h.ch_hold = 0.0
+	h.beams = []
+	h.swing_t = 0.0
+	h.eshield = 0.0
+	h.eshield_t = 0.0
+	h.med_t = 0.0
+	h.jet_t = 0.0
 	if h.ai != null:
 		h.ai.wp = 1
 		h.ai.state = "push"
@@ -132,12 +147,17 @@ static func start_dash(w: SimWorld, h: SimHamster) -> void:
 	h.rdx = dx / l
 	h.rdy = dy / l
 	h.roll_t = float(HR.rollTime)
-	h.dash_cd = float(h.st.dashCd)
+	var P := SimWeapons.params(h)
+	h.dash_cd = float(h.st.dashCd) * float(P.dashCdMul)
+	h.dash_spd = float(P.special.get("dashSpd", 1.0))
 	h.iframes = maxf(h.iframes, float(HR.rollIframes))
 	h.dash_hit = {}
+	h.iaido_hit = {}
+	h.iaido_on = true
 	if h.tal.has("phantom"):
 		h.invis_t = 1.5
 	w.emit({"t": "dash", "id": h.id, "x": h.x, "y": h.y, "dx": h.rdx, "dy": h.rdy})
+	SimWeapons.on_dash(w, h)
 
 
 static func start_reload(w: SimWorld, h: SimHamster) -> void:
@@ -151,38 +171,38 @@ static func start_reload(w: SimWorld, h: SimHamster) -> void:
 
 
 static func gadget_target(w: SimWorld, h: SimHamster) -> Vector2:
-	var G: Dictionary = w.R.gadgets
-	var tx: float
-	var ty: float
-	if h.inp.has_aim_point:
-		tx = h.inp.aim_x
-		ty = h.inp.aim_y
-	else:
-		var tg: SimEntity = h.ai.target if h.ai != null else null
-		if tg != null and Vector2(tg.x - h.x, tg.y - h.y).length() < 560.0:
-			tx = tg.x
-			ty = tg.y
-		else:
-			tx = h.x + cos(h.aim) * 300.0
-			ty = h.y + sin(h.aim) * 300.0
-	var dx := tx - h.x
-	var dy := ty - h.y
-	var d := maxf(0.001, Vector2(dx, dy).length())
-	var dd := clampf(d, float(G.throwMin), float(G.throwMax))
-	return Vector2(h.x + dx / d * dd, h.y + dy / d * dd)
+	return SimGadgets.target(w, h)
 
 
 static func use_gadget(w: SimWorld, h: SimHamster) -> void:
-	var id := String(h.gadget.id)
-	var L := int(h.gadget.lvl)
-	var G0: Dictionary = Data.gadgets().get(id, {"cd": 7})
-	h.gadget.cd = float(G0.cd) * (1.0 + float(w.R.gadgets.cdPerLevel) * (L - 1)) * float(h.st.gcd)
-	var p := gadget_target(w, h)
-	h.spit_t = 0.2
-	match id:
-		_:
-			var F: Dictionary = w.R.gadgets.frag
-			w.throw_lob(h, "frag", p.x, p.y, {"sp": float(F.speed), "fuse": float(F.fuse), "aoe": float(F.aoe), "dmg": float(F.dmg) * (1.0 + float(F.dmgPerLevel) * (L - 1)), "kb": float(F.kb)})
+	SimGadgets.use(w, h)
+
+
+static func spawn_squad(w: SimWorld, h: SimHamster) -> void:
+	## 天赋“小队”：在最近的兵线上召唤 3 个小兵
+	var best_lane := ""
+	var best_i := 0
+	var bd := 1e18
+	for lane in w.map.lanes.keys():
+		var path := w.lane_path(h.team, lane)
+		for i in path.size():
+			var d := SimUtil.d2(path[i].x, path[i].y, h.x, h.y)
+			if d < bd:
+				bd = d
+				best_lane = lane
+				best_i = i
+	if best_lane == "":
+		return
+	for k in int(w.R.talents.squad.n):
+		var m := w.spawn_minion(h.team, best_lane)
+		m.x = h.x + w.rand(-30.0, 30.0)
+		m.y = h.y + w.rand(-30.0, 30.0)
+		m.px = m.x
+		m.py = m.y
+		m.wp = mini(best_i + 1, m.path.size() - 1)
+		w.map.resolve_circle(m, m.r)
+	w.toast(h, "小队报到！", "#8de0a6", 1.2)
+	w.emit({"t": "squad", "id": h.id, "x": h.x, "y": h.y, "team": h.team})
 
 
 static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
@@ -202,6 +222,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 	h.heat = maxf(0.0, h.heat - dt * float(HR.heatDecay))
 	h.munch_t = maxf(0.0, h.munch_t - dt)
 	h.spit_t = maxf(0.0, h.spit_t - dt)
+	h.swing_t = maxf(0.0, h.swing_t - dt)
 	h.slow_t = maxf(0.0, h.slow_t - dt)
 	h.gadget.cd = maxf(0.0, float(h.gadget.cd) - dt)
 	h.blind_t = maxf(0.0, h.blind_t - dt)
@@ -216,6 +237,11 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 	h.invis_t = maxf(0.0, h.invis_t - dt)
 	h.reveal_t = maxf(0.0, h.reveal_t - dt)
 	h.puff = 1.0 if h.lvl >= 30 else clampf(h.xp / float(h.xp_next), 0.0, 1.0)
+	if h.tal.has("squad"):
+		h.squad_t -= dt
+		if h.squad_t <= 0.0:
+			h.squad_t = float(w.R.talents.squad.every)
+			spawn_squad(w, h)
 	# 治疗光环
 	if float(st.aura) > 0.0:
 		var ar := float(Data.rule("abilities.aura.auraRadius", 220))
@@ -233,6 +259,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 		h.y += h.vy * dt
 		w.map.resolve_circle(h, h.r)
 		return
+	SimGadgets.tick_hamster(w, h, dt)
 	SimWeapons.evo_tick(w, h, dt)
 	# 弹射飞行
 	if not h.air.is_empty():
@@ -277,7 +304,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 	if h.roll_t > 0.0:
 		h.roll_t -= dt
 		var k := maxf(0.0, h.roll_t / float(HR.rollTime))
-		var rs := float(HR.rollSpeed) * (0.5 + 0.5 * k)
+		var rs := float(HR.rollSpeed) * h.dash_spd * (0.5 + 0.5 * k)
 		h.vx = h.rdx * rs
 		h.vy = h.rdy * rs
 		if float(st.dashDmg) > 0.0:
@@ -325,5 +352,14 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 		if float(h.gadget.cd) <= 0.0 and h.roll_t <= 0.0:
 			use_gadget(w, h)
 	var can_shoot := h.roll_t <= 0.0 and h.reload_t <= 0.0 and (mag == 0 or h.ammo > 0)
-	SimWeapons.try_fire(w, h, can_shoot)
+	if W.has("spinup"):
+		if inp.fire and h.reload_t <= 0.0:
+			if h.spin == 0.0:
+				w.emit({"t": "spin_up", "id": h.id})
+			h.spin = minf(1.0, h.spin + dt / (float(W.spinup) * SimWeapons.spin_mul(h)))
+		else:
+			var ks: Variant = SimWeapons.special(h, "keepSpin")
+			if not (ks != null and w.t - h.last_shot_t < float(ks)):
+				h.spin = maxf(0.0, h.spin - dt / float(W.get("spinDown", 0.9)))
+	SimWeaponModes.update_weapon(w, h, dt, can_shoot)
 	h.bloom = maxf(0.0, h.bloom - dt * (float(HR.bloomDecayFiring) if inp.fire else float(HR.bloomDecayIdle)))

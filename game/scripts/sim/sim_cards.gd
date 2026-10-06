@@ -91,13 +91,23 @@ static func roll(w: SimWorld, h: SimHamster) -> void:
 				third = {"t": "glvl", "id": h.gadget.id}
 			else:
 				var gs: Array = []
-				for id in Data.gadgets().keys():
+				for id in Data.rule("scope.gadgets", Data.gadgets().keys()):
 					if id != h.gadget.id:
 						gs.append(id)
 				third = {"t": "gad", "id": gs[int(w.rnd() * gs.size()) % gs.size()]}
 	elif r < pw + float(B.gadget) + float(B.pet):
 		if pets_on:
-			third = {"t": "pet", "id": Data.pets().keys()[int(w.rnd() * Data.pets().size()) % Data.pets().size()]}
+			var ps: Array = []
+			var pmax := int(w.R.pets.maxLevel)
+			for id in Data.pets().keys():
+				var lvl := 0
+				for p in h.pet_list:
+					if p.type == id:
+						lvl = p.lvl
+				if lvl < pmax:
+					ps.append(id)
+			if not ps.is_empty():
+				third = {"t": "pet", "id": ps[int(w.rnd() * ps.size()) % ps.size()]}
 	elif r < pw + float(B.gadget) + float(B.pet) + float(B.evo):
 		third = pick_evo.call()
 	else:
@@ -149,7 +159,11 @@ static func label(h: SimHamster, c: Dictionary) -> Dictionary:
 			return {"type": "强化", "name": A.name, "badge": "新" if l == 1 else "", "desc": A.desc, "abil": c.id}
 		_:
 			var P: Dictionary = Data.pets()[c.id]
-			return {"type": "宠物", "name": P.name, "badge": "新", "desc": P.desc}
+			var has := false
+			for p in h.pet_list:
+				if p.type == c.id:
+					has = true
+			return {"type": "宠物", "name": P.name, "badge": "" if has else "新", "desc": P.desc if not has else "升级：伤害更高、攻击更快", "pet": c.id}
 
 
 static func apply(w: SimWorld, h: SimHamster, i: int) -> void:
@@ -166,15 +180,33 @@ static func apply(w: SimWorld, h: SimHamster, i: int) -> void:
 			h.evo = {"a": 0, "b": 0, "c": 0}
 			h.ramp = 0.0
 			h.burst_n = 0
+			h.spin = 0.0
+			h.charge = 0.0
+			h.ch_hold = 0.0
+			h.beams = []
+			h.marks.clear()
+			h.mark_hold = 0.0
+			h.mark_acc = 0.0
+			h.flame_t = 0.0
 		"gad":
 			h.gadget = {"id": c.id, "lvl": 1, "cd": 0.0}
+			h.beacon = {}
 		"glvl":
-			h.gadget.lvl = int(h.gadget.lvl) + 1
+			h.gadget.lvl = mini(int(w.R.gadgets.maxLevel), int(h.gadget.lvl) + 1)
 		"tal":
 			h.tal[c.id] = true
 			h.talent_pend = maxi(0, h.talent_pend - 1)
 		"abil":
 			h.ab[c.id] = int(h.ab.get(c.id, 0)) + 1
+		"pet":
+			var found: SimPet = null
+			for p in h.pet_list:
+				if p.type == c.id:
+					found = p
+			if found != null:
+				found.lvl += 1
+			else:
+				h.pet_list.append(SimMobs.make_pet(w, String(c.id), h))
 	h.pending = maxi(0, h.pending - 1)
 	h.choices = []
 	SimHamsterLogic.calc_stats(h)

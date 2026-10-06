@@ -3,7 +3,7 @@ extends RefCounted
 ## 所有逻辑实体的基类（仓鼠、小兵、建筑、物件、箱子、野怪）。坐标为原型单位。
 
 var id := 0
-var kind := ""            # ham / minion / base / turret / sentry / crate / lamp / barrel / box / roach / rat / boss / decoy
+var kind := ""            # ham / minion / base / turret / sentry / crate / lamp / barrel / box / roach / rat / boss / decoy / pet
 var team := "neutral"
 var x := 0.0
 var y := 0.0
@@ -34,6 +34,7 @@ var supp_until := 0.0
 var dazzle_until := 0.0
 var frozen_until := 0.0
 var shield_hit := 0.0
+var burn_spread_until := 0.0
 
 
 func is_alive() -> bool:

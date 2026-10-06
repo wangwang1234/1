@@ -1,106 +1,27 @@
 {
- "pathColors": [
-  "#ff9a3c",
-  "#5fb0ff",
-  "#c77dff"
- ],
+ "pathColors": ["#ff9a3c", "#5fb0ff", "#c77dff"],
  "maxLevel": 9,
- "traitLevels": [
-  3,
-  6
- ],
+ "traitLevels": [3, 6],
  "capstoneLevel": 9,
  "attachmentType": {
-  "pistol": [
-   "coil",
-   "muzzle",
-   "torch"
-  ],
-  "deagle": [
-   "muzzle",
-   "scope",
-   "radar"
-  ],
-  "ak47": [
-   "tank",
-   "drum",
-   "scope"
-  ],
-  "smg": [
-   "muzzle",
-   "drum",
-   "radar"
-  ],
-  "shotgun": [
-   "muzzle",
-   "tank",
-   "coil"
-  ],
-  "sniper": [
-   "scope",
-   "muzzle",
-   "radar"
-  ],
-  "lmg": [
-   "drum",
-   "coil",
-   "scope"
-  ],
-  "rocket": [
-   "radar",
-   "tank",
-   "drum"
-  ],
-  "katana": [
-   "blade",
-   "blade",
-   "blade"
-  ],
-  "flame": [
-   "muzzle",
-   "tank",
-   "coil"
-  ],
-  "minigun": [
-   "coil",
-   "drum",
-   "torch"
-  ],
-  "autoshot": [
-   "drum",
-   "tank",
-   "coil"
-  ],
-  "amr": [
-   "muzzle",
-   "coil",
-   "scope"
-  ],
-  "dual": [
-   "coil",
-   "scope",
-   "drum"
-  ],
-  "revolver": [
-   "radar",
-   "scope",
-   "muzzle"
-  ],
-  "gl": [
-   "drum",
-   "tank",
-   "radar"
-  ],
-  "rail": [
-   "coil",
-   "muzzle",
-   "radar"
-  ],
-  "laser": [
-   "scope",
-   "coil",
-   "tank"
-  ]
+  "pistol": ["coil", "muzzle", "torch"],
+  "deagle": ["muzzle", "scope", "radar"],
+  "ak47": ["tank", "drum", "scope"],
+  "smg": ["muzzle", "drum", "radar"],
+  "shotgun": ["muzzle", "tank", "coil"],
+  "sniper": ["scope", "muzzle", "radar"],
+  "lmg": ["drum", "coil", "scope"],
+  "rocket": ["radar", "tank", "drum"],
+  "katana": ["blade", "blade", "blade"],
+  "flame": ["muzzle", "tank", "coil"],
+  "minigun": ["coil", "drum", "torch"],
+  "autoshot": ["drum", "tank", "coil"],
+  "amr": ["muzzle", "coil", "scope"],
+  "dual": ["coil", "scope", "drum"],
+  "revolver": ["radar", "scope", "muzzle"],
+  "gl": ["drum", "tank", "radar"],
+  "rail": ["coil", "muzzle", "radar"],
+  "laser": ["scope", "coil", "tank"]
  },
  "muzzleOffsetR": {
   "pistol": 0.88,
@@ -132,21 +53,12 @@
     "lv6": "弹匣 +4",
     "lv9": "扇射：每次扣扳机连发 3 枪",
     "effects": {
-     "perLevel": {
-      "rate": 0.07
-     },
+     "perLevel": {"rate": 0.07},
      "at": {
-      "3": {
-       "spdMul": 1.25
-      },
-      "6": {
-       "magAdd": 4
-      },
+      "3": {"spdMul": 1.25},
+      "6": {"magAdd": 4},
       "9": {
-       "special": {
-        "burst": 2,
-        "burstGap": 0.07
-       }
+       "special": {"burst": 2, "burstGap": 0.07}
       }
      }
     }
@@ -159,19 +71,11 @@
     "lv6": "穿透再 +1",
     "lv9": "暴击率 +25%",
     "effects": {
-     "perLevel": {
-      "dmg": 0.07
-     },
+     "perLevel": {"dmg": 0.07},
      "at": {
-      "3": {
-       "pierce": 1
-      },
-      "6": {
-       "pierce": 1
-      },
-      "9": {
-       "crit": 0.25
-      }
+      "3": {"pierce": 1},
+      "6": {"pierce": 1},
+      "9": {"crit": 0.25}
      }
     }
    },
@@ -183,27 +87,14 @@
     "lv6": "照到的敌人受伤 +10%",
     "lv9": "光里 200 内的敌人被晃瞎",
     "effects": {
-     "perLevel": {
-      "lightRange": 0.1
-     },
+     "perLevel": {"lightRange": 0.1},
      "at": {
-      "3": {
-       "lightCos": -0.06
-      },
+      "3": {"lightCos": -0.06},
       "6": {
-       "special": {
-        "litDmg": 0.1
-       }
+       "special": {"litDmg": 0.1}
       },
       "9": {
-       "special": {
-        "dazzle": 200,
-        "dazzleCos": 0.8,
-        "dazzleEvery": 0.3,
-        "dazzleCd": 2,
-        "dazzleStun": 0.5,
-        "dazzleBlind": 0.7
-       }
+       "special": {"dazzle": 200, "dazzleCos": 0.8, "dazzleEvery": 0.3, "dazzleCd": 2, "dazzleStun": 0.5, "dazzleBlind": 0.7}
       }
      }
     }
@@ -216,7 +107,17 @@
     "perLevel": "击退 +12%、伤害 +4%",
     "lv3": "命中减速",
     "lv6": "击退再 +30%",
-    "lv9": "撞墙眩晕：打到墙上的敌人晕 0.8 秒"
+    "lv9": "撞墙眩晕：打到墙上的敌人晕 0.8 秒",
+    "effects": {
+     "perLevel": {"kb": 0.12, "dmg": 0.04},
+     "at": {
+      "3": {"slow": 0.5},
+      "6": {"kb": 0.3},
+      "9": {
+       "special": {"wallSlam": 34, "slamProbeR": 4, "slamStun": 0.8, "slamDmg": 20}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -224,7 +125,17 @@
     "perLevel": "射速 +7%",
     "lv3": "开枪零散布",
     "lv6": "弹匣 +2",
-    "lv9": "快速补枪：0.5 秒内第二枪伤害 +50%"
+    "lv9": "快速补枪：0.5 秒内第二枪伤害 +50%",
+    "effects": {
+     "perLevel": {"rate": 0.07, "flipK": -0.08},
+     "at": {
+      "3": {"spreadMul": 0},
+      "6": {"magAdd": 2},
+      "9": {
+       "special": {"quickShot": 0.5, "quickDmg": 1.5}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -232,7 +143,18 @@
     "perLevel": "打残血伤害 +8%",
     "lv3": "残血线提高到 50%",
     "lv6": "处决伤害再 +15%",
-    "lv9": "击杀立即返还子弹并重置射击"
+    "lv9": "击杀立即返还子弹并重置射击",
+    "effects": {
+     "base": {"execHp": 0.4},
+     "perLevel": {"execDmg": 0.08},
+     "at": {
+      "3": {"execHp": 0.1},
+      "6": {"execMul": 0.15},
+      "9": {
+       "special": {"killRefund": 1}
+      }
+     }
+    }
    }
   ],
   "ak47": [
@@ -244,26 +166,15 @@
     "lv6": "穿甲弹：穿透 +1，打建筑 +30%",
     "lv9": "三种弹轮流装填：燃烧、穿甲、爆裂",
     "effects": {
-     "perLevel": {
-      "dmg": 0.04
-     },
+     "perLevel": {"dmg": 0.04},
      "at": {
-      "3": {
-       "ign": 0.15
-      },
+      "3": {"ign": 0.15},
       "6": {
        "pierce": 1,
-       "special": {
-        "structDmg": 0.3
-       }
+       "special": {"structDmg": 0.3}
       },
       "9": {
-       "special": {
-        "ammoCycle": 3,
-        "cyclePierce": 2,
-        "blastR": 45,
-        "blastDmg": 0.5
-       }
+       "special": {"ammoCycle": 3, "cyclePierce": 2, "blastR": 45, "blastDmg": 0.5}
       }
      }
     }
@@ -276,21 +187,12 @@
     "lv6": "弹匣再 +20%",
     "lv9": "压制火力：连射时伤害逐渐升高，最多 +40%",
     "effects": {
-     "perLevel": {
-      "magMul": 0.12
-     },
+     "perLevel": {"magMul": 0.12},
      "at": {
-      "3": {
-       "rlMul": 0.85
-      },
-      "6": {
-       "magMul": 0.2
-      },
+      "3": {"rlMul": 0.85},
+      "6": {"magMul": 0.2},
       "9": {
-       "special": {
-        "rampDmg": 0.02,
-        "rampMax": 0.4
-       }
+       "special": {"rampDmg": 0.02, "rampMax": 0.4}
       }
      }
     }
@@ -303,24 +205,13 @@
     "lv6": "暴击率 +10%",
     "lv9": "停顿后的第一枪伤害翻倍并穿透",
     "effects": {
-     "perLevel": {
-      "spreadMul": -0.07,
-      "eff": 0.08
-     },
+     "perLevel": {"spreadMul": -0.07, "eff": 0.08},
      "spreadFloor": 0.3,
      "at": {
-      "3": {
-       "spdMul": 1.2
-      },
-      "6": {
-       "crit": 0.1
-      },
+      "3": {"spdMul": 1.2},
+      "6": {"crit": 0.1},
       "9": {
-       "special": {
-        "firstShot": 0.5,
-        "firstDmg": 2,
-        "firstPierce": 2
-       }
+       "special": {"firstShot": 0.5, "firstDmg": 2, "firstPierce": 2}
       }
      }
     }
@@ -333,7 +224,17 @@
     "perLevel": "覆盖更宽、射速 +3%",
     "lv3": "每次多射 1 发",
     "lv6": "再多射 1 发",
-    "lv9": "子弹飞到一半分裂成两颗"
+    "lv9": "子弹飞到一半分裂成两颗",
+    "effects": {
+     "perLevel": {"spreadMul": 0.06, "rate": 0.03},
+     "at": {
+      "3": {"n": 1},
+      "6": {"n": 1},
+      "9": {
+       "special": {"splitAt": 150, "splitAng": 0.2, "splitDmg": 0.7}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -341,7 +242,17 @@
     "perLevel": "开火时移速 +4%",
     "lv3": "换弹快 20%",
     "lv6": "翻滚冷却 -20%",
-    "lv9": "翻滚瞬间换弹，之后 3 秒射速 +30%"
+    "lv9": "翻滚瞬间换弹，之后 3 秒射速 +30%",
+    "effects": {
+     "perLevel": {"fireMove": 0.04},
+     "at": {
+      "3": {"rlMul": 0.8},
+      "6": {"dashCdMul": 0.8},
+      "9": {
+       "special": {"rollReload": 1, "hasteT": 3}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -349,7 +260,16 @@
     "perLevel": "子弹撞墙反弹、伤害 +3%",
     "lv3": "反弹 2 次",
     "lv6": "反弹后伤害 +20%",
-    "lv9": "反弹后自动追踪敌人"
+    "lv9": "反弹后自动追踪敌人",
+    "effects": {
+     "base": {"bounce": 1},
+     "perLevel": {"dmg": 0.03},
+     "at": {
+      "3": {"bounce": 1},
+      "6": {"bounceK": 1.2},
+      "9": {"homeAfter": 3.2}
+     }
+    }
    }
   ],
   "shotgun": [
@@ -361,21 +281,12 @@
     "lv6": "再 +1 弹丸",
     "lv9": "弹丸穿透 1 个敌人",
     "effects": {
-     "perLevel": {
-      "spreadMul": -0.04,
-      "dmg": 0.03
-     },
+     "perLevel": {"spreadMul": -0.04, "dmg": 0.03},
      "spreadFloor": 0.5,
      "at": {
-      "3": {
-       "n": 1
-      },
-      "6": {
-       "n": 1
-      },
-      "9": {
-       "pierce": 1
-      }
+      "3": {"n": 1},
+      "6": {"n": 1},
+      "9": {"pierce": 1}
      }
     }
    },
@@ -387,28 +298,15 @@
     "lv6": "被点燃的敌人减速",
     "lv9": "每一枪都在前方留下一片火海",
     "effects": {
-     "perLevel": {
-      "ign": 0.07
-     },
-     "base": {
-      "ign": 0.15
-     },
+     "perLevel": {"ign": 0.07},
+     "base": {"ign": 0.15},
      "at": {
-      "3": {
-       "ignK": 1.5
-      },
+      "3": {"ignK": 1.5},
       "6": {
-       "special": {
-        "burnSlow": 1
-       }
+       "special": {"burnSlow": 1}
       },
       "9": {
-       "special": {
-        "fireField": 170,
-        "fieldR": 70,
-        "fieldLife": 2.5,
-        "fieldDps": 16
-       }
+       "special": {"fireField": 170, "fieldR": 70, "fieldLife": 2.5, "fieldDps": 16}
       }
      }
     }
@@ -421,22 +319,12 @@
     "lv6": "击退再 +30%",
     "lv9": "贴脸一枪把人轰飞并眩晕",
     "effects": {
-     "perLevel": {
-      "kb": 0.15
-     },
+     "perLevel": {"kb": 0.15},
      "at": {
-      "3": {
-       "stun": 0.25
-      },
-      "6": {
-       "kb": 0.3
-      },
+      "3": {"stun": 0.25},
+      "6": {"kb": 0.3},
       "9": {
-       "special": {
-        "pointBlank": 90,
-        "pbKb": 520,
-        "pbStun": 0.8
-       }
+       "special": {"pointBlank": 90, "pbKb": 520, "pbStun": 0.8}
       }
      }
     }
@@ -449,7 +337,20 @@
     "perLevel": "手电和视野更远 +12%",
     "lv3": "瞄准线上的敌人全队可见",
     "lv6": "瞄准视野更宽",
-    "lv9": "命中的敌人全队可见 5 秒"
+    "lv9": "命中的敌人全队可见 5 秒",
+    "effects": {
+     "base": {"aimLen": 600},
+     "perLevel": {"range": 0.12, "lightRange": 0.12, "aimLen": 60},
+     "at": {
+      "3": {
+       "special": {"aimLine": 40}
+      },
+      "6": {
+       "special": {"aimLine": 70}
+      },
+      "9": {"mark": 5}
+     }
+    }
    },
    {
     "key": "b",
@@ -457,7 +358,15 @@
     "perLevel": "伤害 +5%",
     "lv3": "穿透 +1",
     "lv6": "穿透再 +1",
-    "lv9": "能穿过薄障碍"
+    "lv9": "能穿过薄障碍",
+    "effects": {
+     "perLevel": {"dmg": 0.05},
+     "at": {
+      "3": {"pierce": 1},
+      "6": {"pierce": 1},
+      "9": {"wp": 1}
+     }
+    }
    },
    {
     "key": "c",
@@ -465,7 +374,18 @@
     "perLevel": "静止瞄准伤害 +8%",
     "lv3": "瞄准蓄力更快",
     "lv6": "蓄满时暴击率 +15%",
-    "lv9": "蓄满必暴击"
+    "lv9": "蓄满必暴击",
+    "effects": {
+     "base": {"stillT": 0.6},
+     "perLevel": {"stillDmg": 0.08},
+     "at": {
+      "3": {"stillT": -0.2},
+      "6": {"stillCrit": 0.15},
+      "9": {
+       "special": {"stillForce": 1}
+      }
+     }
+    }
    }
   ],
   "lmg": [
@@ -475,7 +395,17 @@
     "perLevel": "弹匣 +12%、换弹快 6%",
     "lv3": "弹匣再 +15%",
     "lv6": "换弹再快 15%",
-    "lv9": "站着不动开火不耗子弹"
+    "lv9": "站着不动开火不耗子弹",
+    "effects": {
+     "perLevel": {"magMul": 0.12, "rlMul": -0.06},
+     "at": {
+      "3": {"magMul": 0.15},
+      "6": {"rlMul": 0.85},
+      "9": {
+       "special": {"stillFree": 25}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -483,7 +413,20 @@
     "perLevel": "命中减速更久",
     "lv3": "命中处周围也被减速",
     "lv6": "减速更强",
-    "lv9": "被压制的敌人受到伤害 +20%"
+    "lv9": "被压制的敌人受到伤害 +20%",
+    "effects": {
+     "base": {"slow": 0.35},
+     "perLevel": {"slow": 0.06},
+     "at": {
+      "3": {
+       "special": {"slowSplash": 70, "slowSplashK": 0.6}
+      },
+      "6": {"slow": 0.3},
+      "9": {
+       "special": {"supp": 1.2}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -491,7 +434,19 @@
     "perLevel": "站定后伤害 +5%",
     "lv3": "架枪更快",
     "lv6": "架枪时射速 +15%",
-    "lv9": "架枪时正面挡住子弹"
+    "lv9": "架枪时正面挡住子弹",
+    "effects": {
+     "perLevel": {"deployDmg": 0.05},
+     "at": {
+      "3": {"deployNeed": -0.15},
+      "6": {
+       "special": {"deployRate": 1.15}
+      },
+      "9": {
+       "special": {"frontShield": 52, "shieldArc": 0.9}
+      }
+     }
+    }
    }
   ],
   "rocket": [
@@ -501,7 +456,23 @@
     "perLevel": "火箭追踪更灵敏",
     "lv3": "目标死了自动换下一个",
     "lv6": "追踪范围更大",
-    "lv9": "一次发射 3 枚火箭各锁一个目标"
+    "lv9": "一次发射 3 枚火箭各锁一个目标",
+    "effects": {
+     "base": {"home": 1.4},
+     "perLevel": {"home": 0.35},
+     "at": {
+      "1": {"spdMul": 0.85},
+      "3": {
+       "special": {"homeCone": 3.2}
+      },
+      "6": {
+       "special": {"homeRange": 720}
+      },
+      "9": {
+       "special": {"multi": 3, "multiSpread": 0.25, "multiDmg": 0.6, "multiRange": 820, "multiCone": 1.2, "multiCd": 1.3}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -509,7 +480,19 @@
     "perLevel": "爆炸范围 +9%、伤害 +5%",
     "lv3": "爆炸击退更强",
     "lv6": "爆炸减速敌人",
-    "lv9": "爆炸留下燃烧弹坑"
+    "lv9": "爆炸留下燃烧弹坑",
+    "effects": {
+     "perLevel": {"aoe": 0.09, "aoeDmg": 0.05},
+     "at": {
+      "3": {"kb": 0.4},
+      "6": {
+       "special": {"blastSlow": 1.2}
+      },
+      "9": {
+       "special": {"crater": 0.7, "craterLife": 4, "craterDps": 18}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -517,7 +500,25 @@
     "perLevel": "爆炸散出子炸弹、伤害 +8%",
     "lv3": "子炸弹 +1",
     "lv6": "子炸弹再 +1",
-    "lv9": "一次发射两枚火箭"
+    "lv9": "一次发射两枚火箭",
+    "effects": {
+     "base": {"cluster": 0.25},
+     "perLevel": {"cluster": 0.02},
+     "at": {
+      "1": {
+       "special": {"bombs": 2}
+      },
+      "3": {
+       "special": {"bombs": 3}
+      },
+      "6": {
+       "special": {"bombs": 4}
+      },
+      "9": {
+       "special": {"twin": 0.12}
+      }
+     }
+    }
    }
   ],
   "katana": [
@@ -527,7 +528,21 @@
     "perLevel": "格挡范围 +8%、反弹伤害 +10%",
     "lv3": "反弹的子弹追踪射手",
     "lv6": "翻滚时也能格挡",
-    "lv9": "完美格挡：反弹伤害 ×3 并无敌 0.6 秒"
+    "lv9": "完美格挡：反弹伤害 ×3 并无敌 0.6 秒",
+    "effects": {
+     "perLevel": {"arc": 0.08, "deflect": 0.1},
+     "at": {
+      "3": {
+       "special": {"deflectHome": 3.5}
+      },
+      "6": {
+       "special": {"rollDeflect": 1}
+      },
+      "9": {
+       "special": {"perfectWindow": 0.08, "perfectMul": 3, "perfectIframes": 0.6}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -535,7 +550,22 @@
     "perLevel": "挥刀放出剑气，射程 +30",
     "lv3": "剑气穿透",
     "lv6": "剑气变宽",
-    "lv9": "第三刀放出十字巨型剑气"
+    "lv9": "第三刀放出十字巨型剑气",
+    "effects": {
+     "base": {"wave": 0.5, "waveRange": 220},
+     "perLevel": {"wave": 0.03, "waveRange": 30},
+     "at": {
+      "3": {
+       "special": {"wavePierce": 99}
+      },
+      "6": {
+       "special": {"waveWide": 1.5}
+      },
+      "9": {
+       "special": {"bigEvery": 3, "bigWide": 1.8, "bigDmg": 1.5, "bigSpread": 0.5}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -543,7 +573,20 @@
     "perLevel": "翻滚斩伤害 +8%",
     "lv3": "翻滚冷却 -25%",
     "lv6": "翻滚距离 +25%",
-    "lv9": "击杀刷新翻滚"
+    "lv9": "击杀刷新翻滚",
+    "effects": {
+     "base": {"iaido": 0.4},
+     "perLevel": {"iaido": 0.08},
+     "at": {
+      "3": {"dashCdMul": 0.75},
+      "6": {
+       "special": {"dashSpd": 1.25}
+      },
+      "9": {
+       "special": {"killResetDash": 1}
+      }
+     }
+    }
    }
   ],
   "flame": [
@@ -553,7 +596,19 @@
     "perLevel": "射程 +7%、喷得更宽",
     "lv3": "火焰伤害 +15%",
     "lv6": "火焰推开敌人",
-    "lv9": "蓝色高温火柱：伤害 ×1.5"
+    "lv9": "蓝色高温火柱：伤害 ×1.5",
+    "effects": {
+     "perLevel": {"range": 0.07, "spreadMul": 0.05},
+     "at": {
+      "3": {"dmgMul": 1.15},
+      "6": {"kb": 3},
+      "9": {
+       "dmgMul": 1.5,
+       "spdMul": 1.25,
+       "special": {"blue": 1}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -561,7 +616,21 @@
     "perLevel": "燃烧时间 +0.3 秒",
     "lv3": "火焰尽头留下火洼",
     "lv6": "火洼更大",
-    "lv9": "燃烧会传染给身边敌人"
+    "lv9": "燃烧会传染给身边敌人",
+    "effects": {
+     "perLevel": {"burn": 0.3},
+     "at": {
+      "3": {
+       "special": {"puddle": 45, "puddleCd": 0.8, "puddleAt": 0.8, "puddleLife": 2, "puddleDps": 10}
+      },
+      "6": {
+       "special": {"puddle": 65}
+      },
+      "9": {
+       "special": {"burnSpread": 3, "spreadR": 80, "spreadBurn": 1.5}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -569,7 +638,20 @@
     "perLevel": "近处的敌方子弹被烧掉",
     "lv3": "烧子弹范围更大",
     "lv6": "整条火焰都能烧子弹",
-    "lv9": "连喷 3 秒后火焰爆发"
+    "lv9": "连喷 3 秒后火焰爆发",
+    "effects": {
+     "base": {"heat": 0.5},
+     "perLevel": {"heat": 0.04},
+     "at": {
+      "3": {"heat": 0.15},
+      "6": {
+       "special": {"heatFull": 1}
+      },
+      "9": {
+       "special": {"flameBurst": 3, "burstR": 170, "burstDmg": 90, "burstKb": 300}
+      }
+     }
+    }
    }
   ],
   "minigun": [
@@ -579,7 +661,17 @@
     "perLevel": "预热快 9%、射速 +4%",
     "lv3": "射速再 +6%",
     "lv6": "预热再快 15%",
-    "lv9": "松开后 3 秒不降速"
+    "lv9": "松开后 3 秒不降速",
+    "effects": {
+     "perLevel": {"rate": 0.04, "spinMul": -0.09},
+     "at": {
+      "3": {"rate": 0.06},
+      "6": {"spinMul": 0.85},
+      "9": {
+       "special": {"keepSpin": 3}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -587,7 +679,21 @@
     "perLevel": "开火时移速 +5%",
     "lv3": "开火时不会被击退",
     "lv6": "开火时减伤 10%",
-    "lv9": "开火时减伤 25%"
+    "lv9": "开火时减伤 25%",
+    "effects": {
+     "perLevel": {"slowAdd": 0.05},
+     "at": {
+      "3": {
+       "special": {"noKnockFiring": 0.3}
+      },
+      "6": {
+       "special": {"firingArmor": 0.1, "firingWindow": 0.3}
+      },
+      "9": {
+       "special": {"firingArmor": 0.25}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -595,7 +701,18 @@
     "perLevel": "命中的敌人短暂全队可见",
     "lv3": "5% 几率点燃",
     "lv6": "可见时间再 +1 秒",
-    "lv9": "每第 10 发是爆炸弹"
+    "lv9": "每第 10 发是爆炸弹",
+    "effects": {
+     "base": {"mark": 0.5},
+     "perLevel": {"mark": 0.15},
+     "at": {
+      "3": {"ign": 0.05},
+      "6": {"mark": 1},
+      "9": {
+       "special": {"explEvery": 10, "blastR": 60, "blastDmg": 0.9}
+      }
+     }
+    }
    }
   ],
   "autoshot": [
@@ -605,7 +722,17 @@
     "perLevel": "弹匣 +12%",
     "lv3": "换弹快 20%",
     "lv6": "弹匣再 +20%",
-    "lv9": "翻滚补充一半弹匣"
+    "lv9": "翻滚补充一半弹匣",
+    "effects": {
+     "perLevel": {"magMul": 0.12},
+     "at": {
+      "3": {"rlMul": 0.8},
+      "6": {"magMul": 0.2},
+      "9": {
+       "special": {"rollRefill": 0.5}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -613,7 +740,29 @@
     "perLevel": "命中小爆炸几率 +5%",
     "lv3": "爆炸范围更大",
     "lv6": "几率再 +10%",
-    "lv9": "破片会弹跳"
+    "lv9": "破片会弹跳",
+    "effects": {
+     "base": {"fragChance": 0.1, "fragR": 32},
+     "perLevel": {"fragChance": 0.05},
+     "at": {
+      "1": {
+       "special": {"fragDmg": 0.5}
+      },
+      "3": {"fragR": 13},
+      "6": {"fragChance": 0.1},
+      "9": {
+       "special": {
+        "fragBits": 2,
+        "fragAng": 0.8,
+        "fragSpd": 600,
+        "fragBitDmg": 0.4,
+        "fragRange": 160,
+        "fragBitR": 3.5,
+        "fragBitKb": 20
+       }
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -621,7 +770,18 @@
     "perLevel": "连射越来越快（上限 +4%）",
     "lv3": "加速更快",
     "lv6": "加速上限再 +10%",
-    "lv9": "弹匣最后 5 发变成龙息弹"
+    "lv9": "弹匣最后 5 发变成龙息弹",
+    "effects": {
+     "base": {"stormCap": 0.2, "stormRamp": 0.04},
+     "perLevel": {"stormCap": 0.04},
+     "at": {
+      "3": {"stormRamp": 0.02},
+      "6": {"stormCap": 0.1},
+      "9": {
+       "special": {"dragonLast": 5, "dragonIgn": 0.6}
+      }
+     }
+    }
    }
   ],
   "amr": [
@@ -631,7 +791,17 @@
     "perLevel": "伤害 +5%",
     "lv3": "穿透 +1",
     "lv6": "穿透再 +1",
-    "lv9": "无视所有障碍贯穿全图"
+    "lv9": "无视所有障碍贯穿全图",
+    "effects": {
+     "perLevel": {"dmg": 0.05},
+     "at": {
+      "3": {"pierce": 1},
+      "6": {"pierce": 1},
+      "9": {
+       "special": {"wallPierce": 2, "rangeMapMul": 1.2}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -639,7 +809,23 @@
     "perLevel": "命中时震退周围，范围 +6",
     "lv3": "冲击波眩晕",
     "lv6": "冲击波范围更大",
-    "lv9": "对建筑伤害翻倍"
+    "lv9": "对建筑伤害翻倍",
+    "effects": {
+     "base": {"shockR": 64},
+     "perLevel": {"shockR": 6},
+     "at": {
+      "1": {
+       "special": {"shockKb": 220}
+      },
+      "3": {
+       "special": {"shockStun": 0.4}
+      },
+      "6": {"shockR": 40},
+      "9": {
+       "special": {"structDmg": 1.0}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -647,7 +833,21 @@
     "perLevel": "弹道留下视野（时间 +0.3 秒）",
     "lv3": "视野更宽",
     "lv6": "视野更久",
-    "lv9": "命中标记 8 秒"
+    "lv9": "命中标记 8 秒",
+    "effects": {
+     "base": {"scoutT": 2},
+     "perLevel": {"scoutT": 0.3},
+     "at": {
+      "1": {
+       "special": {"scoutW": 60}
+      },
+      "3": {
+       "special": {"scoutW": 90}
+      },
+      "6": {"scoutT": 1},
+      "9": {"mark": 8}
+     }
+    }
    }
   ],
   "dual": [
@@ -657,7 +857,17 @@
     "perLevel": "射速 +7%",
     "lv3": "子弹更快",
     "lv6": "弹匣 +6",
-    "lv9": "翻滚时 360° 枪斗术"
+    "lv9": "翻滚时 360° 枪斗术",
+    "effects": {
+     "perLevel": {"rate": 0.07},
+     "at": {
+      "3": {"spdMul": 1.2},
+      "6": {"magAdd": 6},
+      "9": {
+       "special": {"gunKata": 8, "kataSpd": 1100, "kataRange": 500, "kataKb": 60, "kataR": 4.5}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -665,7 +875,25 @@
     "perLevel": "副手自动瞄第二个目标（+8%）",
     "lv3": "自动瞄准范围更大",
     "lv6": "副手伤害 +20%",
-    "lv9": "两把枪各锁一个目标"
+    "lv9": "两把枪各锁一个目标",
+    "effects": {
+     "base": {"altChance": 0.25},
+     "perLevel": {"altChance": 0.08},
+     "at": {
+      "1": {
+       "special": {"altR": 450}
+      },
+      "3": {
+       "special": {"altR": 600}
+      },
+      "6": {
+       "special": {"offDmg": 1.2}
+      },
+      "9": {
+       "special": {"altAlways": 1}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -673,7 +901,20 @@
     "perLevel": "换弹快 8%",
     "lv3": "弹匣 +4",
     "lv6": "击杀补 25% 弹匣",
-    "lv9": "弹匣打空时翻滚瞬间装满"
+    "lv9": "弹匣打空时翻滚瞬间装满",
+    "effects": {
+     "perLevel": {"rlMul": -0.08},
+     "rlFloor": 0.3,
+     "at": {
+      "3": {"magAdd": 4},
+      "6": {
+       "special": {"killAmmo": 0.25}
+      },
+      "9": {
+       "special": {"emptyRollReload": 1}
+      }
+     }
+    }
    }
   ],
   "revolver": [
@@ -683,7 +924,16 @@
     "perLevel": "反弹伤害 +6%",
     "lv3": "多反弹 1 次",
     "lv6": "再多反弹 1 次",
-    "lv9": "反弹后自动追踪"
+    "lv9": "反弹后自动追踪",
+    "effects": {
+     "base": {"bounceK": 1.0},
+     "perLevel": {"bounceK": 0.06},
+     "at": {
+      "3": {"bounce": 1},
+      "6": {"bounce": 1},
+      "9": {"homeAfter": 3.6}
+     }
+    }
    },
    {
     "key": "b",
@@ -691,7 +941,33 @@
     "perLevel": "按住标记目标、松开连射（伤害 +5%）",
     "lv3": "标记更快",
     "lv6": "标记的子弹穿透",
-    "lv9": "标记速度翻倍且必暴击"
+    "lv9": "标记速度翻倍且必暴击",
+    "effects": {
+     "perLevel": {"deDmg": 0.05},
+     "at": {
+      "1": {
+       "special": {
+        "deadeye": 1,
+        "markTap": 0.15,
+        "markIv": 0.35,
+        "markMaxHold": 1.6,
+        "markMax": 6,
+        "markR": 700,
+        "markCone": 0.62,
+        "releaseCd": 0.45
+       }
+      },
+      "3": {
+       "special": {"markIv": 0.25}
+      },
+      "6": {
+       "special": {"dePierce": 1}
+      },
+      "9": {
+       "special": {"markIv": 0.125, "deForce": 1}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -699,7 +975,20 @@
     "perLevel": "伤害 +6%，命中硬直",
     "lv3": "击退更强",
     "lv6": "打断对方换弹",
-    "lv9": "每第 6 发必暴击"
+    "lv9": "每第 6 发必暴击",
+    "effects": {
+     "base": {"slow": 0.3},
+     "perLevel": {"dmg": 0.06},
+     "at": {
+      "3": {"kb": 0.4},
+      "6": {
+       "special": {"reloadJam": 0.5}
+      },
+      "9": {
+       "special": {"critEvery": 6}
+      }
+     }
+    }
    }
   ],
   "gl": [
@@ -709,7 +998,26 @@
     "perLevel": "引信更长、弹得更远",
     "lv3": "榴弹更快",
     "lv6": "爆炸范围更大",
-    "lv9": "第一次落地分裂成 3 颗"
+    "lv9": "第一次落地分裂成 3 颗",
+    "effects": {
+     "perLevel": {"fuse": 0.15},
+     "at": {
+      "1": {
+       "special": {"bounces": 1}
+      },
+      "3": {
+       "spdMul": 1.25,
+       "special": {"bounces": 2}
+      },
+      "6": {
+       "aoe": 0.2,
+       "special": {"bounces": 3}
+      },
+      "9": {
+       "special": {"bounces": 4, "splitOnBounce": 1, "splitAng": 0.7, "splitVz": 0.4}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -717,7 +1025,22 @@
     "perLevel": "伤害 +6%，榴弹会粘住",
     "lv3": "粘住的敌人减速",
     "lv6": "爆炸范围更大",
-    "lv9": "再扣扳机手动引爆全部黏弹"
+    "lv9": "再扣扳机手动引爆全部黏弹",
+    "effects": {
+     "perLevel": {"dmg": 0.06},
+     "at": {
+      "1": {
+       "special": {"sticky": 1}
+      },
+      "3": {
+       "special": {"stickSlow": 0.2}
+      },
+      "6": {"aoe": 0.2},
+      "9": {
+       "special": {"detonate": 1, "stickyFuse": 6, "detonateCd": 0.25}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -725,7 +1048,31 @@
     "perLevel": "每 3 发一颗烟雾弹",
     "lv3": "加入闪光弹轮换",
     "lv6": "加入燃烧弹轮换",
-    "lv9": "每颗都附带减速毒气"
+    "lv9": "每颗都附带减速毒气",
+    "effects": {
+     "at": {
+      "1": {
+       "special": {
+        "specialEvery": 3,
+        "rounds": ["smoke"]
+       }
+      },
+      "3": {
+       "special": {
+        "specialEvery": 1,
+        "rounds": ["smoke", "flash"]
+       }
+      },
+      "6": {
+       "special": {
+        "rounds": ["smoke", "flash", "fire"]
+       }
+      },
+      "9": {
+       "special": {"gas": 110, "gasLife": 3, "gasDps": 6, "gasSlow": 0.5}
+      }
+     }
+    }
    }
   ],
   "rail": [
@@ -735,7 +1082,17 @@
     "perLevel": "蓄力快 5%、伤害 +6%",
     "lv3": "蓄力再快 10%",
     "lv6": "伤害再 +10%",
-    "lv9": "蓄满时电弧连锁"
+    "lv9": "蓄满时电弧连锁",
+    "effects": {
+     "perLevel": {"dmg": 0.06, "charge": -0.05},
+     "at": {
+      "3": {"chargeMul": 0.9},
+      "6": {"dmg": 0.1},
+      "9": {
+       "special": {"arcChain": 0.4, "arcFull": 0.99}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -743,7 +1100,24 @@
     "perLevel": "伤害 +3%，光束能穿 1 层墙",
     "lv3": "能穿 2 层墙",
     "lv6": "穿透所有墙",
-    "lv9": "碰到边界反射一次"
+    "lv9": "碰到边界反射一次",
+    "effects": {
+     "perLevel": {"dmg": 0.03},
+     "at": {
+      "1": {
+       "special": {"walls": 1}
+      },
+      "3": {
+       "special": {"walls": 2}
+      },
+      "6": {
+       "special": {"walls": 99}
+      },
+      "9": {
+       "special": {"reflect": 1}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -751,7 +1125,23 @@
     "perLevel": "命中减速并拖慢换弹",
     "lv3": "让炮台停火 1 秒",
     "lv6": "减速更强",
-    "lv9": "地面留下电流带"
+    "lv9": "地面留下电流带",
+    "effects": {
+     "base": {"railSlow": 0.6},
+     "perLevel": {"railSlow": 0.1},
+     "at": {
+      "1": {
+       "special": {"reloadDrag": 0.4}
+      },
+      "3": {
+       "special": {"turretJam": 1.0}
+      },
+      "6": {"railSlow": 0.4},
+      "9": {
+       "special": {"trail": 26, "trailLife": 3, "trailDps": 20}
+      }
+     }
+    }
    }
   ],
   "laser": [
@@ -761,7 +1151,18 @@
     "perLevel": "照同一目标伤害递增（上限 +10%）",
     "lv3": "递增更快",
     "lv6": "上限再 +20%",
-    "lv9": "叠满时点燃并瞬间回能"
+    "lv9": "叠满时点燃并瞬间回能",
+    "effects": {
+     "base": {"focusStep": 0.04},
+     "perLevel": {"focusCap": 0.1},
+     "at": {
+      "3": {"focusStep": 0.04},
+      "6": {"focusCap": 0.2},
+      "9": {
+       "special": {"focusIgnite": 1.2, "focusRefill": 1}
+      }
+     }
+    }
    },
    {
     "key": "b",
@@ -769,7 +1170,23 @@
     "perLevel": "分出副光束（伤害 +3%）",
     "lv3": "副光束更强",
     "lv6": "再分出 1 道",
-    "lv9": "光束在敌人之间折射"
+    "lv9": "光束在敌人之间折射",
+    "effects": {
+     "base": {"sideK": 0.4},
+     "perLevel": {"dmg": 0.03},
+     "at": {
+      "1": {
+       "special": {"sideBeams": 1, "sideAng": 0.22}
+      },
+      "3": {"sideK": 0.2},
+      "6": {
+       "special": {"sideBeams": 2}
+      },
+      "9": {
+       "special": {"refract": 200, "refractK": 0.5}
+      }
+     }
+    }
    },
    {
     "key": "c",
@@ -777,9 +1194,25 @@
     "perLevel": "耗能 -6%、射程 +6%",
     "lv3": "耗能再 -10%",
     "lv6": "射程再 +10%",
-    "lv9": "每 15 秒有 3 秒零耗能且伤害 +30%"
+    "lv9": "每 15 秒有 3 秒零耗能且伤害 +30%",
+    "effects": {
+     "perLevel": {"range": 0.06, "cost": -0.06},
+     "at": {
+      "3": {"cost": -0.1},
+      "6": {"range": 0.1},
+      "9": {
+       "special": {"overdrive": 15, "odWindow": 3, "odDmg": 1.3}
+      }
+     }
+    }
    }
   ]
  },
- "_effectsDoc": "effects：进化数值（批次 1 只填了手枪/AK-47/霰弹枪，其余武器在批次 2 补）。perLevel 每级累加：rate/dmg/kb/range/eff/magMul/aoe/aoeDmg/lightRange/ign 为加到倍率上的增量；spreadMul/rlMul 为乘法（1+v×级，spreadFloor 为下限）。at：达到该级时一次性生效；spdMul/rlMul 相乘，magAdd/n/pierce/crit/ign/stun/lightCos 相加，ignK 覆盖；special 为特殊行为参数。base：路线≥1级时的初始值。"
+ "_effectsDoc": {
+  "summary": "进化效果：每条路线 effects = {base, perLevel, at, spreadFloor?, rlFloor?}。路线等级 L>=1 时：base 覆盖写入 P；perLevel 按 L 线性累加；at 里等级 <= L 的条目按等级从小到大依次生效。",
+  "perLevel": "spreadMul: P.spread *= max(spreadFloor, 1+v*L)；rlMul: P.rl *= max(rlFloor(默认0.2), 1+v*L)；其它键 P[k] += v*L",
+  "at": "spdMul/rlMul/spreadMul/spinMul/dashCdMul/dmgMul/chargeMul 相乘；ignK/bounceK 覆盖；special 合并（后面的等级覆盖同名键）；其它键累加。'1' 表示从 1 级起生效",
+  "keys": "P 默认：rate dmg spread spd kb range eff magMul rl ignK bounceK lightRange aoe aoeDmg spinMul dashCdMul execMul flipK arc charge cost = 1；其余 = 0",
+  "old": "effects：进化数值（批次 1 只填了手枪/AK-47/霰弹枪，其余武器在批次 2 补）。perLevel 每级累加：rate/dmg/kb/range/eff/magMul/aoe/aoeDmg/lightRange/ign 为加到倍率上的增量；spreadMul/rlMul 为乘法（1+v×级，spreadFloor 为下限）。at：达到该级时一次性生效；spdMul/rlMul 相乘，magAdd/n/pierce/crit/ign/stun/lightCos 相加，ignK 覆盖；special 为特殊行为参数。base：路线≥1级时的初始值。"
+ }
 }

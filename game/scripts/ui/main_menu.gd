@@ -238,8 +238,7 @@ func _build_ui() -> void:
 	b_start.custom_minimum_size = Vector2(360, 0)
 	_button("观战：AI 自动对打", func() -> void: _start(true), true)
 	_button("设置", _open_settings, true)
-	var b_codex := _button("图鉴（下一批）", func() -> void: pass, true)
-	b_codex.disabled = true
+	_button("图鉴", _open_codex, true)
 	_button("退出", func() -> void: quit_requested.emit(), true)
 	b_start.call_deferred("grab_focus")
 	# 右下：皮肤与初始武器
@@ -344,6 +343,15 @@ func _open_settings() -> void:
 		_settings = null
 		buttons.visible = true
 		(buttons.get_child(2) as Button).grab_focus())
+
+
+func _open_codex() -> void:
+	var c := Codex.new()
+	root.add_child(c)
+	buttons.visible = false
+	c.closed.connect(func() -> void:
+		buttons.visible = true
+		(buttons.get_child(3) as Button).grab_focus())
 
 
 func _start(autoplay: bool) -> void:

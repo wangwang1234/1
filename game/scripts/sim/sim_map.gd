@@ -45,6 +45,8 @@ var crate_spots: Array = []         # [{x,y,big}]
 var prop_spots: Array = []          # [{kind,x,y}]
 var base_pos: Dictionary = {}       # team -> Vector2
 var turret_pos: Dictionary = {}     # team -> Array[Vector2]
+var camps: Array = []               # [{type, x, y}] 野区营地
+var boss_pos := Vector2.ZERO        # 鼠王出生点（切片模式不在范围内时为 0）
 var mode := "full"
 
 var _grid: Dictionary = {}          # int key -> Array[Solid]
@@ -122,6 +124,14 @@ func build(mode_: String = "full") -> void:
 		var pv := Vector2(float(p.x), float(p.y))
 		if bounds.has_point(pv):
 			prop_spots.append({"kind": p.kind, "x": pv.x, "y": pv.y})
+	camps.clear()
+	for c in _camp_list(L):
+		if bounds.has_point(Vector2(c.x, c.y)):
+			camps.append(c)
+	boss_pos = Vector2.ZERO
+	var bp: Dictionary = L.get("boss", {})
+	if not bp.is_empty() and bounds.has_point(Vector2(float(bp.x), float(bp.y))):
+		boss_pos = Vector2(float(bp.x), float(bp.y))
 	crate_spots.clear()
 	for c in _crate_list(L):
 		if bounds.has_point(Vector2(c.x, c.y)):
@@ -139,6 +149,24 @@ func build(mode_: String = "full") -> void:
 			pads.append({"x": pv.x, "y": pv.y, "tx": tv.x, "ty": tv.y, "anim": 0.0})
 	rebuild_grid()
 	build_nav()
+
+
+func _mirror4(L: Dictionary, x: float, y: float) -> Array:
+	## 原型坐标：单象限原始坐标四象限镜像，再按 SX/SY 缩放
+	var T: Dictionary = L.get("protoTransform", {"SX": 0.7, "SY": 0.86, "OW": 7200, "OH": 3600})
+	var out: Array = []
+	for fx in [false, true]:
+		for fy in [false, true]:
+			out.append(Vector2((float(T.OW) - x if fx else x) * float(T.SX), (float(T.OH) - y if fy else y) * float(T.SY)))
+	return out
+
+
+func _camp_list(L: Dictionary) -> Array:
+	var out: Array = []
+	for c in L.get("camps", []):
+		for p: Vector2 in _mirror4(L, float(c[1]), float(c[2])):
+			out.append({"type": String(c[0]), "x": p.x, "y": p.y})
+	return out
 
 
 func _crate_list(L: Dictionary) -> Array:

@@ -15,9 +15,11 @@ func test_roll_basic() -> void:
 			var k := "%s_%s_%s" % [c.t, c.id, c.get("k", "")]
 			check(not keys.has(k), "卡不重复")
 			keys[k] = true
-			check(c.t in ["evo", "abil", "weap"], "批次 1 只出进化/强化/换武器，出现了 %s" % c.t)
+			check(c.t in ["evo", "abil", "weap", "gad", "glvl", "pet"], "卡片类型未知：%s" % c.t)
 			if c.t == "weap":
-				check(Data.rule("scope.weapons").has(c.id), "换武器只在三把枪里")
+				check(Data.rule("scope.weapons").has(c.id), "换武器只在开放范围内")
+			if c.t == "gad":
+				check(Data.rule("scope.gadgets").has(c.id) and c.id != h.gadget.id, "换道具在开放范围内且不是当前道具")
 			if c.t == "abil":
 				check(Data.rule("scope.abilities").has(c.id), "强化在开放范围内")
 		if not failures.is_empty():

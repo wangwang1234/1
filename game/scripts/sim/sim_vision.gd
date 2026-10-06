@@ -26,6 +26,8 @@ static func _lit_by(w: SimWorld, lights: Array, e: SimEntity) -> bool:
 		if bool(s.get("los", false)) and d > e.r + los_min:
 			if not w.map.has_los(float(s.x), float(s.y), e.x, e.y):
 				continue
+			if SimGadgets.smoke_blocks(w, float(s.x), float(s.y), e.x, e.y):
+				continue
 		return true
 	return false
 
@@ -39,6 +41,14 @@ static func lights_for(w: SimWorld, team: String) -> Array:
 			L.append({"x": p.x, "y": p.y, "r": float(V.lampRadius), "los": true})
 	for f in w.fires:
 		L.append({"x": f.x, "y": f.y, "r": float(f.r) + float(V.fireExtra), "los": true})
+	if float(w.boom.t) > 0.0:
+		L.append({"x": float(w.boom.x), "y": float(w.boom.y), "r": float(V.boomRadius), "los": true})
+	for f in w.flares:
+		if f.team == team:
+			L.append({"x": f.x, "y": f.y, "r": float(w.R.gadgets.flare.radius), "los": true})
+	for c in w.corrs:
+		if c.team == team:
+			L.append({"seg": [c.x0, c.y0, c.x1, c.y1], "w": c.w})
 	for h in w.hams:
 		if not h.alive or h.team != team:
 			continue
@@ -47,6 +57,10 @@ static func lights_for(w: SimWorld, team: String) -> Array:
 		var nr := maxf(float(V.nightvisionRadius) if tal_nv else float(V.selfRadius), nv) + h.r
 		L.append({"x": h.x, "y": h.y, "r": nr, "los": not (nv > 0.0 or tal_nv)})
 		L.append({"x": h.x, "y": h.y, "r": SimWeapons.light_range(h), "dir": h.aim, "cos": SimWeapons.light_cos(h), "los": true, "torch": h.id})
+		var P := SimWeapons.params(h)
+		if P.special.has("aimLine"):
+			var ln := float(P.aimLen)
+			L.append({"seg": [h.x, h.y, h.x + cos(h.aim) * ln, h.y + sin(h.aim) * ln], "w": float(P.special.aimLine)})
 	for s in w.structs:
 		if s.dead or s.team != team:
 			continue
@@ -70,4 +84,23 @@ static func compute(w: SimWorld) -> void:
 			if not m.dead and m.team != team:
 				if m.reveal_t > 0.0 or (m.mark_team == team and w.t < m.mark_until) or _lit_by(w, L, m):
 					VS[m.id] = true
+		for e in w.mobs:
+			if not e.dead:
+				if e.reveal_t > 0.0 or (e.mark_team == team and w.t < e.mark_until) or _lit_by(w, L, e):
+					VS[e.id] = true
+		for d in w.decoys:
+			if not d.dead and d.team != team and _lit_by(w, L, d):
+				VS[d.id] = true
+		for s in w.structs:
+			if not s.dead and s.kind == "sentry" and s.team != team and _lit_by(w, L, s):
+				VS[s.id] = true
+		var MR := float(w.R.gadgets.mine.visR)
+		var probe := SimEntity.new()
+		probe.r = MR
+		for m in w.mines:
+			if m.team != team:
+				probe.x = float(m.x)
+				probe.y = float(m.y)
+				if _lit_by(w, L, probe):
+					VS["mine_%d" % int(m.id)] = true
 		w.vis[team] = VS
