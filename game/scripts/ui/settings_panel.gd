@@ -69,7 +69,7 @@ func _ready() -> void:
 		for i in 4:
 			grid.add_child(UiTheme.label(String(r[i]), 20, UiTheme.CREAM if i > 0 else UiTheme.SUB, false, 0))
 	var note := UiTheme.label("按键自定义会在后续版本加入。手柄按任意键即可切换到手柄操作。", 17, UiTheme.SUB, false, 0)
-	note.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.custom_minimum_size = Vector2(680, 0)
 	pc.add_child(note)
 	var ok := Button.new()

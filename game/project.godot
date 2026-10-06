@@ -38,6 +38,10 @@ theme/custom_font="res://assets/fonts/NotoSansSC.ttf"
 
 pointing/emulate_touch_from_mouse=false
 
+[internationalization]
+
+locale/include_text_server_data=true
+
 [physics]
 
 common/physics_ticks_per_second=60

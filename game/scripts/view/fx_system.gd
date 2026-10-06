@@ -224,6 +224,20 @@ func ring(pos: Vector3, r0: float, grow: float, life: float, color: Color, width
 	_rings.append({"pos": pos, "r": r0, "grow": grow, "life": life, "max": life, "color": color, "w": width})
 
 
+func clear() -> void:
+	## 清场（截图换场景时用）：粒子、环、伤害数字、弹壳、焦痕全部清掉
+	_add.clear()
+	_mix.clear()
+	_rings.clear()
+	_shells.clear()
+	for L in _labels:
+		L.t = 0.0
+		(L.label as Label3D).visible = false
+	for d in _decals:
+		(d.node as Node).queue_free()
+	_decals.clear()
+
+
 func set_number_scale(k: float) -> void:
 	## 分屏时子画面变窄，伤害数字跟着缩小一点
 	for L in _labels:

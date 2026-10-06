@@ -75,7 +75,7 @@ func _ready() -> void:
 	wr.add_child(weapon_pick)
 	wr.add_child(UiTheme.label("测试用：正式规则是手枪起步", 17, UiTheme.SUB, false, 0))
 	help = UiTheme.label("", 18, UiTheme.SUB, false, 0)
-	help.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.custom_minimum_size = Vector2(760, 0)
 	v.add_child(help)
 	var btns := HBoxContainer.new()

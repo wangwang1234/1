@@ -9,7 +9,7 @@ extends Node
 ##   loadout    游戏内武器进化配件对比（每把枪：基础 / A9 / B9 / C9）
 ##   lineup     游戏内皮肤 × 队伍一排
 ##   screens    暂停菜单 + 设置面板 + 结算界面
-##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）
+##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）；--tabs a,b 只拍部分分页
 ##   arsenal    批次 2：18 把武器在局里开火的样子（各带一条 9 级路线）；--weapons a,b 只拍部分
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
@@ -179,7 +179,10 @@ func _codex() -> void:
 	for c in main.menu.root.get_children():
 		if c is Codex:
 			cx = c
+	var only := String(args.get("tabs", ""))    # --tabs talent,pet 只拍部分分页
 	for t in Codex.TABS:
+		if only != "" and not only.split(",").has(String(t[0])):
+			continue
 		cx.show_tab(String(t[0]))
 		await _wait(0.5)
 		# 等这一页的快照拍完
@@ -243,6 +246,7 @@ func _arsenal() -> void:
 	var i := 0
 	for wid: String in ids:
 		_clear_fx(w)
+		mv.fx.clear()
 		h.weapon_id = wid
 		var evo := {"a": 0, "b": 0, "c": 0}
 		evo[["a", "b", "c"][i % 3]] = 9

@@ -127,7 +127,7 @@ static func entries(key: String) -> Array:
 					"flame":
 						st.append("每发伤害 %s，会点燃敌人" % _num(dmg))
 					"rail":
-						st.append("蓄力伤害 %d～%d，贯穿整条线" % [roundi(dmg), roundi(dmg + float(Data.rule("weapons.rail.chargeBonus", 140)))])
+						st.append("蓄力伤害 %d～%d，贯穿整条线" % [roundi(dmg), roundi(dmg + float(w.get("chargeDmg", 0)))])
 					"laser":
 						st.append("持续伤害约 %d/秒" % roundi(dmg * float(w.get("rate", 0))))
 				if int(w.get("mag", 0)) > 0:
@@ -155,7 +155,7 @@ static func entries(key: String) -> Array:
 				out.append({"name": a.get("name", id), "desc": a.get("desc", ""), "stats": ["可以叠加 %d 次" % int(a.get("max", 1))],
 					"badge": String(a.get("ic", String(a.get("name", "?")).left(1))), "badge_col": UiTheme.ability_group_color(id)})
 		"talent":
-			var lv: Array = Data.evolutions().get("traitLevels", [10, 20, 30])
+			var lv: Array = Data.progression().get("talentLevels", [10, 20, 30])
 			var lv_txt := "、".join(lv.map(func(x: Variant) -> String: return str(int(x))))
 			for id in Data.talents():
 				var t: Dictionary = Data.talents()[id]
@@ -180,7 +180,7 @@ static func entries(key: String) -> Array:
 					"击败后全队获得 %d 秒王冠加成（伤害 +%d%%）" % [int(Data.progression().bossReward.crownSeconds), roundi((float(Data.progression().bossReward.crownDamage) - 1.0) * 100.0)],
 					"被击败后 %d 秒重生" % int(Data.progression().get("bossRespawn", 150))],
 				"snap": "res://assets/models/units/mob_boss.glb", "yaw": FACE, "zoom": 0.78})
-			out.append({"name": "小兵", "desc": "双方每 %d 秒在三条兵线各出 %d 个，自动朝敌方推进。" % [int(Data.rule("waves.interval", 30)), int(Data.rule("waves.perLane", 3))],
+			out.append({"name": "小兵", "desc": "双方每 %d 秒在三条兵线各出 %d 个，自动朝敌方推进。" % [int(Data.progression().get("waveInterval", 30)), int(Data.progression().get("minionsPerLanePerWave", 3))],
 				"stats": ["生命 %d" % int(Data.units().get("minion", {}).get("hp", 70)), "击败经验 %d" % int(Data.rule("minion.xp", 7))],
 				"snap": "res://assets/models/units/unit_minion.glb", "yaw": FACE})
 			out.append({"name": "炮台", "desc": "每方三座。优先打小兵，但你攻击敌方仓鼠时会被锁定。",
@@ -264,12 +264,12 @@ func _card(e: Dictionary) -> Control:
 		tag.add_child(tl)
 		nr.add_child(tag)
 	var desc := UiTheme.label(String(e.get("desc", "")), 20, UiTheme.CREAM, false, 0)
-	desc.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+	desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	desc.custom_minimum_size = Vector2(CARD_W - PIC - 70, 0)
 	info.add_child(desc)
 	for s in e.get("stats", []):
 		var l := UiTheme.label(String(s), 18, UiTheme.SUB, false, 0)
-		l.autowrap_mode = TextServer.AUTOWRAP_ARBITRARY
+		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		l.custom_minimum_size = Vector2(CARD_W - PIC - 70, 0)
 		info.add_child(l)
 	if e.has("paths") and not (e.paths as Array).is_empty():
