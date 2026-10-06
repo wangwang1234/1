@@ -190,8 +190,42 @@ def beacon():
     return root
 
 
+def fx_rocket():
+    """飞行中的火箭弹（+Y 朝前，中心在原点，飞行时由表现层整体转向）。"""
+    P = [
+        shapes.cylinder("body", (0, 0.0, 0.0), 0.016, None, 0.11, "Y", 14, 0.003, "white", style.MAT_TOON),
+        shapes.cylinder("nose", (0, 0.07, 0.0), 0.016, 0.0, 0.035, "Y", 14, 0.0, "label_red", style.MAT_TOON),
+        shapes.cylinder("band", (0, 0.035, 0.0), 0.0168, None, 0.01, "Y", 14, 0.0, "label_red", style.MAT_TOON),
+        shapes.cylinder("nozzle", (0, -0.062, 0.0), 0.011, 0.014, 0.016, "Y", 12, 0.0, "gun_dark", style.MAT_METAL),
+    ]
+    for i in range(4):
+        a = i / 4 * math.tau
+        P.append(shapes.rounded_box(f"fin{i}", (math.cos(a) * 0.02, -0.045, math.sin(a) * 0.02), (0.004, 0.03, 0.016), 0.001, 1, "polymer_olive", style.MAT_TOON, rot=(0, a, 0)))
+    return _root("fx_rocket", [shapes.join(P, "rocket")])
+
+
+def fx_gnade():
+    """榴弹（橄榄色椭球 + 黄色弹带）。"""
+    P = [
+        shapes.uv_sphere("shell", (0, 0, 0), (0.024, 0.03, 0.024), 14, 8, "polymer_olive", style.MAT_TOON),
+        shapes.cylinder("band", (0, 0.004, 0), 0.0245, None, 0.01, "Y", 14, 0.0, "sticker_yellow", style.MAT_TOON),
+        shapes.cylinder("tip", (0, 0.03, 0), 0.008, None, 0.008, "Y", 10, 0.002, "brass", style.MAT_METAL),
+    ]
+    return _root("fx_gnade", [shapes.join(P, "gnade")])
+
+
+def fx_bomb():
+    """集束子炸弹（深色小球 + 红色环）。"""
+    P = [
+        shapes.uv_sphere("ball", (0, 0, 0), (0.02, 0.02, 0.02), 12, 8, "gun_darker", style.MAT_METAL),
+        shapes.torus("ring", (0, 0, 0), 0.02, 0.003, "Z", 16, 6, "label_red", style.MAT_TOON),
+        shapes.cylinder("fuse", (0, 0, 0.022), 0.003, None, 0.008, "Z", 8, 0.0, "rubber", style.MAT_TOON),
+    ]
+    return _root("fx_bomb", [shapes.join(P, "bomb")])
+
+
 def build(ctx):
-    items = [molotov(), flash(), mine(), sentry(), eshield(), smoke(), flare(), decoy(), jetpack(), medkit(), freeze(), beacon()]
+    items = [molotov(), flash(), mine(), sentry(), eshield(), smoke(), flare(), decoy(), jetpack(), medkit(), freeze(), beacon(), fx_rocket(), fx_gnade(), fx_bomb()]
     extras = [(r.name, [r]) for r in items]
 
     def layout(_ctx):

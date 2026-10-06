@@ -10,6 +10,7 @@ const CARD_W := 560.0
 const PIC := 132.0
 const SKIN_DESC := {"gold": "经典橙色配奶白肚皮。", "pudding": "奶黄色的布丁仓鼠。", "silver": "雪白带一点灰。", "stripe": "灰色毛，背上有一道深色条纹。"}
 const LEGEND := Color("#ffcf3a")
+const FACE := PI + 0.4   # 让模型正面朝向快照相机
 
 var tab := "weapon"
 var grid: GridContainer
@@ -164,27 +165,27 @@ static func entries(key: String) -> Array:
 			for id in Data.pets():
 				var p: Dictionary = Data.pets()[id]
 				out.append({"name": p.get("name", id), "desc": p.get("desc", ""), "stats": ["可以升级 %d 次，伤害越来越高" % int(Data.rule("pets.maxLevel", 3))],
-					"snap": "res://assets/models/units/pet_%s.glb" % id})
+					"snap": "res://assets/models/units/pet_%s.glb" % id, "yaw": FACE})
 		"mob":
 			var mobs: Dictionary = Data.units().get("mobs", {})
 			out.append({"name": "蟑螂", "desc": "成群住在野区的窝里，一靠近就整群冲上来咬人。",
-				"stats": ["生命 %d　速度很快" % int(mobs.get("roach", {}).get("hp", 28)), "击败经验 %d，有几率掉落瓜子" % int(Data.rule("mobs.roach.xp", 6))],
-				"snap": "res://assets/models/units/mob_roach.glb"})
+				"stats": ["生命 %d　速度很快" % int(mobs.get("roach", {}).get("hp", 28)), "击败经验 %d，有几率掉落瓜子" % int(Data.rule("mobs.roach.xp", 6)), "一窝 %d 只，清空后 %d 秒重生" % [int(Data.rule("mobs.roach.camp", 6)), int(Data.rule("mobs.roach.resp", 50))]],
+				"snap": "res://assets/models/units/mob_roach.glb", "yaw": FACE})
 			out.append({"name": "鼠帮枪手", "desc": "戴墨镜的老鼠，会蹲下瞄准（红色激光）后三连发，三只一伙守着野区。",
-				"stats": ["生命 %d" % int(mobs.get("rat", {}).get("hp", 95)), "击败经验 %d" % int(Data.rule("mobs.rat.xp", 16))],
-				"snap": "res://assets/models/units/mob_rat.glb"})
+				"stats": ["生命 %d" % int(mobs.get("rat", {}).get("hp", 95)), "击败经验 %d" % int(Data.rule("mobs.rat.xp", 16)), "清空后 %d 秒重生" % int(Data.rule("mobs.rat.resp", 70))],
+				"snap": "res://assets/models/units/mob_rat.glb", "yaw": FACE, "zoom": 0.72})
 			out.append({"name": "鼠王", "rar": "首领", "rar_col": LEGEND,
-				"desc": "开局 %s 后出现在地图上方中央。扇形弹幕、环形弹幕，还会召唤小弟。" % _dur(float(Data.rule("boss.spawnAt", 120))),
+				"desc": "开局 %s后出现在地图上方中央。扇形弹幕、环形弹幕，还会召唤小弟。" % _dur(float(Data.progression().get("bossFirst", 120))),
 				"stats": ["生命 %d" % int(mobs.get("boss", {}).get("hp", 2600)),
-					"击败后全队获得 %d 秒王冠加成（伤害 +%d%%）" % [int(Data.rule("boss.crownDur", 60)), roundi(float(Data.rule("boss.crownDmg", 0.25)) * 100.0)],
-					"被击败后 %d 秒重生" % int(Data.rule("boss.respawn", 150))],
-				"snap": "res://assets/models/units/mob_boss.glb"})
+					"击败后全队获得 %d 秒王冠加成（伤害 +%d%%）" % [int(Data.progression().bossReward.crownSeconds), roundi((float(Data.progression().bossReward.crownDamage) - 1.0) * 100.0)],
+					"被击败后 %d 秒重生" % int(Data.progression().get("bossRespawn", 150))],
+				"snap": "res://assets/models/units/mob_boss.glb", "yaw": FACE, "zoom": 0.78})
 			out.append({"name": "小兵", "desc": "双方每 %d 秒在三条兵线各出 %d 个，自动朝敌方推进。" % [int(Data.rule("waves.interval", 30)), int(Data.rule("waves.perLane", 3))],
 				"stats": ["生命 %d" % int(Data.units().get("minion", {}).get("hp", 70)), "击败经验 %d" % int(Data.rule("minion.xp", 7))],
-				"snap": "res://assets/models/units/unit_minion.glb"})
+				"snap": "res://assets/models/units/unit_minion.glb", "yaw": FACE})
 			out.append({"name": "炮台", "desc": "每方三座。优先打小兵，但你攻击敌方仓鼠时会被锁定。",
 				"stats": ["生命 %d　射程 %d" % [int(Data.rule("structure.turret.hp", 1700)), int(Data.rule("structure.turret.range", 480))], "摧毁一座后，对方仓鼠窝的护盾消失"],
-				"snap": "res://assets/models/units/unit_turret.glb"})
+				"snap": "res://assets/models/units/unit_turret.glb", "yaw": FACE})
 		"scene":
 			out.append({"name": "超级弹射装置", "desc": "踩上去翻着跟头飞进野区，空中可以开枪，落地有冲击波。", "stats": ["两边基地附近各两个"], "snap": "res://assets/models/props/prop_pad.glb"})
 			out.append({"name": "爆炸桶", "desc": "打爆后范围爆炸，不分敌我，能连锁引爆。", "stats": ["%d 秒后复原" % int(Data.rule("props.barrel.resp", 50))], "snap": "res://assets/models/props/prop_barrel.glb"})
@@ -310,7 +311,7 @@ func _fill_snapshot(pic: TextureRect, e: Dictionary) -> void:
 		builder = _skin_builder(String(e.skin))
 	elif e.has("snap") and ResourceLoader.exists(String(e.snap)):
 		key = String(e.snap)
-		builder = Snapshot.model(key, -1.0, float(e.get("yaw", 0.0)))
+		builder = Snapshot.model(key, -1.0, float(e.get("yaw", 0.0)), 1.6, float(e.get("zoom", 1.0)))
 	else:
 		return
 	var cached := Snapshot.cached(key)
@@ -335,8 +336,8 @@ static func _skin_builder(skin: String) -> Callable:
 		if ap and ap.has_animation("idle"):
 			ap.play("idle")
 			ap.seek(0.4, true)
-		n.rotation.y = deg_to_rad(-20.0)
-		return {"center": Vector3(0, 0.17, 0), "size": 0.42}
+		n.rotation.y = PI + 0.35
+		return {"center": Vector3(0, 0.2, 0), "size": 0.5}
 
 
 func _close() -> void:

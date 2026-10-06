@@ -1,14 +1,22 @@
 class_name PlayerInput
 extends RefCounted
-## 玩家输入 → SimHamster.HamInput。键鼠：WASD 移动、鼠标瞄准、左键射击、空格翻滚、R 换弹、Q 道具、1/2/3 选卡。
-## 手柄：左摇杆移动、右摇杆瞄准（松开保持朝向，靠近敌人时轻微吸附）、RT 射击、A 翻滚、X 换弹、LB 道具、X/Y/B 选卡。
+## 玩家输入 → SimHamster.HamInput。三种方案：
+## - kbm：WASD 移动、鼠标瞄准、左键射击、空格翻滚、R 换弹、Q 道具、1/2/3 选卡（单人时也接手柄 0 号）
+## - pad：左摇杆移动、右摇杆瞄准（不推右摇杆时自动瞄准最近的敌人）、RT 射击、A 翻滚、X 换弹、LB 道具、X/Y/B 选卡
+## - keys2（本地 2P 方向键）：方向键移动、回车射击（自动瞄准）、右 Shift 翻滚、/ 换弹、. 道具、8/9/0 选卡
 
 const ACTIONS := {
 	"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN], "move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
 	"dash": [KEY_SPACE], "reload": [KEY_R], "gadget": [KEY_Q], "card_1": [KEY_1], "card_2": [KEY_2], "card_3": [KEY_3], "pause": [KEY_ESCAPE, KEY_P],
 }
+const KEYS_P1 := {"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "dash": KEY_SPACE, "reload": KEY_R, "gadget": KEY_Q, "card": [KEY_1, KEY_2, KEY_3]}
+const KEYS_P2 := {"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "fire": KEY_ENTER, "dash": KEY_SHIFT, "reload": KEY_SLASH, "gadget": KEY_PERIOD, "card": [KEY_8, KEY_9, KEY_0]}
 
-var device := "kbm"      # kbm / pad
+var scheme := "kbm"      # kbm / pad / keys2
+var device := "kbm"      # 当前实际在用的设备（kbm 方案里接上手柄会切到 pad）
+var pad_index := 0
+var allow_pad := true    # kbm 方案是否同时接手柄（2P 用手柄时，手柄归 2P）
+var arrows := true       # kbm 方案是否也认方向键（2P 用方向键时方向键归 2P）
 var _pad_aim := 0.0
 var _edge := {}
 
@@ -37,17 +45,41 @@ static func ensure_actions() -> void:
 		InputMap.action_add_event(a, jb)
 
 
-func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: bool) -> void:
+func _key(k: int) -> bool:
+	return Input.is_physical_key_pressed(k)
+
+
+func _pressed_edge(name: String, down: bool) -> bool:
+	var was := bool(_edge.get(name, false))
+	_edge[name] = down
+	return down and not was
+
+
+func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: bool, w: SimWorld = null) -> void:
 	if h == null:
 		return
 	var inp := h.inp
-	var mv := Input.get_vector("move_left", "move_right", "move_up", "move_down")
-	var pad_mv := Vector2(Input.get_joy_axis(0, JOY_AXIS_LEFT_X), Input.get_joy_axis(0, JOY_AXIS_LEFT_Y))
-	var pad_aim := Vector2(Input.get_joy_axis(0, JOY_AXIS_RIGHT_X), Input.get_joy_axis(0, JOY_AXIS_RIGHT_Y))
-	if pad_mv.length() > 0.25 or pad_aim.length() > 0.3:
-		device = "pad"
-	if pad_mv.length() > 0.2:
-		mv = pad_mv
+	var mv := Vector2.ZERO
+	var pad_mv := Vector2.ZERO
+	var pad_aim := Vector2.ZERO
+	var use_pad := scheme == "pad" or (scheme == "kbm" and allow_pad)
+	if use_pad:
+		pad_mv = Vector2(Input.get_joy_axis(pad_index, JOY_AXIS_LEFT_X), Input.get_joy_axis(pad_index, JOY_AXIS_LEFT_Y))
+		pad_aim = Vector2(Input.get_joy_axis(pad_index, JOY_AXIS_RIGHT_X), Input.get_joy_axis(pad_index, JOY_AXIS_RIGHT_Y))
+	match scheme:
+		"keys2":
+			device = "keys2"
+			mv = Vector2(float(_key(KEYS_P2.right)) - float(_key(KEYS_P2.left)), float(_key(KEYS_P2.down)) - float(_key(KEYS_P2.up)))
+		"pad":
+			device = "pad"
+			mv = pad_mv if pad_mv.length() > 0.2 else Vector2.ZERO
+		_:
+			mv = Vector2(float(_key(KEY_D) or (arrows and _key(KEY_RIGHT))) - float(_key(KEY_A) or (arrows and _key(KEY_LEFT))),
+				float(_key(KEY_S) or (arrows and _key(KEY_DOWN))) - float(_key(KEY_W) or (arrows and _key(KEY_UP))))
+			if use_pad and (pad_mv.length() > 0.25 or pad_aim.length() > 0.3):
+				device = "pad"
+			if pad_mv.length() > 0.2:
+				mv = pad_mv
 	if mv.length() > 1.0:
 		mv = mv.normalized()
 	inp.mx = mv.x
@@ -64,24 +96,60 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 	else:
 		if pad_aim.length() > 0.3:
 			_pad_aim = atan2(pad_aim.y, pad_aim.x)
-		elif mv.length() > 0.3:
-			_pad_aim = atan2(mv.y, mv.x)
+		else:
+			# 没推右摇杆 / 方向键：自动瞄准射程内最近的敌人，没有就朝移动方向
+			var t: SimEntity = SimWeapons.auto_aim(w, h, maxf(300.0, minf(SimWeapons.range_of(h), 640.0))) if w != null else null
+			if t != null:
+				_pad_aim = atan2(t.y - h.y, t.x - h.x)
+			elif mv.length() > 0.3:
+				_pad_aim = atan2(mv.y, mv.x)
 		inp.aim = _pad_aim
 		inp.has_aim_point = false
-	inp.fire = Input.is_action_pressed("fire") and not picking_cards
-	if Input.is_action_just_pressed("dash"):
+	var fire := false
+	match scheme:
+		"keys2":
+			fire = _key(KEYS_P2.fire)
+		"pad":
+			fire = Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4 or Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER)
+		_:
+			fire = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or (use_pad and Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4)
+	inp.fire = fire and not picking_cards
+	var K: Dictionary = KEYS_P2 if scheme == "keys2" else KEYS_P1
+	var kb := scheme != "pad"
+	var dash := (kb and _key(K.dash)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A))
+	var reload := (kb and _key(K.reload)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_X) and h.choices.is_empty())
+	var gadget := (kb and _key(K.gadget)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_LEFT_SHOULDER))
+	if _pressed_edge("dash", dash):
 		inp.dash = true
-	if Input.is_action_just_pressed("reload"):
+	if _pressed_edge("reload", reload):
 		inp.reload = true
-	if Input.is_action_just_pressed("gadget"):
+	if _pressed_edge("gadget", gadget):
 		inp.gadget = true
 	for i in 3:
-		if Input.is_action_just_pressed("card_%d" % (i + 1)):
+		var down := kb and _key(int(K.card[i]))
+		if _pressed_edge("card%d" % i, down):
 			inp.card = i
-	if device == "pad" and not h.choices.is_empty():
+	if use_pad and not h.choices.is_empty():
 		var btns := [JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B]
 		for i in 3:
-			var down := Input.is_joy_button_pressed(0, btns[i])
-			if down and not _edge.get(i, false):
+			if _pressed_edge("pcard%d" % i, Input.is_joy_button_pressed(pad_index, btns[i])):
 				inp.card = i
-			_edge[i] = down
+				device = "pad"
+
+
+func card_hint() -> String:
+	match device:
+		"pad":
+			return "按 X / Y / B 选升级"
+		"keys2":
+			return "按 8 / 9 / 0 选升级"
+	return "按 1 / 2 / 3 选升级"
+
+
+func gadget_key() -> String:
+	match device:
+		"pad":
+			return "LB"
+		"keys2":
+			return "."
+	return "Q"

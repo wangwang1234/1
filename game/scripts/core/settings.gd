@@ -1,6 +1,6 @@
 extends Node
-## 设置（自动加载 Settings）：音量、特效强度、伤害数字、全屏。保存在 user://settings.cfg。
-## 批次 1 只做最常用的几项，批次 5 做完整设置菜单（按键、画质、语言）。
+## 设置（自动加载 Settings）：音量、特效强度、震屏、伤害数字、帧率显示、全屏、垂直同步、渲染比例，以及开局大厅上次的选择。
+## 保存在 user://settings.cfg。按键自定义留到批次 5。
 
 const PATH := "user://settings.cfg"
 
@@ -10,6 +10,11 @@ var music_volume := 0.7
 var fx_strength := 1.0
 var show_damage_numbers := true
 var fullscreen := false
+var shake := 1.0
+var show_fps := false
+var vsync := true
+var render_scale := 1.0
+var lobby := {}               # 开局大厅上次的选择
 
 
 func _ready() -> void:
@@ -28,6 +33,11 @@ func load_cfg() -> void:
 	fx_strength = float(c.get_value("game", "fx", fx_strength))
 	show_damage_numbers = bool(c.get_value("game", "numbers", show_damage_numbers))
 	fullscreen = bool(c.get_value("video", "fullscreen", fullscreen))
+	shake = float(c.get_value("game", "shake", shake))
+	show_fps = bool(c.get_value("game", "fps", show_fps))
+	vsync = bool(c.get_value("video", "vsync", vsync))
+	render_scale = float(c.get_value("video", "scale", render_scale))
+	lobby = c.get_value("lobby", "last", {})
 
 
 func save_cfg() -> void:
@@ -38,6 +48,11 @@ func save_cfg() -> void:
 	c.set_value("game", "fx", fx_strength)
 	c.set_value("game", "numbers", show_damage_numbers)
 	c.set_value("video", "fullscreen", fullscreen)
+	c.set_value("game", "shake", shake)
+	c.set_value("game", "fps", show_fps)
+	c.set_value("video", "vsync", vsync)
+	c.set_value("video", "scale", render_scale)
+	c.set_value("lobby", "last", lobby)
 	c.save(PATH)
 
 
@@ -50,6 +65,10 @@ func apply() -> void:
 		var want := DisplayServer.WINDOW_MODE_FULLSCREEN if fullscreen else DisplayServer.WINDOW_MODE_WINDOWED
 		if DisplayServer.window_get_mode() != want and not (want == DisplayServer.WINDOW_MODE_WINDOWED and DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_MAXIMIZED):
 			DisplayServer.window_set_mode(want)
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_ENABLED if vsync else DisplayServer.VSYNC_DISABLED)
+	var tree := get_tree()
+	if tree != null and tree.root != null:
+		tree.root.scaling_3d_scale = clampf(render_scale, 0.5, 1.0)
 
 
 func _bus(nm: String, v: float, base_db: float = 0.0) -> void:

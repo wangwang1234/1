@@ -3,7 +3,8 @@ extends Node
 ## 命令行（写在 -- 之后）：
 ##   --match              跳过主菜单直接开局
 ##   --autoplay           本地玩家也交给 AI（观战 / 录屏 / 压测）
-##   --mode slice|full    地图（默认 slice = 批次 1 切片）
+##   --mode full|slice    地图（默认 full = 完整三路地图；slice = 批次 1 的中路小图）
+##   --duo                本地双人分屏（2P 默认用手柄，--p2 keys2 改用方向键）
 ##   --seed N             随机种子（默认按时间）
 ##   --skin gold|pudding|silver|stripe   --weapon pistol|ak47|shotgun
 ##   --quit-after S       S 秒后自动退出（无人值守跑局用，退出码 0 = 无报错）
@@ -15,7 +16,7 @@ var menu: MainMenu
 var match_view: MatchView
 var pause_menu: PauseMenu
 var result: ResultScreen
-var opts := {"skin": "gold", "weapon": "pistol", "mode": "slice", "seed": 0, "autoplay": false}
+var opts := {"skin": "gold", "weapon": "pistol", "mode": "full", "seed": 0, "autoplay": false}
 var args := {}
 var _fade: ColorRect
 var _busy := false
@@ -30,6 +31,9 @@ func _ready() -> void:
 	if args.has("seed"):
 		opts.seed = int(args.seed)
 	opts.autoplay = args.has("autoplay")
+	if args.has("duo"):
+		opts.duo = true
+		opts.p2_input = String(args.get("p2", "pad"))
 	var fl := CanvasLayer.new()
 	fl.layer = 100
 	add_child(fl)
@@ -112,13 +116,25 @@ func make_cfg(o: Dictionary) -> Dictionary:
 	var sd := int(o.get("seed", 0))
 	if sd == 0:
 		sd = int(Time.get_unix_time_from_system()) % 100000 + 1
-	var mode := String(o.get("mode", "slice"))
+	var mode := String(o.get("mode", "full"))
+	var duo := bool(o.get("duo", false))
 	var ai := {"blue": 2, "red": 3} if mode == "slice" else {"blue": 4, "red": 5}
-	return {
-		"mode": mode, "seed": sd, "autoplay": bool(o.get("autoplay", false)),
-		"players": [{"team": "blue", "ctl": "player", "name": "你", "skin": String(o.get("skin", "gold")), "weapon": String(o.get("weapon", "pistol"))}],
-		"ai": ai,
-	}
+	if o.has("ai_blue"):
+		ai = {"blue": int(o.ai_blue), "red": int(o.ai_red)}
+	var w := String(o.get("weapon", "pistol"))
+	var players: Array = [{"team": String(o.get("p1_team", "blue")), "ctl": "player", "name": "玩家1" if duo else "你", "skin": String(o.get("skin", "gold")), "weapon": w, "input": "kbm"}]
+	if duo:
+		var p2in := String(o.get("p2_input", "pad"))
+		var pads := Input.get_connected_joypads()
+		if p2in == "pad" and pads.is_empty():
+			p2in = "keys2"
+		players.append({"team": String(o.get("p2_team", "red")), "ctl": "player", "name": "玩家2", "skin": String(o.get("skin2", "pudding")), "weapon": w,
+			"input": p2in, "pad": int(pads[0]) if not pads.is_empty() else 0})
+	elif not o.has("ai_blue"):
+		# 默认 5 对 5：玩家在哪队，哪队少补一个 AI
+		var pt := String(o.get("p1_team", "blue"))
+		ai = {"blue": ai.blue + (0 if pt == "blue" else 1), "red": ai.red - (1 if pt == "red" else 0)}
+	return {"mode": mode, "seed": sd, "autoplay": bool(o.get("autoplay", false)), "players": players, "ai": ai}
 
 
 func start_match(o: Dictionary, instant: bool = false) -> void:

@@ -10,6 +10,8 @@ extends Node
 ##   lineup     游戏内皮肤 × 队伍一排
 ##   screens    暂停菜单 + 设置面板 + 结算界面
 ##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）
+##   arsenal    批次 2：18 把武器在局里开火的样子（各带一条 9 级路线）；--weapons a,b 只拍部分
+##   b2world    批次 2：野区、鼠王、战术道具、宠物
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
 ## 建议配合 --fixed-fps 60（截图确定性，每帧 = 一步逻辑）；perf 不要加 --fixed-fps。
 
@@ -61,6 +63,10 @@ func _run() -> void:
 			await _style()
 		"codex":
 			await _codex()
+		"arsenal":
+			await _arsenal()
+		"b2world":
+			await _b2world()
 		"gameplay":
 			await _gameplay()
 		"cards":
@@ -162,6 +168,200 @@ func _codex() -> void:
 			guard += 1
 		await _wait(0.3)
 		await shot("codex_" + String(t[0]))
+
+
+func _open_spot(w: SimWorld, r: float) -> Vector2:
+	## 找一块前方（+x）比较空的地方当靶场
+	for y in [1548.0, 2124.0, 971.0, 1300.0, 1800.0, 600.0, 2500.0]:
+		for x in range(800, 4200, 60):
+			var ok := true
+			for k in 6:
+				if w.map.overlaps_solid(x + k * 90.0, y, r):
+					ok = false
+					break
+			if ok:
+				return Vector2(x, y)
+	return Vector2(2520, 1548)
+
+
+func _clear_fx(w: SimWorld) -> void:
+	w.bullets.clear()
+	w.lobs.clear()
+	w.fires.clear()
+	w.zones.clear()
+	w.smokes.clear()
+	w.corrs.clear()
+
+
+func _steps(n: int) -> void:
+	for i in n:
+		await get_tree().physics_frame
+
+
+func _arsenal() -> void:
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	for e in w.mobs:
+		e.dead = true
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	var spot := _open_spot(w, 70.0)
+	var targets: Array = []
+	for k in 3:
+		var m := w.spawn_minion("red", w.map.lanes.keys()[0])
+		targets.append(m)
+	var ids: Array = Data.weapons().keys()
+	if args.has("weapons"):
+		ids = String(args.weapons).split(",", false)
+	var i := 0
+	for wid: String in ids:
+		_clear_fx(w)
+		h.weapon_id = wid
+		var evo := {"a": 0, "b": 0, "c": 0}
+		evo[["a", "b", "c"][i % 3]] = 9
+		evo[["a", "b", "c"][(i + 1) % 3]] = 3
+		h.evo = evo
+		h.ammo = SimWeapons.mag_size(h)
+		h.reload_t = 0.0
+		h.x = spot.x
+		h.y = spot.y
+		h.px = h.x
+		h.py = h.y
+		h.hp = h.max_hp
+		h.iframes = 99.0
+		h.aim = 0.0
+		h.inp.aim = 0.0
+		h.inp.has_aim_point = true
+		h.inp.aim_x = spot.x + 300.0
+		h.inp.aim_y = spot.y
+		for k in targets.size():
+			var m: SimMinion = targets[k]
+			m.dead = false
+			m.hp = 99999.0
+			m.max_hp = 99999.0
+			m.stun = 999.0
+			m.x = spot.x + 260.0 + k * 50.0
+			m.y = spot.y + (k - 1) * 70.0
+			m.px = m.x
+			m.py = m.y
+		await _steps(20)
+		h.inp.fire = true
+		var kind := String(Data.weapon(wid).get("kind", "bullet"))
+		match kind:
+			"rail":
+				await _steps(50)
+				h.inp.fire = false
+				await _steps(3)
+			"melee":
+				await _steps(16)
+			"lob":
+				await _steps(70)
+			"rocket":
+				await _steps(22)
+			_:
+				await _steps(32)
+		await shot("arsenal_%02d_%s" % [i, wid])
+		h.inp.fire = false
+		i += 1
+
+
+func _b2world() -> void:
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	h.iframes = 9999.0
+	h.weapon_id = "ak47"
+	h.ammo = SimWeapons.mag_size(h)
+	# 1) 蟑螂窝
+	var roach: Dictionary = w.camps.filter(func(c): return c.type == "roach")[0]
+	h.x = float(roach.x) - 170.0
+	h.y = float(roach.y)
+	h.px = h.x
+	h.py = h.y
+	h.inp.aim = 0.0
+	await _steps(90)
+	await shot("b2_jungle_roach")
+	# 2) 鼠帮枪手
+	var rat: Dictionary = w.camps.filter(func(c): return c.type == "rat")[0]
+	h.x = float(rat.x) - 300.0
+	h.y = float(rat.y)
+	h.px = h.x
+	h.py = h.y
+	for e in w.mobs:
+		if e.kind == "roach":
+			e.target = null
+			e.returning = true
+	await _steps(75)
+	await shot("b2_jungle_rat")
+	# 3) 鼠王
+	w.t = float(Data.progression().bossFirst) - 0.05
+	await _steps(4)
+	var b := w.boss
+	if b != null:
+		for a in [PI * 0.5, PI, 0.0, -PI * 0.5]:
+			h.x = b.x + cos(a) * 300.0
+			h.y = b.y + sin(a) * 300.0
+			if w.map.has_los(b.x, b.y, h.x, h.y) and not w.map.overlaps_solid(h.x, h.y, h.r):
+				break
+		h.px = h.x
+		h.py = h.y
+		h.inp.aim = atan2(b.y - h.y, b.x - h.x)
+		await _steps(150)
+		await shot("b2_boss")
+		await _steps(60)
+		await shot("b2_boss_2")
+		w.deal_dmg(b, 99999.0, {"team": "blue", "owner": h, "x": b.x, "y": b.y})
+		await _steps(30)
+		await shot("b2_boss_down")
+	# 4) 道具 + 宠物展示
+	_clear_fx(w)
+	for e in w.mobs:
+		e.dead = true
+	var spot := _open_spot(w, 90.0)
+	h.x = spot.x
+	h.y = spot.y
+	h.px = h.x
+	h.py = h.y
+	h.aim = 0.0
+	h.inp.aim = 0.0
+	h.inp.has_aim_point = true
+	for pt in ["chick", "firefly", "hedgehog"]:
+		h.pet_list.append(SimMobs.make_pet(w, pt, h))
+	var foe := w.spawn_minion("red", w.map.lanes.keys()[0])
+	foe.x = spot.x + 230.0
+	foe.y = spot.y + 60.0
+	foe.hp = 99999.0
+	foe.max_hp = 99999.0
+	foe.stun = 999.0
+	var plan := [["sentry", 0, 0], ["decoy", 0, 0], ["mine", 0, 0], ["smoke", 420, -160], ["molotov", 300, 140], ["flare", 120, -60], ["eshield", 0, 0]]
+	for g in plan:
+		h.gadget = {"id": g[0], "lvl": 1, "cd": 0.0}
+		h.inp.aim_x = spot.x + float(g[1])
+		h.inp.aim_y = spot.y + float(g[2])
+		h.aim = 0.3 if g[0] == "sentry" else (-0.4 if g[0] == "decoy" else 0.0)
+		h.inp.aim = h.aim
+		SimGadgets.use(w, h)
+		if g[0] == "mine":
+			w.mines[-1].x = spot.x - 60.0
+		await _steps(8)
+	h.inp.aim = 0.0
+	await _steps(90)
+	await shot("b2_gadgets")
+	await _steps(60)
+	await shot("b2_gadgets_2")
 
 
 func _style() -> void:

@@ -13,6 +13,7 @@ var lead := Vector3.ZERO
 var trauma := 0.0
 var kick := Vector3.ZERO
 var bounds := Rect2(0, 0, 50.4, 30.96)
+var view_width := VIEW_WIDTH
 var _pos := Vector3.ZERO
 var _t := 0.0
 var _noise := FastNoiseLite.new()
@@ -30,7 +31,7 @@ func distance() -> float:
 	var vp := get_viewport().get_visible_rect().size
 	var asp := maxf(0.5, vp.x / maxf(1.0, vp.y))
 	var hfov := 2.0 * atan(tan(deg_to_rad(FOV_DEG) * 0.5) * asp)
-	return VIEW_WIDTH * 0.5 / tan(hfov * 0.5)
+	return view_width * 0.5 / tan(hfov * 0.5)
 
 
 func snap(p: Vector3) -> void:
@@ -65,13 +66,13 @@ func _apply(_delta: float) -> void:
 	var pitch := deg_to_rad(PITCH_DEG)
 	var p := _pos + kick
 	# 地图边缘夹紧（让画面不出界太多）
-	var half_w := VIEW_WIDTH * 0.5
+	var half_w := view_width * 0.5
 	var vis_h := dist * tan(deg_to_rad(FOV_DEG) * 0.5) * 2.0 / sin(pitch)
 	if bounds.size.x > half_w * 2.0:
 		p.x = clampf(p.x, bounds.position.x + half_w - 0.6, bounds.end.x - half_w + 0.6)
 	if bounds.size.y > vis_h * 0.7:
 		p.z = clampf(p.z, bounds.position.y + vis_h * 0.32, bounds.end.y - vis_h * 0.22)
-	var sh := trauma * trauma
+	var sh := trauma * trauma * Settings.shake
 	var off := Vector3(_noise.get_noise_2d(_t * 25.0, 0.0), 0.0, _noise.get_noise_2d(0.0, _t * 25.0)) * sh * 0.35
 	var roll := _noise.get_noise_2d(_t * 20.0, 50.0) * sh * 0.05
 	var focus := p + off

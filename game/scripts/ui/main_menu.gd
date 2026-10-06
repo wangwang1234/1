@@ -24,6 +24,7 @@ var buttons: VBoxContainer
 var _t := 0.0
 var _mouse := Vector2(0.5, 0.5)
 var _settings: SettingsPanel
+var _lobby: Lobby
 
 
 func _ready() -> void:
@@ -160,9 +161,6 @@ func _refresh_hero() -> void:
 	hero_h.skin = String(opts.skin)
 	hero_h.weapon_id = String(opts.weapon)
 	ToonMaterials.set_param(hero.model, "skin_index", maxi(0, Data.skin_ids().find(hero_h.skin)))
-	skin_label.text = String(Data.skins().get(hero_h.skin, {}).get("name", hero_h.skin))
-	for i in weapon_btns.size():
-		weapon_btns[i].button_pressed = WEAPONS[i] == opts.weapon
 	hero.on_event({"t": "picked"})
 
 
@@ -234,59 +232,15 @@ func _build_ui() -> void:
 	buttons = VBoxContainer.new()
 	buttons.add_theme_constant_override("separation", 16)
 	left.add_child(buttons)
-	var b_start := _button("开始对战", func() -> void: _start(false))
+	var b_start := _button("开始对战", _open_lobby)
 	b_start.custom_minimum_size = Vector2(360, 0)
 	_button("观战：AI 自动对打", func() -> void: _start(true), true)
 	_button("设置", _open_settings, true)
 	_button("图鉴", _open_codex, true)
 	_button("退出", func() -> void: quit_requested.emit(), true)
 	b_start.call_deferred("grab_focus")
-	# 右下：皮肤与初始武器
-	var pick := PanelContainer.new()
-	pick.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	pick.grow_horizontal = Control.GROW_DIRECTION_BEGIN
-	pick.grow_vertical = Control.GROW_DIRECTION_BEGIN
-	pick.offset_right = -80
-	pick.offset_bottom = -70
-	root.add_child(pick)
-	var pv := VBoxContainer.new()
-	pv.add_theme_constant_override("separation", 10)
-	pick.add_child(pv)
-	var sh := HBoxContainer.new()
-	sh.alignment = BoxContainer.ALIGNMENT_CENTER
-	sh.add_theme_constant_override("separation", 14)
-	pv.add_child(sh)
-	sh.add_child(UiTheme.label("皮肤", 22, UiTheme.SUB))
-	sh.add_child(_arrow("‹", -1))
-	skin_label = UiTheme.label("金丝熊", 34, UiTheme.CREAM, true, 8)
-	skin_label.custom_minimum_size = Vector2(150, 0)
-	skin_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sh.add_child(skin_label)
-	sh.add_child(_arrow("›", 1))
-	pv.add_child(UiTheme.label("初始武器（试玩用，正式版固定手枪起步）", 18, UiTheme.SUB, false, 4))
-	var wh := HBoxContainer.new()
-	wh.add_theme_constant_override("separation", 10)
-	pv.add_child(wh)
-	var grp := ButtonGroup.new()
-	for w in WEAPONS:
-		var b := Button.new()
-		b.theme_type_variation = "GhostButton"
-		b.toggle_mode = true
-		b.button_group = grp
-		b.text = String(Data.weapon(w).get("name", w))
-		var ip := "res://assets/icons/wpn_%s.png" % w
-		if ResourceLoader.exists(ip):
-			b.icon = load(ip)
-			b.expand_icon = false
-			b.add_theme_constant_override("icon_max_width", 56)
-		b.pressed.connect(func() -> void:
-			opts.weapon = w
-			Audio.play2d("pump" if w == "shotgun" else "reload_pistol", -10.0)
-			_refresh_hero())
-		wh.add_child(b)
-		weapon_btns.append(b)
 	# 左下：操作说明 + 版本
-	var help := UiTheme.label("WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚 · R 换弹 · Q 手雷 · 1/2/3 选升级 · Esc 暂停     手柄也可以玩", 18, UiTheme.SUB, false, 4)
+	var help := UiTheme.label("WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选升级 · Esc 暂停     手柄也可以玩 · 支持本地双人分屏", 18, UiTheme.SUB, false, 4)
 	help.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	help.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	help.offset_left = 120
@@ -345,6 +299,34 @@ func _open_settings() -> void:
 		(buttons.get_child(2) as Button).grab_focus())
 
 
+func _open_lobby() -> void:
+	if _lobby != null:
+		return
+	_lobby = Lobby.new()
+	_lobby.position = Vector2(110, 120)
+	root.add_child(_lobby)
+	buttons.visible = false
+	_title_box().visible = false
+	_lobby.skin_changed.connect(func(sk: String) -> void:
+		opts.skin = sk
+		_refresh_hero())
+	_lobby.start_requested.connect(func(o: Dictionary) -> void:
+		var oo := o.duplicate()
+		oo.autoplay = false
+		start_requested.emit(oo))
+	_lobby.closed.connect(func() -> void:
+		_lobby = null
+		buttons.visible = true
+		_title_box().visible = true
+		(buttons.get_child(0) as Button).grab_focus())
+	opts.skin = String(Settings.lobby.get("skin", opts.skin))
+	_refresh_hero()
+
+
+func _title_box() -> Control:
+	return buttons.get_parent().get_child(0) as Control
+
+
 func _open_codex() -> void:
 	var c := Codex.new()
 	root.add_child(c)
@@ -357,4 +339,6 @@ func _open_codex() -> void:
 func _start(autoplay: bool) -> void:
 	var o := opts.duplicate()
 	o.autoplay = autoplay
+	o.mode = "full"
+	o.duo = false
 	start_requested.emit(o)

@@ -78,7 +78,7 @@ static func get_tex(host: Node, key: String, builder: Callable) -> Texture2D:
 	return tex
 
 
-static func model(path: String, size: float = -1.0, yaw: float = 0.0, outline: float = 1.6) -> Callable:
+static func model(path: String, size: float = -1.0, yaw: float = 0.0, outline: float = 1.6, zoom: float = 1.0) -> Callable:
 	## 常用 builder：放一个 glb，自动按包围盒取景
 	return func(holder: Node3D) -> Dictionary:
 		var n := ToonMaterials.instance(path, outline)
@@ -86,7 +86,7 @@ static func model(path: String, size: float = -1.0, yaw: float = 0.0, outline: f
 		holder.add_child(n)
 		var ab := _aabb(n)
 		var s := size if size > 0.0 else maxf(ab.size.x, maxf(ab.size.y, ab.size.z))
-		return {"center": ab.get_center(), "size": maxf(0.05, s)}
+		return {"center": ab.get_center(), "size": maxf(0.05, s * zoom)}
 
 
 static func _aabb(n: Node3D) -> AABB:

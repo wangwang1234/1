@@ -511,6 +511,8 @@ func sync_tracers(bullets: Array, alpha: float, cam: Basis, team_vis: Callable) 
 	for b: SimBullet in bullets:
 		if n >= MAX_TRACER:
 			break
+		if b.kind == "rocket" or b.kind == "flame" or b.kind == "swave":
+			continue   # 火箭 / 火焰 / 剑气由 WorldFx 画
 		var x := lerpf(b.px, b.x, alpha) * 0.01
 		var z := lerpf(b.py, b.y, alpha) * 0.01
 		var pos := Vector3(x, b.h * 0.01, z)
@@ -534,6 +536,22 @@ func sync_tracers(bullets: Array, alpha: float, cam: Basis, team_vis: Callable) 
 				len = 0.1
 				wdt = 0.06
 				col = Color("#6fb8ff") if b.team == "blue" else Color("#ff6f8a")
+			"snipe":
+				len = clampf(sp * 0.05, 0.3, 0.9)
+				wdt = 0.045
+				col = Color("#bff4ff")
+			"orb":
+				len = 0.14
+				wdt = 0.14
+				col = Color("#ff7fd0")
+			"rat":
+				len = 0.12
+				wdt = 0.07
+				col = Color("#ffb070")
+			"spike":
+				len = 0.1
+				wdt = 0.04
+				col = Color("#d9b48a")
 		var up := cam.z.cross(dir).normalized()
 		var basis := Basis(dir * len, up * wdt, cam.z)
 		_mm_tracer.set_instance_transform(n, Transform3D(basis, pos - dir * len * 0.4))
@@ -574,20 +592,36 @@ func sync_items(items: Array, alpha: float, t: float) -> void:
 			_cheese_nodes.erase(id)
 
 
+const LOB_MODEL := {
+	"frag": ["res://assets/models/props/prop_frag.glb", 1.6], "molo": ["res://assets/models/props/gad_molotov.glb", 1.0],
+	"flsh": ["res://assets/models/props/gad_flash.glb", 1.1], "smk": ["res://assets/models/props/gad_smoke.glb", 1.1],
+	"flr": ["res://assets/models/props/gad_flare.glb", 1.0], "frz": ["res://assets/models/props/gad_freeze.glb", 1.1],
+	"gnade": ["res://assets/models/props/fx_gnade.glb", 1.4], "bomb": ["res://assets/models/props/fx_bomb.glb", 1.3],
+}
+
+
 func sync_lobs(lobs: Array) -> void:
 	var seen := {}
 	for L: SimLob in lobs:
 		seen[L.id] = true
 		if not _lob_nodes.has(L.id):
-			var n := ToonMaterials.instance("res://assets/models/props/prop_frag.glb", 1.2)
-			n.scale = Vector3.ONE * 1.6
+			var spec: Array = LOB_MODEL.get(L.kind, LOB_MODEL.frag)
+			var n := ToonMaterials.instance(String(spec[0]), 1.2)
+			n.scale = Vector3.ONE * float(spec[1])
 			add_child(n)
 			_lob_nodes[L.id] = n
 		var node: Node3D = _lob_nodes[L.id]
 		node.position = Vector3(L.x * 0.01, L.z * 0.01, L.y * 0.01)
-		node.rotation = Vector3(L.rot, L.rot * 0.7, 0)
+		if L.att == null and not L.stuck:
+			node.rotation = Vector3(L.rot, L.rot * 0.7, 0)
 		if L.fuse >= 0.0 and L.fuse < 0.6:
 			ToonMaterials.set_param(node, "flash", 0.6 if fmod(L.fuse, 0.16) < 0.08 else 0.0)
+		elif L.sticky:
+			ToonMaterials.set_param(node, "flash", 0.5 if fmod(Time.get_ticks_msec() / 1000.0, 0.5) < 0.1 else 0.0)
+		if (L.kind == "molo" or L.kind == "flr") and _rng.randf() < 0.6:
+			spawn(node.position + Vector3(0, 0.12, 0), Vector3(0, 0.3, 0), 0.18, _rng.randf_range(0.05, 0.08), Color(1.0, 0.6, 0.2), S_CIRCLE, true, -0.5, 2.0, -0.1)
+		elif _rng.randf() < 0.4:
+			spawn(node.position, Vector3(_rng.randf_range(-0.1, 0.1), 0.08, _rng.randf_range(-0.1, 0.1)), 0.35, _rng.randf_range(0.03, 0.05), Color(0.72, 0.7, 0.77, 0.5), S_SMOKE, false, -0.1, 2.0, 0.1)
 	for id in _lob_nodes.keys():
 		if not seen.has(id):
 			(_lob_nodes[id] as Node).queue_free()

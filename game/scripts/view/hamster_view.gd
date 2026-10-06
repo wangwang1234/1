@@ -6,8 +6,13 @@ extends Node3D
 const MODEL := "res://assets/models/characters/chr_hamster.glb"
 const UPPER := ["spine", "weapon_socket", "arm_L", "forearm_L", "arm_R", "forearm_R"]
 const HURT_BONES := ["root", "pelvis", "head", "ear_L", "ear_R"]
-const LOOPS := ["idle", "run_fwd", "run_back", "run_left", "run_right", "hold_pistol", "hold_rifle", "hold_shotgun", "victory"]
-const CLASS_OF := {"pistol": "pistol", "deagle": "pistol", "revolver": "pistol", "dual": "pistol", "ak47": "rifle", "smg": "rifle", "sniper": "rifle", "lmg": "rifle", "amr": "rifle", "minigun": "rifle", "rail": "rifle", "laser": "rifle", "flame": "rifle", "katana": "pistol", "rocket": "shotgun", "gl": "shotgun", "shotgun": "shotgun", "autoshot": "shotgun"}
+const LOOPS := ["idle", "run_fwd", "run_back", "run_left", "run_right", "hold_pistol", "hold_rifle", "hold_shotgun", "hold_heavy", "hold_launcher",
+	"hold_melee", "hold_flame", "hold_dual", "hold_beam", "victory"]
+const CLASS_OF := {"pistol": "pistol", "deagle": "pistol", "revolver": "pistol", "dual": "dual", "ak47": "rifle", "smg": "rifle", "sniper": "rifle",
+	"lmg": "heavy", "amr": "rifle", "minigun": "heavy", "rail": "beam", "laser": "beam", "flame": "flame", "katana": "melee", "rocket": "launcher",
+	"gl": "launcher", "shotgun": "shotgun", "autoshot": "shotgun"}
+## 换弹音效：新姿势类别沿用三种基础换弹声
+const RELOAD_SND := {"pistol": "pistol", "dual": "pistol", "rifle": "rifle", "heavy": "rifle", "flame": "rifle", "beam": "rifle", "shotgun": "shotgun", "launcher": "shotgun", "melee": "pistol"}
 
 var sim_id := 0
 var team := "blue"
@@ -41,6 +46,10 @@ var _won := false
 var _vis := 1.0
 var _shown := true
 var _air_spin := 0.0
+var spin_node: Node3D
+var _spin_a := 0.0
+var eshield: MeshInstance3D
+var _slash_flip := false
 
 
 func setup(h: SimHamster, local: bool) -> void:
@@ -73,6 +82,22 @@ func setup(h: SimHamster, local: bool) -> void:
 			_sock_fix = Transform3D(rest.basis.inverse(), Vector3.ZERO)
 	_setup_light()
 	_set_expr("open", "idle")
+	eshield = MeshInstance3D.new()
+	var sph := SphereMesh.new()
+	sph.radius = 1.0
+	sph.height = 2.0
+	sph.radial_segments = 24
+	sph.rings = 12
+	eshield.mesh = sph
+	var sm := ShaderMaterial.new()
+	sm.shader = preload("res://shaders/shield_bubble.gdshader")
+	sm.set_shader_parameter("color", Color("#7fe3ff"))
+	eshield.material_override = sm
+	eshield.scale = Vector3.ONE * 0.3
+	eshield.position = Vector3(0, 0.16, 0)
+	eshield.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	eshield.visible = false
+	add_child(eshield)
 
 
 func _setup_anim() -> void:
@@ -121,7 +146,15 @@ func _setup_anim() -> void:
 	var ts := AnimationNodeTimeScale.new()
 	bt.add_node("reload_ts", ts, Vector2(620, 300))
 	bt.connect_node("reload_ts", 0, "reload_anim")
-	bt.connect_node("reload", 0, "fire")
+	var thr := AnimationNodeOneShot.new()
+	thr.fadein_time = 0.04
+	thr.fadeout_time = 0.1
+	_filter(thr, track_prefix, UPPER)
+	bt.add_node("throw", thr, Vector2(620, 0))
+	bt.add_node("throw_anim", _a("throw"), Vector2(500, -120))
+	bt.connect_node("throw", 0, "fire")
+	bt.connect_node("throw", 1, "throw_anim")
+	bt.connect_node("reload", 0, "throw")
 	bt.connect_node("reload", 1, "reload_ts")
 	var hurt := AnimationNodeOneShot.new()
 	hurt.fadein_time = 0.02
@@ -221,11 +254,12 @@ func _set_weapon(h: SimHamster) -> void:
 		socket.add_child(weapon_node)
 		weapon_node.transform = _sock_fix
 	_cls = CLASS_OF.get(weapon_id, "pistol")
+	spin_node = weapon_node.find_child("spin", true, false) as Node3D
 	if tree:
 		var bt := tree.tree_root as AnimationNodeBlendTree
-		(bt.get_node("hold") as AnimationNodeAnimation).animation = "hold_" + _cls
-		(bt.get_node("fire_anim") as AnimationNodeAnimation).animation = "fire_" + _cls
-		(bt.get_node("reload_anim") as AnimationNodeAnimation).animation = "reload_" + _cls
+		(bt.get_node("hold") as AnimationNodeAnimation).animation = _anim_or("hold_" + _cls, "hold_pistol")
+		(bt.get_node("fire_anim") as AnimationNodeAnimation).animation = _anim_or("slash_a" if _cls == "melee" else "fire_" + _cls, "fire_pistol")
+		(bt.get_node("reload_anim") as AnimationNodeAnimation).animation = _anim_or("reload_" + _cls, "reload_pistol")
 	evo_sig = ""
 
 
@@ -270,9 +304,26 @@ func _sync_attachments(h: SimHamster) -> void:
 			holder3.add_child(tb)
 
 
+func _anim_or(nm: String, fallback: String) -> String:
+	return nm if anim and anim.has_animation(nm) else fallback
+
+
+func muzzle_node(side: int) -> Node3D:
+	if weapon_node == null:
+		return null
+	if side < 0:
+		var l := weapon_node.find_child("muzzle_L", true, false) as Node3D
+		if l:
+			return l
+	return weapon_node.find_child("muzzle", true, false) as Node3D
+
+
 static func yaw_for(a: float) -> float:
 	## 逻辑朝向（原型平面角）-> 模型绕 Y 旋转（模型正面朝 -Z）
 	return -a - PI * 0.5
+
+
+var frozen := false
 
 
 func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> void:
@@ -363,9 +414,24 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 	# 受击闪白、无敌闪烁
 	ToonMaterials.set_param(model, "flash", clampf(h.flash / 0.09, 0.0, 1.0) * 0.85)
 	var inv := h.iframes > 0.0 and h.roll_t <= 0.0 and h.alive and fmod(Time.get_ticks_msec() / 1000.0, 0.16) < 0.08
-	ToonMaterials.set_param(model, "tint", Color(1.6, 1.6, 1.8, 1) if inv else Color(1, 1, 1, 1))
+	var tint := Color(1, 1, 1, 1)
+	if inv:
+		tint = Color(1.6, 1.6, 1.8, 1)
+	elif frozen:
+		tint = Color(0.7, 0.92, 1.35, 1)
+	elif h.invis_t > 0.0 and h.reveal_t <= 0.0:
+		tint = Color(0.8, 0.8, 1.0, 0.45)
+	ToonMaterials.set_param(model, "tint", tint)
 	if weapon_node:
-		weapon_node.visible = h.roll_t <= 0.0 and h.alive
+		weapon_node.visible = h.roll_t <= 0.0 and h.alive and h.air.get("jet", false) == false
+	if spin_node:
+		_spin_a += h.spin * delta * 40.0
+		spin_node.rotation.y = _spin_a
+	eshield.visible = h.eshield_t > 0.0 and h.alive
+	if eshield.visible:
+		var ek := clampf(h.eshield / maxf(1.0, h.max_hp), 0.2, 1.0)
+		eshield.scale = Vector3.ONE * h.r * 0.024 * (0.9 + 0.1 * sin(Time.get_ticks_msec() * 0.01))
+		(eshield.material_override as ShaderMaterial).set_shader_parameter("hit", 0.3 * ek)
 	# 手电
 	var lr := SimWeapons.light_range(h) * 0.01
 	var lc := SimWeapons.light_cos(h)
@@ -384,10 +450,18 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 func on_event(ev: Dictionary) -> void:
 	match String(ev.t):
 		"fire":
-			_kick_v -= 14.0 * float(Data.weapon(weapon_id).get("fx", {}).get("gk", 4.0))
+			_kick_v -= 14.0 * float(Data.weapon(weapon_id).get("fx", {}).get("gk", 4.0 if _cls != "melee" else 1.0))
 			_squint_t = 0.18
 			if tree:
-				tree.set("parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+				if _cls == "melee":
+					_slash_flip = not _slash_flip
+					var bt := tree.tree_root as AnimationNodeBlendTree
+					(bt.get_node("fire_anim") as AnimationNodeAnimation).animation = _anim_or("slash_b" if _slash_flip else "slash_a", "fire_pistol")
+				if String(ev.get("kind", "")) != "flame" or randf() < 0.15:
+					tree.set("parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
+		"throw", "gadget":
+			if tree:
+				tree.set("parameters/throw/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		"reload":
 			if tree:
 				var dur := maxf(0.2, float(ev.dur))
