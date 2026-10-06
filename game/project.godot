@@ -7,7 +7,7 @@ config_version=5
 
 config/name="满载而鼠"
 config/description="俯视角三渲二红蓝对战射击"
-config/version="0.1.0-batch1"
+config/version="0.2.0-batch2"
 run/main_scene="res://scenes/main.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
 boot_splash/bg_color=Color(0.101961, 0.0705882, 0.14902, 1)

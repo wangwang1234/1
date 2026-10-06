@@ -120,8 +120,12 @@ func _slider(v: VBoxContainer, text: String, val: float, lo: float, hi: float, c
 func _check(v: VBoxContainer, text: String, val: bool, cb: Callable) -> void:
 	var h := _row(v, text)
 	var c := CheckButton.new()
+	c.theme_type_variation = "GhostButton"    # 开 = 橙边高亮、关 = 暗底，一眼分得清
+	c.custom_minimum_size = Vector2(128, 0)
 	c.button_pressed = val
+	c.text = "开" if val else "关"
 	c.toggled.connect(func(b: bool) -> void:
+		c.text = "开" if b else "关"
 		cb.call(b)
 		Settings.apply()
 		Audio.play2d("ui_click", -8.0))

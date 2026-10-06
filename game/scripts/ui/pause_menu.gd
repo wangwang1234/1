@@ -43,7 +43,7 @@ func _ready() -> void:
 	sep.add_theme_constant_override("separation", 18)
 	box.add_child(sep)
 	var help := UiTheme.label(
-		"键鼠：WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚\nR 换弹 · Q 手雷 · 1 / 2 / 3 选升级卡 · Esc 暂停\n手柄：左摇杆移动 · 右摇杆瞄准 · RT 射击 · A 翻滚\nX 换弹 · LB 手雷 · X / Y / B 选升级卡 · Start 暂停", 19, UiTheme.SUB, false, 4)
+		"键鼠：WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚\nR 换弹 · Q 道具 · 1 / 2 / 3 选升级卡 · Esc 暂停\n手柄：左摇杆移动 · 右摇杆瞄准 · RT 射击 · A 翻滚\nX 换弹 · LB 道具 · X / Y / B 选升级卡 · Start 暂停", 19, UiTheme.SUB, false, 4)
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(help)
 	b.call_deferred("grab_focus")

@@ -43,15 +43,16 @@
 
 ## 常用命令（已在本机验证；Windows 下把 `tools/xxx.sh` 换成 `tools\xxx.bat`）
 - 运行游戏：`tools/run.sh`（= `godot --path game`）；直接开局 `tools/run.sh --match --weapon ak47`；AI 观战 `tools/run.sh --match --autoplay`
-  - 游戏参数（写在 `--` 之后）：`--match` `--autoplay` `--mode slice|full` `--seed N` `--skin gold|pudding|silver|stripe` `--weapon pistol|ak47|shotgun` `--quit-after 秒`
-- 全部测试：`tools/test.sh`（sim 测试 + 表现层 headless 跑 2 分钟 AI 对局 + 主菜单冒烟，日志里有 SCRIPT ERROR 即失败）
+  - 游戏参数（写在 `--` 之后）：`--match` `--autoplay` `--mode full|slice`（默认 full 完整地图）`--seed N` `--skin gold|pudding|silver|stripe` `--weapon <武器 id>`（18 把，见 `weapons.json`）`--duo`（本地双人分屏）`--p2 pad|keys2`（2P 用手柄 / 方向键）`--quit-after 秒`
+- 全部测试：`tools/test.sh`（sim 测试 + 表现层 headless 跑 2 分钟 AI 对局 + `tests/view_smoke.tscn`（18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏）+ 主菜单冒烟，日志里有 SCRIPT ERROR 即失败）
   - 只跑 sim 测试：`godot --headless --path game -s res://tests/run_all.gd`（`-- --only 名称` 只跑一个文件）
+  - 注意：`-s` 脚本模式下没有自动加载（Settings / Audio / Capture），用到它们的表现层测试要写成场景（`godot --headless --path game res://tests/view_smoke.tscn`）
 - 生成资产：`tools/assets.sh`（全部模型 + 预览图 + 音效 + 重新导入）；单个模型 `tools/assets.sh chr_hamster`
   - 等价于 `blender --background --python tools/blender/build.py -- --asset <名称>`（`--all` 全部，`--list` 列出）；没有显示器时要套 `xvfb-run -a`（EEVEE 需要）
 - 生成音效：`python3 tools/audio/build.py --all`
 - 改了调色板 / 模型 / 音效后让 Godot 重新导入：`godot --headless --path game --import`
 - 截图（窗口模式；无显示器时自动套 xvfb-run）：`tools/capture.sh <场景> <输出目录> [分辨率] [参数]`
-  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `perf`，说明见 `game/scripts/core/capture.gd` 开头
+  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
   - 例：`tools/capture.sh style review/x 1920x1080 --n 6 --from 30 --every 5`
 - 录屏：`tools/record.sh out.mp4 [秒数] [分辨率] [种子]`（Godot Movie Maker 固定 30 帧 + ffmpeg 转码）
 - 帧率测试：`tools/capture.sh perf <目录> 1920x1080 --dur 60` → `perf.json` / `perf.csv`；导出版里双击 `帧率测试.bat`

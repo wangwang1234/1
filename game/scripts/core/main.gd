@@ -6,7 +6,7 @@ extends Node
 ##   --mode full|slice    地图（默认 full = 完整三路地图；slice = 批次 1 的中路小图）
 ##   --duo                本地双人分屏（2P 默认用手柄，--p2 keys2 改用方向键）
 ##   --seed N             随机种子（默认按时间）
-##   --skin gold|pudding|silver|stripe   --weapon pistol|ak47|shotgun
+##   --skin gold|pudding|silver|stripe   --weapon <武器 id>（见 weapons.json）
 ##   --quit-after S       S 秒后自动退出（无人值守跑局用，退出码 0 = 无报错）
 ## 截图 / 录屏 / 帧率测试见 Capture 自动加载（--capture ...）。
 
@@ -19,6 +19,7 @@ var result: ResultScreen
 var opts := {"skin": "gold", "weapon": "pistol", "mode": "full", "seed": 0, "autoplay": false}
 var args := {}
 var _fade: ColorRect
+var _fps: Label          # 设置里“显示帧率”打开时，右下角显示帧率
 var _busy := false
 
 
@@ -42,6 +43,15 @@ func _ready() -> void:
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
 	_fade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	fl.add_child(_fade)
+	_fps = UiTheme.label("", 15, Color("#9fe8a0"), false, 4)
+	_fps.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_fps.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	_fps.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_fps.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_fps.offset_right = -8
+	_fps.offset_bottom = -2
+	_fps.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	fl.add_child(_fps)
 	if args.has("quit-after"):
 		get_tree().create_timer(float(args["quit-after"]), true, false, true).timeout.connect(func() -> void: get_tree().quit(0))
 	if args.has("capture"):
@@ -179,6 +189,12 @@ func _on_finished(_winner: String, stats: Dictionary) -> void:
 	result.show_result(match_view.local_team, stats)
 	result.again_requested.connect(func() -> void: start_match(opts))
 	result.menu_requested.connect(func() -> void: show_menu())
+
+
+func _process(_delta: float) -> void:
+	_fps.visible = Settings.show_fps
+	if _fps.visible:
+		_fps.text = "%d FPS" % roundi(Engine.get_frames_per_second())
 
 
 func _notification(what: int) -> void:

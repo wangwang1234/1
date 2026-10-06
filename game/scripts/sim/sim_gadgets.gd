@@ -17,13 +17,14 @@ static func target(w: SimWorld, h: SimHamster) -> Vector2:
 		tx = h.inp.aim_x
 		ty = h.inp.aim_y
 	else:
-		var tg: SimEntity = h.ai.target if h.ai != null else SimWeapons.auto_aim(w, h, 520.0)
-		if tg != null and not tg.dead and Vector2(tg.x - h.x, tg.y - h.y).length() < 560.0:
+		# 手柄 / 方向键 / AI 没有落点：扔向当前目标（太远就沿瞄准方向扔一段）
+		var tg: SimEntity = h.ai.target if h.ai != null else SimWeapons.auto_aim(w, h, float(G.autoTarget))
+		if tg != null and not tg.dead and Vector2(tg.x - h.x, tg.y - h.y).length() < float(G.autoTargetMax):
 			tx = tg.x
 			ty = tg.y
 		else:
-			tx = h.x + cos(h.aim) * 300.0
-			ty = h.y + sin(h.aim) * 300.0
+			tx = h.x + cos(h.aim) * float(G.noTargetDist)
+			ty = h.y + sin(h.aim) * float(G.noTargetDist)
 	var dx := tx - h.x
 	var dy := ty - h.y
 	var d := maxf(0.001, Vector2(dx, dy).length())
@@ -380,24 +381,25 @@ static func smoke_blocks(w: SimWorld, x1: float, y1: float, x2: float, y2: float
 static func ai_want(w: SimWorld, h: SimHamster, t: SimEntity) -> bool:
 	## 原型 aiWantGadget
 	var gid := String(h.gadget.id)
+	var GW: Dictionary = w.R.ai.gadgetWant
 	var d := Vector2(t.x - h.x, t.y - h.y).length() if t != null else 9999.0
 	match gid:
 		"eshield":
-			return h.hurt_t > 0.0 and h.hp < h.max_hp * 0.7
+			return h.hurt_t > 0.0 and h.hp < h.max_hp * float(GW.eshieldHp)
 		"medkit":
-			return h.hp < h.max_hp * 0.5
+			return h.hp < h.max_hp * float(GW.medkitHp)
 		"beacon":
-			return h.hp > h.max_hp * 0.8 if h.beacon.is_empty() else h.hp < h.max_hp * 0.3
+			return h.hp > h.max_hp * float(GW.beaconSetHp) if h.beacon.is_empty() else h.hp < h.max_hp * float(GW.beaconBackHp)
 	if t == null:
 		return false
 	match gid:
 		"mine":
-			return d < 220.0
+			return d < float(GW.mine)
 		"sentry":
-			return d < 460.0
+			return d < float(GW.sentry)
 		"jetpack":
-			return d > 260.0 and d < 480.0
+			return d > float(GW.jetpack[0]) and d < float(GW.jetpack[1])
 		"decoy":
-			return d < 520.0
+			return d < float(GW.decoy)
 	var gr: Array = w.R.ai.gadgetRange
 	return d > float(gr[0]) and d < float(gr[1])

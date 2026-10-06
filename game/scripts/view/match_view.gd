@@ -102,6 +102,7 @@ func start(cfg: Dictionary) -> void:
 	add_child(wfx)
 	if split:
 		_setup_split()
+		fx.set_number_scale(0.75)
 	else:
 		cam = GameCamera.new()
 		cam.name = "Camera"
@@ -249,6 +250,10 @@ static func apply_mask(n: Node, mask: int) -> void:
 		(g as GeometryInstance3D).layers = layers
 	if n is GeometryInstance3D:
 		(n as GeometryInstance3D).layers = layers
+	# 点光 / 聚光（手电、枪口光）也按相机的渲染层过滤：分屏对打时，看不见的敌人的手电不会照亮另一边的画面
+	for l in n.find_children("*", "Light3D", true, false):
+		if not l is DirectionalLight3D:
+			(l as Light3D).layers = layers
 
 
 func _setup_env() -> void:

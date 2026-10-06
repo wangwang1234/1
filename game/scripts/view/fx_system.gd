@@ -224,6 +224,12 @@ func ring(pos: Vector3, r0: float, grow: float, life: float, color: Color, width
 	_rings.append({"pos": pos, "r": r0, "grow": grow, "life": life, "max": life, "color": color, "w": width})
 
 
+func set_number_scale(k: float) -> void:
+	## 分屏时子画面变窄，伤害数字跟着缩小一点
+	for L in _labels:
+		(L.label as Label3D).pixel_size = 0.0011 * k
+
+
 func number(pos: Vector3, text: String, color: Color, size: float = 1.0) -> void:
 	var best: Dictionary = _labels[0]
 	for L in _labels:

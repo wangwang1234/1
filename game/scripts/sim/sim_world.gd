@@ -119,15 +119,20 @@ func setup(cfg: Dictionary) -> void:
 			h.ammo = SimWeapons.mag_size(h)
 		idx += 1
 		names_used[h.name] = true
-	var ai_names := ["豆豆", "团子", "花卷", "布丁", "毛毛", "球球", "糯米", "芝麻", "可可", "饭团", "奶糖", "栗子"]
+	var ai_names := ["豆豆", "团子", "花卷", "年糕", "毛毛", "球球", "糯米", "芝麻", "可可", "饭团", "奶糖", "栗子", "汤圆", "麻薯", "米粒", "瓜子"]
 	var ai_cfg: Dictionary = cfg.get("ai", {"blue": 2, "red": 3})
 	var skin_ids := Data.skin_ids()
 	var forced: Dictionary = cfg.get("ai_weapons", {})
+	var k := 0    # 第几只 AI：步长 5 和名字表长度 16 互质，16 只以内不重名
 	for team in TEAMS:
 		for i in int(ai_cfg.get(team, 0)):
-			var nm: String = ai_names[(idx * 7 + i) % ai_names.size()]
+			var base_nm: String = ai_names[(k * 5 + 3) % ai_names.size()]
+			k += 1
+			var nm := base_nm
+			var n := 2
 			while names_used.has(nm):
-				nm = nm + "2"
+				nm = "%s%d" % [base_nm, n]
+				n += 1
 			names_used[nm] = true
 			var h := _make_ham(team, "ai", nm, idx, String(skin_ids[rng.randi() % skin_ids.size()]))
 			if forced.has(team):
@@ -1390,8 +1395,8 @@ func _upd_evo_world(dt: float) -> void:
 				continue
 			if bt != "" and not can_hit(bt, q):
 				continue
-			if Vector2(q.x - e.x, q.y - e.y).length() < 80.0 + q.r:
-				q.burn_t = maxf(q.burn_t, 1.5)
+			if Vector2(q.x - e.x, q.y - e.y).length() < float(R.burnSpread.reach) + q.r:
+				q.burn_t = maxf(q.burn_t, float(R.burnSpread.burn))
 				q.burn_by = e.burn_by
 
 

@@ -97,7 +97,7 @@ func show_result(local_team: String, stats: Dictionary) -> void:
 					evs += " %s%d" % [["A", "B", "C"][i], int(evo[i])]
 			grid.add_child(UiTheme.label(wn + evs, 18, UiTheme.CREAM, false, 4))
 			for k: String in ["lvl", "kills", "deaths", "dmg", "bdmg"]:
-				grid.add_child(UiTheme.label(str(p.get(k, 0)), 23, UiTheme.CREAM, k == "kills", 5))
+				grid.add_child(UiTheme.label(str(p.get(k, 0)), 23, UiTheme.GOLD if k == "kills" else UiTheme.CREAM, false, 5))
 			grid.add_child(UiTheme.label("MVP" if String(p.name) == mvp else "", 20, UiTheme.GOLD, true, 5))
 		if team == first_team:
 			for i in 8:

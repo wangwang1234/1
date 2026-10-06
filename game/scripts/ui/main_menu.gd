@@ -25,6 +25,7 @@ var _t := 0.0
 var _mouse := Vector2(0.5, 0.5)
 var _settings: SettingsPanel
 var _lobby: Lobby
+var _foot: Array[Control] = []    # 底部暗带 + 操作说明：打开大厅 / 设置 / 图鉴时隐藏
 
 
 func _ready() -> void:
@@ -239,13 +240,31 @@ func _build_ui() -> void:
 	_button("图鉴", _open_codex, true)
 	_button("退出", func() -> void: quit_requested.emit(), true)
 	b_start.call_deferred("grab_focus")
-	# 左下：操作说明 + 版本
-	var help := UiTheme.label("WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选升级 · Esc 暂停     手柄也可以玩 · 支持本地双人分屏", 18, UiTheme.SUB, false, 4)
+	# 左下：操作说明 + 版本（底部压一条暗带，说明文字压在亮地板上也看得清）
+	var foot := TextureRect.new()
+	var fg := Gradient.new()
+	fg.offsets = PackedFloat32Array([0.0, 1.0])
+	fg.colors = PackedColorArray([Color(0.04, 0.025, 0.07, 0.0), Color(0.04, 0.025, 0.07, 0.8)])
+	var ft := GradientTexture2D.new()
+	ft.gradient = fg
+	ft.fill_from = Vector2(0, 0)
+	ft.fill_to = Vector2(0, 1)
+	ft.width = 4
+	ft.height = 64
+	foot.texture = ft
+	foot.stretch_mode = TextureRect.STRETCH_SCALE
+	foot.set_anchors_preset(Control.PRESET_BOTTOM_WIDE)
+	foot.offset_top = -130
+	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(foot)
+	_foot.append(foot)
+	var help := UiTheme.label("WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选升级 · Esc 暂停     手柄也可以玩 · 支持本地双人分屏", 18, UiTheme.SUB, false, 6)
 	help.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	help.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	help.offset_left = 120
 	help.offset_bottom = -40
 	root.add_child(help)
+	_foot.append(help)
 	var ver := UiTheme.label("v" + String(ProjectSettings.get_setting("application/config/version", "")), 16, Color(1, 1, 1, 0.35), false, 0)
 	ver.set_anchors_preset(Control.PRESET_TOP_RIGHT)
 	ver.grow_horizontal = Control.GROW_DIRECTION_BEGIN
@@ -291,11 +310,11 @@ func _open_settings() -> void:
 	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.add_child(cc)
 	cc.add_child(_settings)
-	buttons.visible = false
+	_overlay(true)
 	_settings.closed.connect(func() -> void:
 		cc.queue_free()
 		_settings = null
-		buttons.visible = true
+		_overlay(false)
 		(buttons.get_child(2) as Button).grab_focus())
 
 
@@ -305,8 +324,7 @@ func _open_lobby() -> void:
 	_lobby = Lobby.new()
 	_lobby.position = Vector2(110, 120)
 	root.add_child(_lobby)
-	buttons.visible = false
-	_title_box().visible = false
+	_overlay(true)
 	_lobby.skin_changed.connect(func(sk: String) -> void:
 		opts.skin = sk
 		_refresh_hero())
@@ -316,8 +334,7 @@ func _open_lobby() -> void:
 		start_requested.emit(oo))
 	_lobby.closed.connect(func() -> void:
 		_lobby = null
-		buttons.visible = true
-		_title_box().visible = true
+		_overlay(false)
 		(buttons.get_child(0) as Button).grab_focus())
 	opts.skin = String(Settings.lobby.get("skin", opts.skin))
 	_refresh_hero()
@@ -327,12 +344,20 @@ func _title_box() -> Control:
 	return buttons.get_parent() as Control
 
 
+func _overlay(on: bool) -> void:
+	## 打开大厅 / 设置 / 图鉴时，藏起标题、按钮和底部说明，免得叠在面板后面
+	buttons.visible = not on
+	_title_box().visible = not on
+	for n in _foot:
+		n.visible = not on
+
+
 func _open_codex() -> void:
 	var c := Codex.new()
 	root.add_child(c)
-	buttons.visible = false
+	_overlay(true)
 	c.closed.connect(func() -> void:
-		buttons.visible = true
+		_overlay(false)
 		(buttons.get_child(3) as Button).grab_focus())
 
 

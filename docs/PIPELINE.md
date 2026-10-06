@@ -59,6 +59,11 @@ game/
   - `scripts/view/match_view.gd`（60Hz 推进 sim + 事件分发）、`hamster_view.gd`、`unit_views.gd`、`map_view.gd`、`fx_system.gd`、`toon_materials.gd`（按材质名前缀换 toon 着色器）。
   - `scripts/ui/`（主题、HUD、主菜单、暂停、设置、结算）、`scripts/core/main.gd`（入口和命令行参数）、`scripts/core/capture.gd`（截图 / 帧率测试场景）。
   - `data/rules.json`：原型里写死的常数；`evolutions.json` 的 `effects`：进化效果（格式见 `_effectsDoc`）。
+- 批次 2 新增：
+  - sim：`sim_weapon_modes.gd`（火箭 / 榴弹 / 武士刀 / 喷火 / 电磁炮 / 激光这些不走普通子弹的开火方式）、`sim_gadgets.gd`（13 种道具 + AI 用道具的判断）、`sim_mobs.gd`（野怪营地、鼠王、宠物）、实体 `sim_mob.gd` / `sim_pet.gd` / `sim_decoy.gd`。
+  - 表现：`world_fx.gd`（光束、刀光、火区、烟雾、冲击波、火箭、野怪 / 鼠王 / 宠物 / 诱饵 / 自动炮台等新实体的节点）、`b2_views.gd`、`shaders/beam.gdshader`；`hamster_view.gd` 里的强化挂件（`ACC` 表）。
+  - 界面：`lobby.gd`（开局大厅）、`codex.gd` + `snapshot.gd`（图鉴 8 页 + 模型快照）、`settings_panel.gd`（3 页设置）、`player_input.gd`（键鼠 / 手柄 / 2P 方向键）。
+  - 本地分屏：两个 SubViewport 共用主 3D 世界，每人一个 `GameCamera` + 一套 `Hud`；视野靠渲染层（蓝队第 2 位、红队第 3 位，相机 `cull_mask = 1 | 队伍位`），`MatchView.apply_mask()` 把几何体和点光 / 聚光放到“哪些本地队伍看得见”的层上。
 - 固定逻辑帧 60Hz，渲染插值；随机数用带种子的 RNG，方便复现和联机。
 - 大量重复物体（子弹、弹壳、小兵、装饰）用 MultiMesh 或对象池。
 
@@ -77,6 +82,8 @@ game/
 
 ## 9. 测试
 - **sim 测试（headless）**：全部 18 把武器 × 各进化等级的 AI 对局，跑 2 分钟无报错（原型就是这样压力测试的）；同种子结果一致；升级卡规则（不出满级路线、换武器清零等）。
+  - 现状（批次 2）：`tests/test_*.gd`，`godot --headless --path game -s res://tests/run_all.gd`。武器 × 路线 × 等级共 504 种组合、13 种道具、野怪 / 鼠王 / 宠物 / 天赋、切片和完整地图对局都能分出胜负。
+- **表现层冒烟（headless，带自动加载）**：`tests/view_smoke.tscn` 把 18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏的表现层全部跑一遍，日志里不能有 SCRIPT ERROR。`-s` 脚本模式下没有自动加载，所以用到 Settings / Audio 的测试要写成场景。
 - **截图测试（窗口模式，headless 不渲染画面）**：固定场景、固定镜头批量截图到 `review/`，用来自查和给导演审阅。
 - **性能**：固定场景记录帧时间。目标 PC 1080p 稳 60（争取 120），中端手机稳 30（争取 60）。
 

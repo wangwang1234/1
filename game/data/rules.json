@@ -197,6 +197,9 @@
  "gadgets": {
   "throwMin": 80,
   "throwMax": 520,
+  "autoTarget": 520,
+  "autoTargetMax": 560,
+  "noTargetDist": 300,
   "cdPerLevel": -0.15,
   "frag": {"speed": 420, "fuse": 1.5, "aoe": 130, "dmg": 70, "dmgPerLevel": 0.2, "kb": 380},
   "maxLevel": 4,
@@ -280,6 +283,7 @@
   "waypointRadius": 130,
   "gadgetRate": 0.9,
   "gadgetRange": [140, 480],
+  "gadgetWant": {"_doc": "AI 什么时候用道具（原型 aiWantGadget）：hp 项是生命比例，其余是到目标的距离", "eshieldHp": 0.7, "medkitHp": 0.5, "beaconSetHp": 0.8, "beaconBackHp": 0.3, "mine": 220, "sentry": 460, "jetpack": [260, 480], "decoy": 520},
   "maxRange": 560,
   "keepRatio": 0.62,
   "buildingRatio": 0.85,
@@ -340,7 +344,10 @@
   "tick": 0.25
  },
  "burnSpread": {
-  "radius": 90
+  "_doc": "喷火器 B9：着火的敌人把火传给 reach（+目标半径）内的其他敌人，传过去的燃烧至少 burn 秒；radius 是搜索范围",
+  "radius": 90,
+  "reach": 80,
+  "burn": 1.5
  },
  "mobs": {
   "_doc": "野区：蟑螂窝（6 只）和鼠帮枪手（3 只），被打光后 resp 秒重生；被惹到后整窝追击，离家超过 leash 或目标太远就回家回血",

@@ -161,15 +161,15 @@ func _refresh() -> void:
 		(ai_labels[team] as Label).text = str(int(o["ai_" + team]))
 	var t := ""
 	if not duo:
-		t = "WASD 移动 · 鼠标瞄准、左键射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选升级 · Esc 暂停（手柄按一下就能切换）"
+		t = "WASD 移动 · 鼠标瞄准、左键射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选卡 · Esc 暂停\n接上手柄按一下就能切换到手柄操作"
 	else:
-		t = "玩家1：WASD 移动 · 鼠标瞄准射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选升级\n"
+		t = "玩家1：WASD 移动 · 鼠标瞄准射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选卡\n"
 		if String(o.p2_input) == "pad":
-			t += "玩家2（手柄）：左摇杆移动 · 右摇杆瞄准（不推时自动瞄准）· RT 射击 · A 翻滚 · X 换弹 · LB 道具 · X/Y/B 选升级"
+			t += "玩家2（手柄）：左摇杆移动 · 右摇杆瞄准（不推时自动瞄准）· RT 射击 · A 翻滚 · X 换弹 · LB 道具 · X/Y/B 选卡"
 			if Input.get_connected_joypads().is_empty():
 				t += "\n还没检测到手柄：开局后先用方向键操作，接上手柄会自动切换"
 		else:
-			t += "玩家2（方向键）：方向键移动（自动瞄准）· 回车射击 · 右 Shift 翻滚 · / 换弹 · . 道具 · 8/9/0 选升级"
+			t += "玩家2（方向键）：方向键移动（自动瞄准）· 回车射击 · 右 Shift 翻滚 · / 换弹 · . 道具 · 8/9/0 选卡"
 	var nb := int(o.ai_blue) + (1 if String(o.p1_team) == "blue" else 0) + (1 if duo and String(o.p2_team) == "blue" else 0)
 	var nr := int(o.ai_red) + (1 if String(o.p1_team) == "red" else 0) + (1 if duo and String(o.p2_team) == "red" else 0)
 	help.text = "%s\n本局：蓝队 %d 只 vs 红队 %d 只" % [t, nb, nr]

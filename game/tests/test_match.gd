@@ -98,3 +98,13 @@ func test_slice_match_finishes() -> void:
 	check(w.over, "25 分钟内分出胜负（实际 %.0f 秒）" % w.t)
 	check(w.winner == "blue" or w.winner == "red", "有胜方")
 	w.dispose()
+
+
+func test_full_match_finishes() -> void:
+	## 完整地图 5 对 5（AI 对 AI）必须能分出胜负：炮台 → 鼠窝护盾 → 鼠窝，加速决战后 AI 以建筑为目标
+	var w := make_world("full", 23, 5, 5)
+	run(w, 2400.0)
+	check(w.over, "40 分钟内分出胜负（实际 %.0f 秒）" % w.t)
+	check(w.winner == "blue" or w.winner == "red", "有胜方")
+	note = "full 5v5：%.0f 秒分出胜负，%s 胜" % [w.t, w.winner]
+	w.dispose()
