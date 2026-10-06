@@ -52,7 +52,9 @@ func show_result(local_team: String, stats: Dictionary) -> void:
 		return int(a.kills) > int(b.kills))
 	for p: Dictionary in players:
 		var col := UiTheme.BLUE if p.team == "blue" else UiTheme.RED
-		var nm := String(p.name) + ("（你）" if bool(p.get("local", false)) else "")
+		var nm := String(p.name)
+		if bool(p.get("local", false)) and nm != "你":
+			nm += "（你）"
 		grid.add_child(UiTheme.label(nm, 24, col.lightened(0.25) if bool(p.get("local", false)) else col, false, 5))
 		for k: String in ["lvl", "kills", "deaths", "dmg", "bdmg"]:
 			grid.add_child(UiTheme.label(str(p.get(k, 0)), 24, UiTheme.CREAM, k == "kills", 5))

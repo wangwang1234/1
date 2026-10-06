@@ -54,6 +54,11 @@ game/
   tests/             headless 测试
 ```
 - **逻辑和表现分离**：sim 可以在 headless 下跑整局（自动测试和以后的联机都靠它）。
+- 批次 1 落地后的关键文件（详细说明见各文件开头注释）：
+  - `scripts/sim/sim_world.gd`（一局的全部状态和规则，事件队列给表现层）、`sim_weapons.gd`（武器参数 = weapons.json + evolutions.json 的 effects）、`sim_cards.gd`、`sim_ai.gd`、`sim_map.gd`。
+  - `scripts/view/match_view.gd`（60Hz 推进 sim + 事件分发）、`hamster_view.gd`、`unit_views.gd`、`map_view.gd`、`fx_system.gd`、`toon_materials.gd`（按材质名前缀换 toon 着色器）。
+  - `scripts/ui/`（主题、HUD、主菜单、暂停、设置、结算）、`scripts/core/main.gd`（入口和命令行参数）、`scripts/core/capture.gd`（截图 / 帧率测试场景）。
+  - `data/rules.json`：原型里写死的常数；`evolutions.json` 的 `effects`：进化效果（格式见 `_effectsDoc`）。
 - 固定逻辑帧 60Hz，渲染插值；随机数用带种子的 RNG，方便复现和联机。
 - 大量重复物体（子弹、弹壳、小兵、装饰）用 MultiMesh 或对象池。
 

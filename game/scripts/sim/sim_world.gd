@@ -133,6 +133,10 @@ func _add_struct(kind: String, team: String, pos: Vector2) -> SimStructure:
 	s.x = pos.x; s.y = pos.y; s.px = s.x; s.py = s.y
 	s.r = float(D.r)
 	s.hp = float(D.hp); s.max_hp = s.hp
+	if mode == "slice":
+		# 切片只有一条兵线、一座炮台，推进压力比全图小得多：建筑血量按比例缩小，否则一局打不完
+		s.hp *= float(Data.rule("match.slice.structHpMul.%s" % kind, 1.0))
+		s.max_hp = s.hp
 	s.range_ = float(D.range)
 	s.dmg = float(D.dmg)
 	s.cd_max = float(D.cd)
@@ -307,7 +311,8 @@ func step(dt: float) -> void:
 				var c := _make_crate(s)
 				s.cur = c
 		var sd: Dictionary = R.combat.sudden
-		if not sudden and t >= float(sd.time):
+		var sd_time := float(Data.rule("match.slice.suddenTime", sd.time)) if mode == "slice" else float(sd.time)
+		if not sudden and t >= sd_time:
 			sudden = true
 			min_mul = float(sd.minionMul)
 			toast_all("加速决战！建筑受到双倍伤害", "#ff8a7a", 3.5)

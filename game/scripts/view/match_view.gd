@@ -17,6 +17,7 @@ var cam: GameCamera
 var hud: Hud
 var input := PlayerInput.new()
 var env: WorldEnvironment
+var listener: AudioListener3D
 var moon: DirectionalLight3D
 var ham_views := {}
 var minion_views := {}
@@ -63,6 +64,10 @@ func start(cfg: Dictionary) -> void:
 	cam.name = "Camera"
 	add_child(cam)
 	cam.current = true
+	listener = AudioListener3D.new()
+	listener.name = "Listener"
+	add_child(listener)
+	listener.make_current()
 	cam.bounds = Rect2(world.map.min_x * 0.01, world.map.min_y * 0.01, (world.map.max_x - world.map.min_x) * 0.01, (world.map.max_y - world.map.min_y) * 0.01)
 	fx.camera = cam
 	for s in world.structs:
@@ -242,6 +247,8 @@ func _process(delta: float) -> void:
 	if input.device == "kbm" and not autoplay and focus.inp.has_aim_point:
 		aim_pt = Vector3(focus.inp.aim_x * 0.01, 0, focus.inp.aim_y * 0.01)
 	cam.update(delta, fpos, aim_pt, focus.alive)
+	# 听者放在角色头顶（不是 10 米高的镜头上），否则所有 3D 音效都像隔得很远；朝向沿用镜头，左右声道和画面一致
+	listener.global_transform = Transform3D(cam.global_transform.basis, fpos + Vector3(0, 1.2, 0))
 	fx.sync_tracers(world.bullets, alpha, cam.global_transform.basis, func(b, _p): return true)
 	fx.sync_items(world.items, alpha, Time.get_ticks_msec() / 1000.0)
 	fx.sync_lobs(world.lobs)

@@ -88,3 +88,12 @@ func test_dispose_frees_world() -> void:
 	check(probe.get_ref() == null, "仓鼠对象已释放")
 	if probe2 != null:
 		check(probe2.get_ref() == null, "物件对象已释放")
+
+
+func test_slice_match_finishes() -> void:
+	## 切片对局必须能分出胜负（AI 对 AI，加速决战后 AI 以建筑为目标）
+	var w := make_world("slice", 11, 3, 3)
+	run(w, 1500.0)
+	check(w.over, "25 分钟内分出胜负（实际 %.0f 秒）" % w.t)
+	check(w.winner == "blue" or w.winner == "red", "有胜方")
+	w.dispose()

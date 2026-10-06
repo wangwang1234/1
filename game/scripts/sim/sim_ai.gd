@@ -19,21 +19,31 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 		if d * wgt < float(acc.bs):
 			acc.bs = d * wgt
 			acc.best = e
+	# 加速决战：目标优先是建筑，只和贴近的敌人缠斗（否则两边 AI 在中路对耗，谁也推不动）
+	var objective := w.sudden and bool(A.get("pushInSudden", false))
 	for e in w.hams:
 		if e.alive and e.team != h.team and sees.call(e):
-			consider.call(e, float(WT.ham), float(RG.ham))
+			consider.call(e, float(WT.ham), float(A.get("suddenHamRange", RG.ham)) if objective else float(RG.ham))
 	for e in w.minions:
 		if not e.dead and e.team != h.team and sees.call(e):
 			consider.call(e, float(WT.minion), float(RG.minion))
+	# 人数占优（对面有人在等复活）或进入加速决战时，没有小兵掩护也去拆建筑
+	var alive_diff := 0
+	for e in w.hams:
+		if e.alive:
+			alive_diff += 1 if e.team == h.team else -1
+	var push := alive_diff >= int(A.get("pushAhead", 99)) or (w.sudden and bool(A.get("pushInSudden", false)))
 	for s in w.structs:
 		if s.dead or s.team == h.team or (s.kind == "base" and s.shielded):
 			continue
-		var allies := false
+		var allies := push
 		for m in w.minions:
 			if not m.dead and m.team == h.team and Vector2(m.x - s.x, m.y - s.y).length() < s.range_:
 				allies = true
 				break
-		if allies or s.hp < s.max_hp * float(A.structLowHp):
+		if objective:
+			consider.call(s, float(WT.struct) * float(A.get("suddenStructWeight", 1.0)), 1e9)
+		elif allies or s.hp < s.max_hp * float(A.structLowHp):
 			consider.call(s, float(WT.struct), s.range_ + float(RG.structExtra))
 	for c in w.crates:
 		if not c.dead:

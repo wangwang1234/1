@@ -46,11 +46,18 @@ func _setup_buses() -> void:
 			var i := AudioServer.bus_count - 1
 			AudioServer.set_bus_name(i, nm)
 			AudioServer.set_bus_send(i, "Master")
+	# 总线：压缩（密集枪战时不炸）+ 补偿增益 + 限幅（峰值不超过 -1 dB）
 	var comp := AudioEffectCompressor.new()
-	comp.threshold = -14.0
-	comp.ratio = 4.0
+	comp.threshold = -12.0
+	comp.ratio = 3.0
+	comp.gain = 6.0
+	comp.attack_us = 2000.0
+	comp.release_ms = 120.0
+	var lim := AudioEffectHardLimiter.new()
+	lim.ceiling_db = -1.0
 	if AudioServer.get_bus_effect_count(0) == 0:
 		AudioServer.add_bus_effect(0, comp)
+		AudioServer.add_bus_effect(0, lim)
 	Settings.apply()
 
 

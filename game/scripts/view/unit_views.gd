@@ -161,6 +161,7 @@ class PropView:
 			light.omni_attenuation = 1.0
 			light.position = Vector3(0, 0.46, 0)
 			light.shadow_enabled = true
+			light.omni_shadow_mode = OmniLight3D.SHADOW_DUAL_PARABOLOID   # 2 次阴影渲染（立方体是 6 次）
 			light.light_specular = 0.0
 			add_child(light)
 

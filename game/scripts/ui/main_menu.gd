@@ -201,8 +201,8 @@ func _build_ui() -> void:
 	# 左侧暗角，压住背景让文字清楚
 	var shade := TextureRect.new()
 	var g := Gradient.new()
-	g.set_color(0, Color(0.04, 0.025, 0.07, 0.92))
-	g.set_color(1, Color(0.04, 0.025, 0.07, 0.0))
+	g.offsets = PackedFloat32Array([0.0, 0.55, 1.0])
+	g.colors = PackedColorArray([Color(0.04, 0.025, 0.07, 0.95), Color(0.04, 0.025, 0.07, 0.7), Color(0.04, 0.025, 0.07, 0.0)])
 	var gt := GradientTexture2D.new()
 	gt.gradient = g
 	gt.fill_from = Vector2(0, 0)
@@ -212,7 +212,7 @@ func _build_ui() -> void:
 	shade.texture = gt
 	shade.stretch_mode = TextureRect.STRETCH_SCALE
 	shade.set_anchors_preset(Control.PRESET_LEFT_WIDE)
-	shade.offset_right = 900
+	shade.offset_right = 1150
 	shade.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(shade)
 	# 标题
@@ -226,7 +226,7 @@ func _build_ui() -> void:
 	title.add_theme_constant_override("shadow_offset_y", 8)
 	title.add_theme_constant_override("shadow_outline_size", 18)
 	left.add_child(title)
-	var sub := UiTheme.label("夜里的桌面，零食归谁？", 30, UiTheme.GOLD, false, 6)
+	var sub := UiTheme.label("夜里的桌面，零食归谁？", 32, UiTheme.GOLD, false, 10)
 	left.add_child(sub)
 	var gap := Control.new()
 	gap.custom_minimum_size = Vector2(0, 48)

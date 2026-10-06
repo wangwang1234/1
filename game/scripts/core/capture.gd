@@ -157,6 +157,7 @@ func _style() -> void:
 
 func _gameplay() -> void:
 	var mv := await _start(true)
+	await _wait(0.6)     # 等开局淡入结束
 	var dur := float(args.get("dur", 120.0))
 	var every := float(args.get("every", 2.0))
 	var t := 0.0
@@ -312,8 +313,8 @@ func _loadout() -> void:
 				v.queue_free()
 		await get_tree().process_frame
 		var hv := _fake(st, "blue", 0.0, 0.3, w, {"a": 9, "b": 9, "c": 9})
-		cam.position = Vector3(0.25, 0.55, 1.25)
-		cam.look_at(Vector3(0.05, 0.22, 0.3))
+		cam.position = Vector3(0.3, 0.72, 1.75)
+		cam.look_at(Vector3(0.08, 0.24, 0.3))
 		hv.get_meta("h").aim = PI * 0.5 - 1.25
 		await _sync_all(st, 0.8)
 		await shot("loadout_%s_max" % w)

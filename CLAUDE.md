@@ -66,7 +66,7 @@
 - Blender：4.0.2，`/usr/bin/blender`（apt 安装；内置 Python 3.12 + python3-numpy）
 - Python：3.11（`python3`；音频脚本用 numpy / scipy，审阅拼图用 Pillow）
 - ffmpeg 6.1（音效转 OGG、录屏转码）
-- GitHub：本会话 push 返回 403（Claude 的 GitHub 权限没装到这个仓库），提交都在本地分支 `claude/new-session-w3yl0l`
+- GitHub：远程 `origin` = github.com/wangwang1234/1，开发分支 `claude/new-session-w3yl0l`（`git push -u origin claude/new-session-w3yl0l`）
 
 ## 第一次会话
 1. 检查 Godot、Blender、Python、git 是否可用；缺什么就告诉导演怎么安装（这属于需要导演操作的事），装好后继续。
@@ -74,5 +74,17 @@
 3. 直接开始批次 1。
 
 ## 当前进度
-- 已完成：批次 0（交接包：设计文档、美术规范、管线规范、数值数据、可玩原型）。
-- 下一步：批次 1 垂直切片。
+- 已完成：批次 0（交接包）；**批次 1 垂直切片**（2026-10，审阅包 `review/batch1/`，汇报 `review/batch1/REPORT.md`，Windows 包 `release/manzai_batch1_win64.zip`）。
+  - 工具链：Godot 4.7.2（源码编译）、Blender 资产管线、音频合成、截图 / 录屏 / 帧率测试、Windows 导出、`tools/*.sh|.bat`。
+  - 内容：仓鼠（4 皮肤、19 动作、表情）、手枪 / AK-47 / 霰弹枪 + 3×3 条进化路线（逻辑 + 配件外观）、小兵、炮台、鼠窝、场景物件和装饰、39 种音效。
+  - 玩法：切片模式（全宽中路带、3 对 3、中路炮台护盾规则、第 5 分钟加速决战）；全图模式（`--mode full`，三条兵线 5 对 5）也能跑，地图按 map_layout 自动拼装，但野怪、鼠王等是批次 2 的内容。
+  - 界面：主菜单、HUD、升级卡、暂停、设置、结算。
+- 等导演：试玩反馈（风格、手感、节奏）；在目标电脑上跑 `帧率测试.bat` 把 `perf` 文件夹发回来（容器里没有显卡，测不了真实帧率）。
+- 下一步：批次 2 全部系统（先处理导演对批次 1 的反馈）。
+- 约定 / 坑：
+  - 数值全在 `game/data/*.json`；原型里写死的常数在 `rules.json`；进化效果格式见 `evolutions.json` 的 `_effectsDoc`；切片专用调整在 `rules.json` 的 `match.slice`。
+  - 改了调色板 / 模型 / 音效后要 `godot --headless --path game --import`，否则运行时还是旧资源。
+  - 特效颜色在代码里按 sRGB 写，着色器里转线性；MultiMesh 实例色不会自动转换。
+  - SimWorld 用完要 `dispose()`（实体间有循环引用），MatchView 退出时已自动调用。
+  - 截图在软件渲染下很慢：长时间快进用 Capture 的 `_wait(秒, true)`（关 3D 渲染只跑逻辑）。
+  - 软件渲染 + 实时模式下，开局 3 秒内就退出（如 `--quit-after 3`）会卡在引擎退出流程（等后台着色器编译）；自动化脚本请用 `--fixed-fps` 或 headless，或者 `--quit-after` 给到 10 秒以上。
