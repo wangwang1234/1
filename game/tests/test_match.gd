@@ -38,16 +38,17 @@ func test_determinism() -> void:
 
 
 func test_all_weapon_evo_levels() -> void:
-	## 三把枪 × 三条路线 × 0..9 级，每种 AI 打 6 秒
+	## 全部 18 把武器 × 三条路线 × 1..9 级，再加三条路线全满，每种 AI 打 6 秒
 	var count := 0
 	for wid in Data.rule("scope.weapons"):
-		for k: String in ["a", "b", "c"]:
-			for lv: int in [1, 3, 6, 9]:
+		for k: String in ["a", "b", "c", "abc"]:
+			for lv: int in ([1, 2, 3, 4, 5, 6, 7, 8, 9] if k != "abc" else [9]):
 				var w := make_world("slice", 100 + count, 2, 2)
 				for h in w.hams:
 					h.weapon_id = String(wid)
 					h.evo = {"a": 0, "b": 0, "c": 0}
-					h.evo[k] = lv
+					for kk in k:
+						h.evo[kk] = lv
 					h.ammo = SimWeapons.mag_size(h)
 					# 拉近距离保证交火
 					h.x = w.map.base_pos.blue.x + 1500.0 + (60.0 if h.team == "red" else -60.0) * 3.0
@@ -58,7 +59,7 @@ func test_all_weapon_evo_levels() -> void:
 					shots += h.shot_n
 				check(shots > 0, "%s %s%d 开过火" % [wid, k, lv])
 				count += 1
-	note = "%d 种组合" % count
+	note = "%d 种组合（18 把武器 × 3 路线 × 9 级 + 全满）" % count
 
 
 func test_match_can_end() -> void:

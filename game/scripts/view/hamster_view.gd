@@ -11,6 +11,13 @@ const LOOPS := ["idle", "run_fwd", "run_back", "run_left", "run_right", "hold_pi
 const CLASS_OF := {"pistol": "pistol", "deagle": "pistol", "revolver": "pistol", "dual": "dual", "ak47": "rifle", "smg": "rifle", "sniper": "rifle",
 	"lmg": "heavy", "amr": "rifle", "minigun": "heavy", "rail": "beam", "laser": "beam", "flame": "flame", "katana": "melee", "rocket": "launcher",
 	"gl": "launcher", "shotgun": "shotgun", "autoshot": "shotgun"}
+## 强化外观挂件：强化 id -> [[glb 名, 骨骼], ...]（模型在仓鼠模型空间建模，挂到骨骼上跟着动）
+const ACC := {
+	"armor": [["acc_vest", "spine"]], "scholar": [["acc_glasses", "head"]], "nvg": [["acc_nvg", "head"]], "recon": [["acc_antenna", "head"]],
+	"rage": [["acc_headband", "head"]], "crit": [["acc_clover", "head"]], "vamp": [["acc_fangs", "head"]], "scav": [["acc_bando", "spine"]],
+	"gcd": [["acc_belt", "pelvis"]], "magnet": [["acc_magnet", "spine"]], "chain": [["acc_coilpack", "spine"]], "banner": [["acc_banner", "spine"]],
+	"speed": [["acc_shoe_L", "shin_L"], ["acc_shoe_R", "shin_R"]],
+}
 ## 换弹音效：新姿势类别沿用三种基础换弹声
 const RELOAD_SND := {"pistol": "pistol", "dual": "pistol", "rifle": "rifle", "heavy": "rifle", "flame": "rifle", "beam": "rifle", "shotgun": "shotgun", "launcher": "shotgun", "melee": "pistol"}
 
@@ -49,6 +56,8 @@ var _air_spin := 0.0
 var spin_node: Node3D
 var _spin_a := 0.0
 var eshield: MeshInstance3D
+var _acc := {}               # 强化 id -> [BoneAttachment3D]
+var _acc_sig := ""
 var _slash_flip := false
 
 
@@ -263,6 +272,36 @@ func _set_weapon(h: SimHamster) -> void:
 	evo_sig = ""
 
 
+func _sync_accessories(h: SimHamster) -> void:
+	var sig := ",".join(h.ab.keys())
+	if sig == _acc_sig or skel == null:
+		return
+	_acc_sig = sig
+	for id in _acc.keys():
+		if not h.ab.has(id):
+			for n in _acc[id]:
+				(n as Node).queue_free()
+			_acc.erase(id)
+	for id in h.ab.keys():
+		if _acc.has(id) or not ACC.has(id):
+			continue
+		var nodes: Array = []
+		for spec in ACC[id]:
+			var path := "res://assets/models/characters/%s.glb" % spec[0]
+			var bi := skel.find_bone(String(spec[1]))
+			if bi < 0 or not ResourceLoader.exists(path):
+				continue
+			var ba := BoneAttachment3D.new()
+			ba.bone_name = String(spec[1])
+			skel.add_child(ba)
+			var m := ToonMaterials.instance(path, 2.0)
+			ba.add_child(m)
+			m.transform = skel.get_bone_global_rest(bi).affine_inverse()
+			ToonMaterials.set_param(m, "team_index", 0 if team == "blue" else 1)
+			nodes.append(ba)
+		_acc[id] = nodes
+
+
 func _sync_attachments(h: SimHamster) -> void:
 	var sig := "%s_%d_%d_%d_%s" % [h.weapon_id, h.evo_lv("a"), h.evo_lv("b"), h.evo_lv("c"), str(h.ab.get("rate", 0)) + str(h.ab.get("torch", 0) + h.ab.get("wide", 0))]
 	if sig == evo_sig or weapon_node == null:
@@ -336,6 +375,7 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 	if h.weapon_id != weapon_id:
 		_set_weapon(h)
 	_sync_attachments(h)
+	_sync_accessories(h)
 	var x := lerpf(h.px, h.x, alpha) * 0.01
 	var z := lerpf(h.py, h.y, alpha) * 0.01
 	position = Vector3(x, h.z * 0.01, z)

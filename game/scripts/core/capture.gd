@@ -12,6 +12,8 @@ extends Node
 ##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）
 ##   arsenal    批次 2：18 把武器在局里开火的样子（各带一条 9 级路线）；--weapons a,b 只拍部分
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
+##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
+##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
 ## 建议配合 --fixed-fps 60（截图确定性，每帧 = 一步逻辑）；perf 不要加 --fixed-fps。
 
@@ -65,6 +67,10 @@ func _run() -> void:
 			await _codex()
 		"arsenal":
 			await _arsenal()
+		"ui2":
+			await _ui2()
+		"duo":
+			await _duo()
 		"b2world":
 			await _b2world()
 		"gameplay":
@@ -92,22 +98,37 @@ func _run() -> void:
 func _wait(sec: float, fast: bool = false) -> void:
 	## fast = 期间关掉 3D 渲染和界面（逻辑和表现层照常跑），软件渲染下截长序列能快很多
 	var vp := get_viewport()
-	var hud: CanvasLayer = null
+	var huds: Array = []
+	var vps: Array = []
+	var mv: MatchView = main.match_view if main != null else null
+	var was_3d_off := vp.disable_3d
 	if fast and not args.has("no-fast"):
 		vp.disable_3d = true
-		if main != null and main.match_view != null and main.match_view.hud != null:
-			hud = main.match_view.hud
-			hud.visible = false
-			hud.portrait_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+		if mv != null:
+			for pl in mv.players:
+				if pl.vp != null:
+					pl.vp.disable_3d = true
+					vps.append(pl.vp)
+				if pl.hud != null:
+					huds.append(pl.hud)
+			if mv.players.is_empty() and mv.hud != null:
+				huds.append(mv.hud)
+		for h in huds:
+			(h as Hud).visible = false
+			(h as Hud).portrait_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	var t := 0.0
 	while t < sec:
 		await get_tree().process_frame
 		t += get_process_delta_time()
-	if vp.disable_3d:
-		vp.disable_3d = false
-		if hud != null and is_instance_valid(hud):
-			hud.visible = true
-			(hud as Hud).portrait_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
+	if fast and not args.has("no-fast"):
+		vp.disable_3d = was_3d_off if (mv == null or not mv.split) else true
+		for v in vps:
+			if is_instance_valid(v):
+				(v as SubViewport).disable_3d = false
+		for h in huds:
+			if is_instance_valid(h):
+				(h as Hud).visible = true
+				(h as Hud).portrait_vp.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 		await _frames(3)
 
 
@@ -364,6 +385,45 @@ func _b2world() -> void:
 	await shot("b2_gadgets_2")
 
 
+func _ui2() -> void:
+	main.show_menu(true)
+	await _wait(1.5)
+	var menu: MainMenu = main.menu
+	await shot("ui2_menu")
+	menu._open_lobby()
+	await _wait(0.8)
+	await shot("ui2_lobby_solo")
+	menu._lobby.o.duo = true
+	menu._lobby.o.p2_input = "keys2"
+	menu._lobby._refresh()
+	await _wait(0.5)
+	await shot("ui2_lobby_duo")
+	menu._lobby._close()
+	await _wait(0.4)
+	menu._open_settings()
+	await _wait(0.5)
+	for k in ["video", "audio", "controls"]:
+		menu._settings._show(k)
+		await _wait(0.3)
+		await shot("ui2_settings_" + k)
+
+
+func _duo() -> void:
+	main.opts.merge({"duo": true, "p2_input": "keys2", "p1_team": "blue", "p2_team": "red", "mode": "full", "seed": int(args.get("seed", 12)), "autoplay": true,
+		"ai_blue": 3, "ai_red": 3}, true)
+	main.start_match(main.opts, true)
+	while main.match_view == null or main.match_view.world == null:
+		await get_tree().process_frame
+	await _frames(3)
+	var t0 := float(args.get("from", 20.0))
+	var every := float(args.get("every", 15.0))
+	var n := int(args.get("n", 3))
+	await _wait(t0, true)
+	for i in n:
+		await shot("duo_%02d" % i)
+		await _wait(every, true)
+
+
 func _style() -> void:
 	var mv := await _start(true)
 	var t0 := float(args.get("from", 24.0))
@@ -511,7 +571,10 @@ func _caption(st: Node3D, pos: Vector3, text: String, col: Color, size: int = 64
 
 func _loadout() -> void:
 	var paths: Dictionary = Data.evolutions().paths
-	for w: String in ["pistol", "ak47", "shotgun"]:
+	var wl: Array = Data.weapons().keys()
+	if args.has("weapons"):
+		wl = String(args.weapons).split(",", false)
+	for w: String in wl:
 		var st := _stage()
 		var cam := Camera3D.new()
 		cam.fov = 26

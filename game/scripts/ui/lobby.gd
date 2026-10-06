@@ -15,6 +15,7 @@ var rows := {}
 var ai_labels := {}
 var help: Label
 var weapon_pick: OptionButton
+var seg_btns: Array = []      # [[key, value, Button]]
 
 
 func _ready() -> void:
@@ -57,6 +58,7 @@ func _ready() -> void:
 	# 初始武器（测试用）
 	var wr := _row(v, "初始武器")
 	weapon_pick = OptionButton.new()
+	weapon_pick.theme_type_variation = "GhostButton"
 	weapon_pick.add_theme_font_size_override("font_size", 20)
 	var ids: Array = Data.weapons().keys()
 	for i in ids.size():
@@ -122,6 +124,7 @@ func _seg(v: VBoxContainer, text: String, key: String, opts: Array) -> HBoxConta
 		b.text = String(op[1])
 		b.button_pressed = o.get(key) == op[0]
 		var val: Variant = op[0]
+		seg_btns.append([key, val, b])
 		b.pressed.connect(func() -> void:
 			o[key] = val
 			Audio.play2d("ui_click", -8.0)
@@ -147,6 +150,8 @@ func _ai(key: String, d: int) -> void:
 
 
 func _refresh() -> void:
+	for sb in seg_btns:
+		(sb[2] as Button).set_pressed_no_signal(o.get(sb[0]) == sb[1])
 	var duo := bool(o.duo)
 	for k in ["p2_team", "p2_input", "skin2"]:
 		(rows[k] as Control).visible = duo

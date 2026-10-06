@@ -379,6 +379,14 @@ func _process(delta: float) -> void:
 				var back := Vector3(-cos(h.aim), 0, -sin(h.aim)) * h.r * 0.008
 				for k in 2:
 					fx.spawn(hp + back + Vector3(randf_range(-0.04, 0.04), h.r * 0.012, randf_range(-0.04, 0.04)), Vector3(randf_range(-0.2, 0.2), randf_range(-1.2, -0.6), randf_range(-0.2, 0.2)), 0.25, randf_range(0.08, 0.12), Color(1.0, 0.6, 0.2), FxSystem.S_CIRCLE, true, 0.0, 1.0, -0.2)
+			if float(h.st.get("regen", 0.0)) > 0.0 and h.hp < h.max_hp and randf() < delta * 3.0:
+				fx.spawn(hp + Vector3(randf_range(-0.14, 0.14), randf_range(0.1, 0.34), randf_range(-0.14, 0.14)), Vector3(0, 0.3, 0), 0.6, 0.04, Color("#8de0a6"), FxSystem.S_STAR, true, 0.0, 0.0)
+			if float(h.st.get("aura", 0.0)) > 0.0 and randf() < delta * 0.8:
+				fx.ring(hp + Vector3(0, 0.03, 0), 0.2, 2.2, 0.9, Color("#8de0a6"), 0.12)
+			if int(h.ab.get("dash", 0)) > 0 and h.roll_t > 0.0:
+				fx.spawn(hp + Vector3(randf_range(-0.1, 0.1), randf_range(0.05, 0.3), randf_range(-0.1, 0.1)), Vector3(-h.rdx, 0, -h.rdy) * 2.0, 0.15, 0.03, Color.WHITE, FxSystem.S_STREAK, true, 0.0, 1.0, 0.0, false, 0.6)
+			if int(h.ab.get("frost", 0)) > 0 and randf() < delta * 2.0:
+				fx.spawn(hp + Vector3(cos(h.aim), 0, sin(h.aim)) * 0.3 + Vector3(0, 0.18, 0), Vector3(0, 0.1, 0), 0.5, 0.035, Color("#cfefff"), FxSystem.S_STAR, true, 0.0, 0.0)
 			if h.haste_t > 0.0 and randf() < delta * 10.0:
 				fx.spawn(hp + Vector3(randf_range(-0.12, 0.12), randf_range(0.05, 0.3), randf_range(-0.12, 0.12)), Vector3(-h.vx, 0, -h.vy) * 0.004, 0.25, 0.03, Color("#ffd166"), FxSystem.S_STREAK, true, 0.0, 1.0, 0.0, false, 0.6)
 	var alive_ids := {}

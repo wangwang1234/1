@@ -324,7 +324,7 @@ func _open_lobby() -> void:
 
 
 func _title_box() -> Control:
-	return buttons.get_parent().get_child(0) as Control
+	return buttons.get_parent() as Control
 
 
 func _open_codex() -> void:
