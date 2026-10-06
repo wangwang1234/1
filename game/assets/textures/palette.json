@@ -422,5 +422,93 @@
 "team_knit__red": [
 7,
 4
+],
+"laser_pink": [
+6,
+5
+],
+"rail_cyan": [
+6,
+6
+],
+"blade_edge": [
+6,
+7
+],
+"pilot_blue": [
+6,
+8
+],
+"lens_orange": [
+6,
+9
+],
+"roach_brown": [
+6,
+10
+],
+"roach_dark": [
+6,
+11
+],
+"rat_grey": [
+6,
+12
+],
+"rat_dark": [
+6,
+13
+],
+"boss_fur": [
+6,
+14
+],
+"boss_robe": [
+6,
+15
+],
+"chick_yellow": [
+7,
+5
+],
+"firefly_glow": [
+7,
+6
+],
+"hedgehog_brown": [
+7,
+7
+],
+"spike_dark": [
+7,
+8
+],
+"glass_green": [
+7,
+9
+],
+"flare_red": [
+7,
+10
+],
+"smoke_grey": [
+7,
+11
+],
+"copper": [
+7,
+12
+],
+"poison_green": [
+7,
+13
+],
+"katana_wrap": [
+7,
+14
+],
+"crown_gold": [
+7,
+15
 ]
 }

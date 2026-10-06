@@ -415,7 +415,15 @@ HOLD = {
     "pistol": {"sock_loc": (0.0, 0.035, 0.022), "sock_rot": (0, 0, 0), "R": (0.012, -0.006, -0.006), "L": (-0.004, -0.004, -0.008)},
     "rifle": {"sock_loc": (0.018, 0.0, 0.0), "sock_rot": (0, 0, 0), "R": (0.014, -0.008, -0.01), "L": (-0.02, -0.006, -0.012)},
     "shotgun": {"sock_loc": (0.016, 0.0, 0.002), "sock_rot": (0, 0, 0), "R": (0.014, -0.008, -0.01), "L": (-0.02, -0.006, -0.014)},
+    # 批次 2：重武器端在腰间、发射器扛高、刀斜向上举、喷火器略低、双枪两侧各一把、光束枪同步枪
+    "heavy": {"sock_loc": (0.024, -0.012, -0.032), "sock_rot": (deg(2), 0, 0), "R": (0.014, -0.008, -0.01), "L": (-0.018, -0.006, -0.012)},
+    "launcher": {"sock_loc": (0.03, -0.03, 0.045), "sock_rot": (deg(3), 0, 0), "R": (0.012, -0.008, -0.012), "L": (-0.016, -0.006, -0.016)},
+    "melee": {"sock_loc": (0.024, 0.006, 0.006), "sock_rot": (deg(38), 0, deg(-12)), "R": (0.0, -0.004, -0.012), "L": (0.0, -0.004, -0.012)},
+    "flame": {"sock_loc": (0.018, -0.004, -0.014), "sock_rot": (0, 0, 0), "R": (0.014, -0.008, -0.01), "L": (-0.018, -0.006, -0.012)},
+    "dual": {"sock_loc": (0.066, 0.004, 0.0), "sock_rot": (0, 0, 0), "R": (0.012, -0.006, -0.006), "L": (-0.012, -0.006, -0.006)},
+    "beam": {"sock_loc": (0.018, 0.0, 0.004), "sock_rot": (0, 0, 0), "R": (0.014, -0.008, -0.01), "L": (-0.02, -0.006, -0.012)},
 }
+CLASSES = ("pistol", "rifle", "shotgun", "heavy", "launcher", "melee", "flame", "dual", "beam")
 
 
 def socket_world(P, sock_loc, sock_rot, spine_q=Quaternion()):
@@ -429,14 +437,14 @@ def socket_world(P, sock_loc, sock_rot, spine_q=Quaternion()):
     return pos, q
 
 
-def hold_pose(P, cls, kick=0.0, kick_up=0.0, tilt=0.0, sock_extra=(0, 0, 0), hand_extra_L=(0, 0, 0), hand_extra_R=(0, 0, 0), spine_rot=(0, 0, 0)):
+def hold_pose(P, cls, kick=0.0, kick_up=0.0, tilt=0.0, sock_extra=(0, 0, 0), hand_extra_L=(0, 0, 0), hand_extra_R=(0, 0, 0), spine_rot=(0, 0, 0), yaw=0.0):
     """生成某武器类别的上半身姿势（手 + weapon_socket），kick = 后坐位移（米），kick_up = 枪口上扬（弧度），tilt = 侧倾（换弹）。"""
     from mathutils import Euler
 
     h = HOLD[cls]
     spine_q = Euler(spine_rot, "XYZ").to_quaternion()
     sl = Vector(h["sock_loc"]) + Vector((0, -kick, 0)) + Vector(sock_extra)
-    sr = (h["sock_rot"][0] + kick_up, h["sock_rot"][1] + tilt, h["sock_rot"][2])
+    sr = (h["sock_rot"][0] + kick_up, h["sock_rot"][1] + tilt, h["sock_rot"][2] + yaw)
     pos, q = socket_world(P, sl, sr, spine_q)
     out = {}
     out["spine"] = P.P("spine", rot=spine_rot)
@@ -604,7 +612,7 @@ def make_animations(arm):
     a.finish()
 
     # ---------------- 持枪姿势 / 开火 / 换弹（按武器类别） ----------------
-    for cls in ("pistol", "rifle", "shotgun"):
+    for cls in CLASSES:
         a = A(arm, f"hold_{cls}", loop=True, bones=UPPER)
         for f, br in ((0, 0.0), (30, 1.0), (60, 0.0)):
             a.key(f, hold_pose(P, cls, sock_extra=(0, 0, 0.002 * br), spine_rot=(deg(-1.5) * br, 0, 0)))
@@ -615,6 +623,11 @@ def make_animations(arm):
         "pistol": ((0, 0, 0), (1, 0.018, deg(16)), (3, 0.006, deg(6)), (6, 0, 0)),
         "rifle": ((0, 0, 0), (1, 0.014, deg(5)), (2, 0.006, deg(2)), (4, 0, 0)),
         "shotgun": ((0, 0, 0), (1, 0.03, deg(14)), (4, 0.012, deg(5)), (8, 0, 0)),
+        "heavy": ((0, 0, 0), (1, 0.008, deg(2)), (2, 0.003, deg(1)), (3, 0, 0)),
+        "launcher": ((0, 0, 0), (1, 0.04, deg(10)), (5, 0.015, deg(4)), (10, 0, 0)),
+        "flame": ((0, 0, 0), (1, 0.004, deg(1)), (2, 0, 0)),
+        "dual": ((0, 0, 0), (1, 0.014, deg(10)), (4, 0, 0)),
+        "beam": ((0, 0, 0), (1, 0.012, deg(4)), (3, 0.004, deg(1)), (6, 0, 0)),
     }
     for cls, keys in fire.items():
         a = A(arm, f"fire_{cls}", bones=UPPER)
@@ -635,6 +648,41 @@ def make_animations(arm):
     for f, tilt, up, hand in ((0, 0, 0, 0), (5, deg(-25), deg(10), 0), (10, deg(-30), deg(12), 1.0), (15, deg(-30), deg(12), 1.0), (20, deg(-28), deg(10), 0.0), (25, deg(-5), deg(-4), 0), (30, 0, 0, 0)):
         a.key(f, hold_pose(P, "rifle", tilt=tilt, kick_up=up, hand_extra_L=(0.0, -0.05 * hand, -0.06 * hand)))
     a.finish()
+    # 批次 2 新类别的换弹：按相近的老类别做（重武器 / 光束 / 喷火 = 步枪式；双枪 = 手枪式；发射器 = 往后装填）
+    for cls in ("heavy", "flame", "beam"):
+        a = A(arm, f"reload_{cls}", bones=UPPER)
+        for f, tilt, up, hand in ((0, 0, 0, 0), (5, deg(-25), deg(10), 0), (10, deg(-30), deg(12), 1.0), (15, deg(-30), deg(12), 1.0), (20, deg(-28), deg(10), 0.0), (25, deg(-5), deg(-4), 0), (30, 0, 0, 0)):
+            a.key(f, hold_pose(P, cls, tilt=tilt, kick_up=up, hand_extra_L=(0.0, -0.05 * hand, -0.06 * hand)))
+        a.finish()
+    a = A(arm, "reload_dual", bones=UPPER)
+    for f, down, hand in ((0, 0, 0), (6, 0.03, 0), (12, 0.035, 1), (18, 0.035, 1), (24, 0.008, 0), (30, 0, 0)):
+        a.key(f, hold_pose(P, "dual", kick_up=deg(-30) * (down / 0.035), sock_extra=(0, 0, -down), hand_extra_L=(0.01 * hand, 0, -0.03 * hand), hand_extra_R=(-0.01 * hand, 0, -0.03 * hand)))
+    a.finish()
+    a = A(arm, "reload_launcher", bones=UPPER)
+    for f, up, hand in ((0, 0, 0), (6, deg(-12), 0), (12, deg(-15), 1.0), (20, deg(-15), 1.0), (26, deg(-5), 0.3), (30, 0, 0)):
+        a.key(f, hold_pose(P, "launcher", kick_up=up, hand_extra_L=(0.0, -0.09 * hand, 0.02 * hand)))
+    a.finish()
+    # 刀没有弹匣：换弹动作做成一个挽刀花（备用，正常不会触发）
+    a = A(arm, "reload_melee", bones=UPPER)
+    for f, sp in ((0, 0), (8, 1), (16, 2), (24, 3), (30, 4)):
+        a.key(f, hold_pose(P, "melee", tilt=deg(90) * sp))
+    a.finish()
+    # 武士刀两向挥砍（8 帧 ≈ 0.27 秒）：举到一侧 → 向前横扫 → 甩到另一侧 → 收回
+    for name, sgn in (("slash_a", 1.0), ("slash_b", -1.0)):
+        a = A(arm, name, bones=UPPER)
+        for f, yw, up, tw in ((0, 0, 0, 0), (1, 55, 15, 1), (3, 0, -40, 0), (5, -65, -45, -1), (8, 0, 0, 0)):
+            a.key(f, hold_pose(P, "melee", kick_up=deg(up), yaw=deg(yw) * sgn, sock_extra=(0.015 * sgn * tw, 0.02 if f == 3 else 0.0, 0), spine_rot=(0, 0, deg(14) * sgn * tw)))
+        a.finish()
+    # 扔道具：左手后摆再甩出去（右手照常持枪）
+    a = A(arm, "throw", bones=UPPER)
+    for f, k in ((0, 0.0), (3, -1.0), (6, 1.0), (9, 0.3), (12, 0.0)):
+        pose = hold_pose(P, "pistol")
+        if k != 0.0:
+            tgt = Vector((-0.07, 0.02 + 0.09 * k, 0.2 + 0.05 * max(0.0, -k) + 0.03 * max(0.0, k)))
+            pose.update(P.ik_arm("L", tgt, pole=Vector((-0.6, -0.2, -1))))
+        a.key(f, pose)
+    a.finish()
+
     a = A(arm, "reload_shotgun", bones=UPPER)
     fr = [(0, 0.0, 0.0)]
     for i in range(3):
@@ -766,7 +814,7 @@ def build(ctx):
     pv.append(("team_red", "three_quarter", {"pre": pre_factory(None, "idle", 0, 0, "red"), "only": visible, "res": 420}))
     for e in ("open", "squint", "blink", "hurt", "dead", "happy"):
         pv.append((f"expr_{e}", "front", {"pre": pre_factory(None, "idle", 0, 0, "blue", e, "open" if e in ("hurt", "happy") else "idle"), "only": visible, "res": 360, "margin": 0.8}))
-    for wid, cls in (("pistol", "pistol"), ("ak47", "rifle"), ("shotgun", "shotgun")):
+    for wid, cls in (("pistol", "pistol"), ("ak47", "rifle"), ("shotgun", "shotgun"), ("lmg", "heavy"), ("rocket", "launcher"), ("katana", "melee"), ("flame", "flame"), ("dual", "dual"), ("rail", "beam")):
         pv.append((f"hold_{wid}", "three_quarter", {"pre": pre_factory(wid, f"hold_{cls}", 0), "only": visible, "res": 420, "margin": 1.5}))
         pv.append((f"hold_{wid}_game", "game", {"pre": pre_factory(wid, f"hold_{cls}", 0), "only": visible, "res": 420, "margin": 1.8}))
     seqs = [("run_fwd", [0, 2, 5, 7], "side"), ("dash_roll", [0, 3, 5, 7], "side"), ("death", [0, 8, 16, 24], "three_quarter"), ("victory", [0, 5, 10, 15], "three_quarter"), ("reload_rifle", [0, 8, 14, 25], "three_quarter"), ("fire_shotgun", [0, 1, 4, 12], "side"), ("hurt", [0, 2, 5, 9], "front"), ("respawn_pop", [0, 3, 5, 9], "front")]

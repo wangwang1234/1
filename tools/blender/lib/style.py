@@ -154,6 +154,30 @@ for i, (n, cb, cr, eb, er) in enumerate(_TEAM):
     _put(n, 6, i, cb, eb)
     _put(n + "__red", 7, i, cr, er)
 
+# 队伍行（第 6、7 行）第 5 列以后没被队伍色占用：放批次 2 新增的普通颜色（不随队伍偏移，只要不用 M_team 材质）
+_put("laser_pink", 6, 5, "#ff5fa8", "#ff5fa8")
+_put("rail_cyan", 6, 6, "#5fe0ff", "#5fe0ff")
+_put("blade_edge", 6, 7, "#d8f0ff", "#9fd8ff")
+_put("pilot_blue", 6, 8, "#7fb6ff", "#7fb6ff")
+_put("lens_orange", 6, 9, "#ff8a3d", "#ff8a3d")
+_put("roach_brown", 6, 10, "#6b3a1e")
+_put("roach_dark", 6, 11, "#3b2414")
+_put("rat_grey", 6, 12, "#8a8796")
+_put("rat_dark", 6, 13, "#5a5866")
+_put("boss_fur", 6, 14, "#6d6070")
+_put("boss_robe", 6, 15, "#6a2c8a")
+_put("chick_yellow", 7, 5, "#ffe066")
+_put("firefly_glow", 7, 6, "#c8ff6a", "#c8ff6a")
+_put("hedgehog_brown", 7, 7, "#7a5a40")
+_put("spike_dark", 7, 8, "#3a2c22")
+_put("glass_green", 7, 9, "#5fae6a")
+_put("flare_red", 7, 10, "#ff4a3a", "#ff4a3a")
+_put("smoke_grey", 7, 11, "#b8b4c4")
+_put("copper", 7, 12, "#d07a3a")
+_put("poison_green", 7, 13, "#9be05a", "#6fbf3a")
+_put("katana_wrap", 7, 14, "#2a2030")
+_put("crown_gold", 7, 15, "#ffd166", "#7a5a10")
+
 
 def color(name):
     """名字 -> 固有色 RGB（0..1 sRGB）。"""
@@ -226,6 +250,13 @@ GRIP = {
     "pistol": {"R": (0.0, 0.0, 0.0), "L": (-0.014, 0.004, -0.006)},
     "rifle": {"R": (0.0, 0.0, 0.0), "L": (0.0, 0.07, 0.0)},
     "shotgun": {"R": (0.0, 0.0, 0.0), "L": (0.0, 0.072, 0.0)},
+    # 批次 2 新增的持握类别（左手相对右手握把的位置）
+    "heavy": {"R": (0.0, 0.0, 0.0), "L": (-0.004, 0.11, -0.018)},
+    "launcher": {"R": (0.0, 0.0, 0.0), "L": (0.0, 0.1, -0.012)},
+    "melee": {"R": (0.0, 0.0, 0.0), "L": (0.0, -0.032, 0.0)},
+    "flame": {"R": (0.0, 0.0, 0.0), "L": (0.0, 0.1, -0.006)},
+    "dual": {"R": (0.0, 0.0, 0.0), "L": (-0.13, 0.0, 0.0)},
+    "beam": {"R": (0.0, 0.0, 0.0), "L": (0.0, 0.085, -0.004)},
 }
 
 

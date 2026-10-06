@@ -121,6 +121,19 @@ GUN = {
     "shotgun": dict(hp=1800, cr=0.75, lp=950, bd=0.3, bg=1.1, t0=110, t1=32, td=0.17, tg=1.0, rev=0.48),
     "minion": dict(hp=3400, cr=0.22, lp=2600, bd=0.05, bg=0.28, t0=230, t1=110, td=0.035, tg=0.18, rev=0.08),
     "turret": dict(hp=1500, cr=0.35, lp=900, bd=0.16, bg=0.7, t0=110, t1=40, td=0.12, tg=0.7, rev=0.3),
+    # 批次 2：其余枪械（数值照抄原型 GSFX.P）
+    "deagle": dict(hp=2200, cr=0.75, lp=1250, bd=0.22, bg=1.05, t0=125, t1=36, td=0.15, tg=0.95, rev=0.45),
+    "smg": dict(hp=3000, cr=0.42, lp=2300, bd=0.07, bg=0.55, t0=190, t1=80, td=0.05, tg=0.4, rev=0.16),
+    "sniper": dict(hp=3300, cr=0.9, lp=1100, bd=0.34, bg=1.05, t0=95, t1=28, td=0.2, tg=1.0, rev=0.8),
+    "lmg": dict(hp=2300, cr=0.62, lp=1300, bd=0.13, bg=0.9, t0=130, t1=44, td=0.09, tg=0.75, rev=0.28, mech=1),
+    "rat": dict(hp=2800, cr=0.35, lp=2000, bd=0.07, bg=0.45, t0=180, t1=70, td=0.05, tg=0.35, rev=0.15),
+    "minigun": dict(hp=3000, cr=0.38, lp=2100, bd=0.06, bg=0.5, t0=180, t1=75, td=0.045, tg=0.38, rev=0.14),
+    "autoshot": dict(hp=1900, cr=0.65, lp=1050, bd=0.22, bg=0.95, t0=115, t1=36, td=0.13, tg=0.85, rev=0.38),
+    "amr": dict(hp=2800, cr=1.0, lp=850, bd=0.42, bg=1.25, t0=80, t1=22, td=0.28, tg=1.2, rev=0.95),
+    "revolver": dict(hp=2500, cr=0.8, lp=1500, bd=0.2, bg=0.95, t0=140, t1=40, td=0.13, tg=0.85, rev=0.5),
+    "gl": dict(hp=1200, cr=0.2, lp=600, bd=0.12, bg=0.8, t0=160, t1=60, td=0.1, tg=0.9, rev=0.2),
+    "sentry": dict(hp=3200, cr=0.28, lp=2400, bd=0.05, bg=0.32, t0=210, t1=100, td=0.035, tg=0.22, rev=0.1),
+    "dual": dict(hp=2800, cr=0.5, lp=2000, bd=0.08, bg=0.65, t0=180, t1=66, td=0.06, tg=0.5, rev=0.2),
 }
 
 
@@ -139,6 +152,178 @@ def gun_shot(name, seed):
     x = mix(*parts)
     x = s.reverb(x, 1.2, p["rev"])
     return trim(x)
+
+
+# ---------------------------------------------------------------------------
+# 批次 2：特殊武器 / 道具 / 野怪（对应原型 GSFX 的 rocket、swish、ting、flame、spin、charge、rail、laser、bang、beep、bolt）
+# ---------------------------------------------------------------------------
+
+def rocket(seed):
+    s = Synth(seed)
+    whoosh = s.noise(0.55)
+    f = np.geomspace(500, 2400, len(whoosh))
+    # 扫频带通：分段近似
+    out = np.zeros(len(whoosh))
+    seg = len(whoosh) // 8
+    for i in range(8):
+        a, b = i * seg, (i + 1) * seg if i < 7 else len(whoosh)
+        out[a:b] = s.filt(whoosh, "bp", float(f[(a + b) // 2]), 1.2)[a:b]
+    out *= s.env(0.55, 0.02, 0.5) * 0.9
+    thump = s.sweep(95, 38, 0.2) * s.env(0.2, 0.003, 0.18) * 0.75
+    return trim(s.reverb(mix(out, thump), 1.2, 0.35))
+
+
+def swish(seed):
+    s = Synth(seed)
+    n = s.noise(0.2)
+    out = np.zeros(len(n))
+    fs = np.geomspace(700, 3800, 6)
+    seg = len(n) // 6
+    for i in range(6):
+        a, b = i * seg, (i + 1) * seg if i < 5 else len(n)
+        out[a:b] = s.filt(n, "bp", float(fs[i]), 2)[a:b]
+    return trim(out * s.env(0.2, 0.03, 0.17) * 0.75)
+
+
+def ting(seed):
+    s = Synth(seed)
+    k = s.rng.uniform(0.95, 1.05)
+    x = mix(s.sweep(2600 * k, 2500 * k, 0.3, "tri") * s.env(0.3, 0.001, 0.25) * 0.4, s.sweep(3900 * k, 3850 * k, 0.22) * s.env(0.22, 0.001, 0.18) * 0.25)
+    return trim(s.reverb(x, 1.0, 0.3))
+
+
+def flame_loop(seed):
+    s = Synth(seed)
+    roar = s.filt(s.noise(0.25), "lp", 1400) * s.env(0.25, 0.03, 0.22) * 0.5
+    crackle = np.zeros(len(roar))
+    for _ in range(6):
+        at = int(s.rng.uniform(0, 0.2) * SR)
+        c = s.filt(s.noise(0.01), "hp", 3000) * s.env(0.01, 0.0005, 0.008) * 0.4
+        crackle[at:at + len(c)] += c[: max(0, len(crackle) - at)]
+    return trim(mix(roar, crackle))
+
+
+def spin(seed):
+    s = Synth(seed)
+    x = mix(s.sweep(180, 900, 0.6, "saw") * s.env(0.6, 0.05, 0.6, "lin") * 0.12, s.filt(s.noise(0.6), "bp", 1800, 3) * s.env(0.6, 0.3, 0.3, "lin") * 0.2)
+    return trim(x)
+
+
+def charge(seed):
+    s = Synth(seed)
+    x = mix(s.sweep(300, 2400, 1.0) * s.env(1.0, 0.05, 1.0, "lin") * 0.25, s.sweep(302, 2420, 1.0, "tri") * s.env(1.0, 0.05, 1.0, "lin") * 0.12)
+    return trim(x)
+
+
+def rail_shot(seed):
+    s = Synth(seed)
+    x = mix(s.sweep(3200, 180, 0.35, "saw") * s.env(0.35, 0.002, 0.3) * 0.35, s.filt(s.noise(0.06), "hp", 2000) * s.env(0.06, 0.0005, 0.05) * 1.2,
+            s.filt(s.noise(0.5), "lp", 700) * s.env(0.5, 0.003, 0.45), s.sweep(90, 28, 0.4) * s.env(0.4, 0.003, 0.35))
+    return trim(s.reverb(x, 1.4, 0.7))
+
+
+def laser(seed):
+    s = Synth(seed)
+    k = s.rng.uniform(0.97, 1.03)
+    x = mix(s.sweep(880 * k, 860 * k, 0.12, "saw") * s.env(0.12, 0.003, 0.11) * 0.25, s.sweep(1320 * k, 1300 * k, 0.12, "square") * s.env(0.12, 0.003, 0.11) * 0.1)
+    return trim(s.filt(x, "lp", 5000))
+
+
+def bang(seed):
+    s = Synth(seed)
+    x = mix(s.filt(s.noise(0.08), "hp", 1800) * s.env(0.08, 0.0005, 0.06) * 1.6, s.filt(s.noise(0.7), "lp", 600) * s.env(0.7, 0.003, 0.6) * 1.2,
+            s.sweep(70, 25, 0.4) * s.env(0.4, 0.003, 0.35) * 1.1, place(s.sweep(3600, 3550, 1.6) * s.env(1.6, 0.01, 1.6, "lin") * 0.12, 0.05))
+    return trim(s.reverb(x, 1.6, 0.6))
+
+
+def beep(seed):
+    s = Synth(seed)
+    return trim(mix(s.sweep(1600, 1600, 0.08, "square") * s.env(0.08, 0.002, 0.07) * 0.2, place(s.sweep(2100, 2100, 0.08, "square") * s.env(0.08, 0.002, 0.07) * 0.2, 0.12)))
+
+
+def bolt(seed):
+    s = Synth(seed)
+    return trim(mix(click(s, 2100, 7, 0.65, 0.03, 0.0), click(s, 2900, 7, 0.75, 0.025, 0.17)))
+
+
+def hiss(seed, dur=1.2):
+    """烟雾弹 / 照明弹 / 喷气背包的嘶嘶声"""
+    s = Synth(seed)
+    return trim(s.filt(s.noise(dur), "hp", 2500) * s.env(dur, 0.05, dur * 0.9, "lin") * 0.5)
+
+
+def jet(seed):
+    s = Synth(seed)
+    x = mix(s.filt(s.noise(0.6), "lp", 900) * s.env(0.6, 0.02, 0.55) * 0.9, s.filt(s.noise(0.6), "hp", 3000) * s.env(0.6, 0.02, 0.4) * 0.3)
+    return trim(x)
+
+
+def freeze(seed):
+    s = Synth(seed)
+    parts = [s.filt(s.noise(0.4), "hp", 4000) * s.env(0.4, 0.002, 0.3) * 0.5]
+    for i in range(7):
+        f = s.rng.uniform(2500, 6000)
+        parts.append(place(s.sweep(f, f * 0.96, 0.12, "tri") * s.env(0.12, 0.001, 0.1) * 0.22, i * 0.03))
+    return trim(s.reverb(mix(*parts), 1.0, 0.3))
+
+
+def zap(seed):
+    s = Synth(seed)
+    x = s.filt(s.noise(0.25), "bp", 3000, 2) * s.env(0.25, 0.001, 0.2) * 0.8
+    buzz = s.sweep(120, 110, 0.25, "square") * s.env(0.25, 0.001, 0.2) * 0.25
+    return trim(mix(x, buzz))
+
+
+def teleport(seed):
+    s = Synth(seed)
+    return trim(s.reverb(mix(s.sweep(300, 2400, 0.35) * s.env(0.35, 0.01, 0.3) * 0.4, s.sweep(1200, 4800, 0.35, "tri") * s.env(0.35, 0.01, 0.3) * 0.15), 1.0, 0.4))
+
+
+def shield_up(seed):
+    s = Synth(seed)
+    return trim(s.reverb(mix(s.sweep(400, 1200, 0.3, "tri") * s.env(0.3, 0.01, 0.28) * 0.35, s.sweep(800, 2400, 0.3) * s.env(0.3, 0.01, 0.25) * 0.15), 1.0, 0.35))
+
+
+def heal(seed):
+    s = Synth(seed)
+    notes = [660, 880, 1100]
+    return trim(mix(*[place(s.sweep(f, f, 0.18, "tri") * s.env(0.18, 0.005, 0.15) * 0.25, i * 0.07) for i, f in enumerate(notes)]))
+
+
+def skitter(seed):
+    """蟑螂爬：快速的细碎咔嗒"""
+    s = Synth(seed)
+    return trim(mix(*[click(s, s.rng.uniform(3000, 5000), 8, 0.4, 0.008, i * 0.035) for i in range(8)]))
+
+
+def squeak(seed, low=False):
+    """老鼠 / 鼠王叫"""
+    s = Synth(seed)
+    f0 = s.rng.uniform(1700, 2200) * (0.45 if low else 1.0)
+    x = s.sweep(f0, f0 * 1.5, 0.12, "tri") * s.env(0.12, 0.005, 0.1) * 0.4
+    y = place(s.sweep(f0 * 1.4, f0 * 0.9, 0.16, "tri") * s.env(0.16, 0.005, 0.14) * 0.35, 0.1)
+    out = mix(x, y)
+    if low:
+        out = s.reverb(mix(out, s.filt(s.noise(0.5), "lp", 400) * s.env(0.5, 0.02, 0.45) * 0.6), 1.4, 0.5)
+    return trim(out)
+
+
+def boss_roar(seed):
+    s = Synth(seed)
+    growl = s.filt(s.sweep(90, 60, 1.2, "saw"), "lp", 900) * s.env(1.2, 0.08, 1.1, "lin") * 0.6
+    sq = mix(*[place(squeak(seed + i, True), i * 0.25) for i in range(2)])
+    return trim(s.reverb(mix(growl, sq), 1.8, 0.6))
+
+
+def fanfare(seed):
+    s = Synth(seed)
+    notes = [523, 659, 784, 1047]
+    return trim(s.reverb(mix(*[place(s.sweep(f, f, 0.26, "square") * s.env(0.26, 0.005, 0.22) * 0.18, i * 0.12) for i, f in enumerate(notes)]), 1.2, 0.3))
+
+
+def peck(seed):
+    s = Synth(seed)
+    return trim(mix(click(s, 2600, 6, 0.5, 0.015, 0.0), click(s, 2400, 6, 0.4, 0.015, 0.07)))
 
 
 def click(s, f, q, g, d, at=0.0):
@@ -414,6 +599,42 @@ SOUNDS = {
     "win": (win, 1),
     "lose": (lose, 1),
     "ambience": (ambience, 1),
+    # 批次 2
+    "shot_deagle": (lambda sd: gun_shot("deagle", sd), 3),
+    "shot_smg": (lambda sd: gun_shot("smg", sd), 4),
+    "shot_sniper": (lambda sd: gun_shot("sniper", sd), 3),
+    "shot_lmg": (lambda sd: gun_shot("lmg", sd), 4),
+    "shot_rat": (lambda sd: gun_shot("rat", sd), 3),
+    "shot_minigun": (lambda sd: gun_shot("minigun", sd), 4),
+    "shot_autoshot": (lambda sd: gun_shot("autoshot", sd), 3),
+    "shot_amr": (lambda sd: gun_shot("amr", sd), 3),
+    "shot_revolver": (lambda sd: gun_shot("revolver", sd), 3),
+    "shot_gl": (lambda sd: gun_shot("gl", sd), 3),
+    "shot_sentry": (lambda sd: gun_shot("sentry", sd), 3),
+    "shot_dual": (lambda sd: gun_shot("dual", sd), 4),
+    "shot_rocket": (rocket, 3),
+    "swish": (swish, 4),
+    "ting": (ting, 3),
+    "flame": (flame_loop, 4),
+    "spin": (spin, 2),
+    "charge": (charge, 2),
+    "shot_rail": (rail_shot, 3),
+    "shot_laser": (laser, 3),
+    "bang": (bang, 2),
+    "beep": (beep, 2),
+    "bolt": (bolt, 3),
+    "hiss": (hiss, 2),
+    "jet": (jet, 2),
+    "freeze": (freeze, 3),
+    "zap": (zap, 4),
+    "teleport": (teleport, 2),
+    "shield_up": (shield_up, 2),
+    "heal": (heal, 2),
+    "skitter": (skitter, 3),
+    "squeak": (squeak, 4),
+    "boss_roar": (boss_roar, 2),
+    "fanfare": (fanfare, 1),
+    "peck": (peck, 3),
 }
 
 
