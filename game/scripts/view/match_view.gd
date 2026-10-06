@@ -42,6 +42,7 @@ var prop_views := {}
 var crate_views := {}
 var autoplay := false          # 截图/录屏时让本地玩家也由 AI 控制
 var hitstop := 0.0
+var cam_focus_offset := Vector3.ZERO    # 镜头焦点额外偏移（米）；只给截图取景用，游戏里恒为 0
 var time_scale := 1.0
 var _over_handled := false
 var _t := 0.0
@@ -457,7 +458,7 @@ func _process(delta: float) -> void:
 		var aim_pt := fpos + Vector3(cos(focus.aim), 0, sin(focus.aim)) * 3.0
 		if pl.input.device == "kbm" and not autoplay and focus.inp.has_aim_point:
 			aim_pt = Vector3(focus.inp.aim_x * 0.01, 0, focus.inp.aim_y * 0.01)
-		pl.cam.update(delta, fpos, aim_pt, focus.alive)
+		pl.cam.update(delta, fpos + cam_focus_offset, aim_pt + cam_focus_offset, focus.alive)
 		if pl == players[0]:
 			# 听者放在角色头顶（不是 10 米高的镜头上），否则所有 3D 音效都像隔得很远；朝向沿用镜头，左右声道和画面一致
 			listener.global_transform = Transform3D(pl.cam.global_transform.basis, fpos + Vector3(0, 1.2, 0))

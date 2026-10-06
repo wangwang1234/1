@@ -75,17 +75,17 @@
 3. 直接开始批次 1。
 
 ## 当前进度
-- 已完成：批次 0（交接包）；**批次 1 垂直切片**（2026-10，审阅包 `review/batch1/`，汇报 `review/batch1/REPORT.md`，Windows 包 `release/manzai_batch1_win64.zip`）。
-  - 工具链：Godot 4.7.2（源码编译）、Blender 资产管线、音频合成、截图 / 录屏 / 帧率测试、Windows 导出、`tools/*.sh|.bat`。
-  - 内容：仓鼠（4 皮肤、19 动作、表情）、手枪 / AK-47 / 霰弹枪 + 3×3 条进化路线（逻辑 + 配件外观）、小兵、炮台、鼠窝、场景物件和装饰、39 种音效。
-  - 玩法：切片模式（全宽中路带、3 对 3、中路炮台护盾规则、第 5 分钟加速决战）；全图模式（`--mode full`，三条兵线 5 对 5）也能跑，地图按 map_layout 自动拼装，但野怪、鼠王等是批次 2 的内容。
-  - 界面：主菜单、HUD、升级卡、暂停、设置、结算。
-- 等导演：试玩反馈（风格、手感、节奏）；在目标电脑上跑 `帧率测试.bat` 把 `perf` 文件夹发回来（容器里没有显卡，测不了真实帧率）。
-- 下一步：批次 2 全部系统（先处理导演对批次 1 的反馈）。
+- 已完成：批次 0（交接包）；批次 1 垂直切片（审阅包 `review/batch1/`）；**批次 2 全部系统**（2026-10，审阅包 `review/batch2/`，汇报 `review/batch2/REPORT.md`，Windows 包 `release/manzai_batch2_win64.zip`）。
+  - 批次 2 内容：18 把武器 × 3 路线 × 9 级（含质变）、13 种道具、22 种强化（全部有外观）、12 个天赋、3 个宠物；蟑螂窝 / 鼠帮枪手营地、鼠王；完整地图 5 对 5（三条兵线、3 炮台 + 鼠窝护盾规则、加速决战）；全部 AI 行为、视野听觉；开局大厅、图鉴 8 页、设置 3 页、结算、本地双人分屏、HUD 补全；新模型都是风格统一的简化版。
+  - 测试：sim 测试（504 种武器 × 路线 × 等级组合、道具、野怪鼠王宠物天赋、切片和完整地图都能分出胜负）+ 表现层冒烟（`tests/view_smoke.tscn`）+ 主菜单冒烟，`tools/test.sh` 一条命令。
+- 等导演：批次 1、2 的试玩反馈（风格、手感、节奏、完整地图一局 16～26 分钟是否合适）；在目标电脑上跑 `帧率测试.bat`（现在测完整地图），把 `perf` 文件夹发回来。
+- 下一步：批次 3 内容量产（所有简化模型做到批次 1 品质、全地图美术、全部特效 / 图标 / 音效 / 音乐），先处理导演反馈。
 - 约定 / 坑：
   - 数值全在 `game/data/*.json`；原型里写死的常数在 `rules.json`；进化效果格式见 `evolutions.json` 的 `_effectsDoc`；切片专用调整在 `rules.json` 的 `match.slice`。
-  - 改了调色板 / 模型 / 音效后要 `godot --headless --path game --import`，否则运行时还是旧资源。
+  - 改了调色板 / 模型 / 音效后要 `godot --headless --path game --import`，否则运行时还是旧资源；新加 `class_name` 后也要 import 一次刷新类缓存。
   - 特效颜色在代码里按 sRGB 写，着色器里转线性；MultiMesh 实例色不会自动转换。
   - SimWorld 用完要 `dispose()`（实体间有循环引用），MatchView 退出时已自动调用。
-  - 截图在软件渲染下很慢：长时间快进用 Capture 的 `_wait(秒, true)`（关 3D 渲染只跑逻辑）。
+  - 截图在软件渲染下很慢：长时间快进用 Capture 的 `_wait(秒, true)`（关 3D 渲染只跑逻辑）；全套审阅截图要 2～3 小时，容器重启会打断后台进程，分组跑、跑完一组就检查。
   - 软件渲染 + 实时模式下，开局 3 秒内就退出（如 `--quit-after 3`）会卡在引擎退出流程（等后台着色器编译）；自动化脚本请用 `--fixed-fps` 或 headless，或者 `--quit-after` 给到 10 秒以上。
+  - 分屏：两个 SubViewport 共用主 3D 世界，视野靠渲染层（`MatchView.apply_mask`），新加的表现节点要走 `apply_mask` 才会按队伍视野隐藏。
+  - 中文换行用 `AUTOWRAP_WORD_SMART`（导出时带了文本断行数据 `internationalization/locale/include_text_server_data`），不要用 ARBITRARY（标点会落到行首）。

@@ -114,6 +114,7 @@ static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void:
 	h.xp += n * float(h.st.get("xpK", 1.0))
 	var talent_levels: Array = Data.progression().get("talentLevels", [10, 20, 30])
 	var talents_on := bool(Data.rule("scope.talents", true))
+	var leveled := 0
 	while h.xp >= h.xp_next and h.lvl < maxl:
 		h.xp -= h.xp_next
 		h.lvl += 1
@@ -125,11 +126,14 @@ static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void:
 		if is_talent:
 			h.talent_pend += 1
 		w.emit({"t": "levelup", "id": h.id, "lvl": h.lvl, "talent": is_talent})
-		w.emit({"t": "pop", "x": h.x, "y": h.y, "h": h.r * 3.2, "text": "+HP", "color": "#8de0a6", "size": 15})
+		leveled += 1
 		if is_talent:
 			w.toast(h, "Lv%d！解锁一个强大天赋" % h.lvl, "#ff9ff0", 2.2)
 		else:
 			w.toast(h, "咕咚！升到 Lv%d，选一个奖励" % h.lvl, "#ffd166", 2.2)
+	if leveled > 0:
+		# 一次连升几级（比如打鼠王）也只冒一个“+HP”，不然几个字叠在一起
+		w.emit({"t": "pop", "x": h.x, "y": h.y, "h": h.r * 3.2, "text": "+HP", "color": "#8de0a6", "size": 15})
 	if h.lvl >= maxl:
 		h.xp = 0.0
 	if h.pending > 0 and h.choices.is_empty():

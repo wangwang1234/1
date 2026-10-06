@@ -413,7 +413,7 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 			break
 		_ability_badge(c, Vector2(ax + 14 * s, ay), 14 * s, String(id), int(h.ab[id]))
 		ax += 34 * s
-	if h.ab.is_empty() and h.evo_total() == 0:
+	if h.ab.is_empty() and h.evo_total() == 0 and h.pet_list.is_empty() and h.tal.is_empty():
 		_txt(c, Vector2(bx, ay + 6 * s), "还没有能力，升级来拿", 15 * s, Color(1, 0.95, 0.88, 0.45))
 	if not h.choices.is_empty():
 		_txt(c, Vector2(bx, y + 176 * s), pin.card_hint(), 16 * s, UiTheme.GOLD)
@@ -655,7 +655,7 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		var bw := (150.0 if st.kind == "base" else 84.0) * s
 		_bar(c, Rect2(p.x - bw * 0.5, p.y, bw, 10 * s), st.hp / st.max_hp, UiTheme.BLUE if st.team == "blue" else UiTheme.RED, Color(0.05, 0.03, 0.08, 0.75))
 		if st.kind == "base" and st.shielded:
-			_txt(c, Vector2(p.x - 150 * s, p.y - 8 * s), "护盾中：先拆掉中路炮台", 15 * s, Color("#9fe8ff"), HORIZONTAL_ALIGNMENT_CENTER, false, 300 * s, 5)
+			_txt(c, Vector2(p.x - 150 * s, p.y - 8 * s), "护盾中：先拆掉中路炮台" if w.mode == "slice" else "护盾中：先拆掉任意一座炮台", 15 * s, Color("#9fe8ff"), HORIZONTAL_ALIGNMENT_CENTER, false, 300 * s, 5)
 	for m in w.minions:
 		if m.dead or m.hp >= m.max_hp or not mv.team_sees(m):
 			continue
@@ -855,7 +855,18 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 			"abil":
 				_ability_badge(c, ic_c, 30 * s, String(cd.id), 1)
 			_:
-				c.draw_circle(ic_c, 30 * s, col)
+				# 道具 / 道具升级 / 宠物 / 天赋：路线色圆底 + 一个字
+				var glyph := "?"
+				match String(cd.t):
+					"gad", "glvl":
+						glyph = String(GICON.get(String(cd.id), "道"))
+					"pet":
+						glyph = String(PET_ICON.get(String(cd.id), "宠"))
+					"tal":
+						glyph = String(Data.talents().get(String(cd.id), {}).get("name", "天")).left(1)
+				c.draw_circle(ic_c, 30 * s, Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.95))
+				c.draw_arc(ic_c, 30 * s, 0, TAU, 32, col, 2.0 * s, true)
+				_txt(c, ic_c + Vector2(-30 * s, 30 * s * 0.45), glyph, 30 * s * 1.15, col.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, true, 60 * s, 3)
 		# 名字 + 描述
 		var tx := r.position.x + 108 * s
 		_txt(c, Vector2(tx, r.position.y + 78 * s), String(L.name), 26 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_LEFT, true)

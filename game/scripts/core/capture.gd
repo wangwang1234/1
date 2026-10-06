@@ -240,14 +240,18 @@ func _arsenal() -> void:
 	for k in 3:
 		var m := w.spawn_minion("red", w.map.lanes.keys()[0])
 		targets.append(m)
-	var ids: Array = Data.weapons().keys()
+	var all_ids: Array = Data.weapons().keys()
+	var ids: Array = all_ids
 	if args.has("weapons"):
 		ids = String(args.weapons).split(",", false)
-	var i := 0
 	for wid: String in ids:
+		var i := all_ids.find(wid)    # 文件编号按完整武器表，只补拍几把时也不会错位
 		_clear_fx(w)
 		mv.fx.clear()
 		h.weapon_id = wid
+		h.fire_cd = 0.0
+		h.spin = 0.0
+		h.charge = 0.0
 		var evo := {"a": 0, "b": 0, "c": 0}
 		evo[["a", "b", "c"][i % 3]] = 9
 		evo[["a", "b", "c"][(i + 1) % 3]] = 3
@@ -293,7 +297,6 @@ func _arsenal() -> void:
 				await _steps(32)
 		await shot("arsenal_%02d_%s" % [i, wid])
 		h.inp.fire = false
-		i += 1
 
 
 func _b2world() -> void:
@@ -310,47 +313,64 @@ func _b2world() -> void:
 	h.iframes = 9999.0
 	h.weapon_id = "ak47"
 	h.ammo = SimWeapons.mag_size(h)
-	# 1) 蟑螂窝
-	var roach: Dictionary = w.camps.filter(func(c): return c.type == "roach")[0]
-	h.x = float(roach.x) - 170.0
-	h.y = float(roach.y)
-	h.px = h.x
-	h.py = h.y
-	h.inp.aim = 0.0
-	await _steps(90)
-	await shot("b2_jungle_roach")
-	# 2) 鼠帮枪手
-	var rat: Dictionary = w.camps.filter(func(c): return c.type == "rat")[0]
-	h.x = float(rat.x) - 300.0
-	h.y = float(rat.y)
-	h.px = h.x
-	h.py = h.y
-	for e in w.mobs:
-		if e.kind == "roach":
-			e.target = null
-			e.returning = true
-	await _steps(75)
-	await shot("b2_jungle_rat")
-	# 3) 鼠王
-	w.t = float(Data.progression().bossFirst) - 0.05
-	await _steps(4)
-	var b := w.boss
-	if b != null:
-		for a in [PI * 0.5, PI, 0.0, -PI * 0.5]:
-			h.x = b.x + cos(a) * 300.0
-			h.y = b.y + sin(a) * 300.0
-			if w.map.has_los(b.x, b.y, h.x, h.y) and not w.map.overlaps_solid(h.x, h.y, h.r):
-				break
+	var parts := String(args.get("parts", "jungle,boss,gadgets")).split(",")    # --parts boss 只补拍鼠王
+	if parts.has("jungle"):
+		# 1) 蟑螂窝
+		var roach: Dictionary = w.camps.filter(func(c): return c.type == "roach")[0]
+		h.x = float(roach.x) - 170.0
+		h.y = float(roach.y)
 		h.px = h.x
 		h.py = h.y
-		h.inp.aim = atan2(b.y - h.y, b.x - h.x)
-		await _steps(150)
-		await shot("b2_boss")
-		await _steps(60)
-		await shot("b2_boss_2")
-		w.deal_dmg(b, 99999.0, {"team": "blue", "owner": h, "x": b.x, "y": b.y})
-		await _steps(30)
-		await shot("b2_boss_down")
+		h.inp.aim = 0.0
+		await _steps(90)
+		await shot("b2_jungle_roach")
+		# 2) 鼠帮枪手
+		var rat: Dictionary = w.camps.filter(func(c): return c.type == "rat")[0]
+		h.x = float(rat.x) - 300.0
+		h.y = float(rat.y)
+		h.px = h.x
+		h.py = h.y
+		for e in w.mobs:
+			if e.kind == "roach":
+				e.target = null
+				e.returning = true
+		await _steps(75)
+		await shot("b2_jungle_rat")
+	if parts.has("boss"):
+		# 3) 鼠王
+		w.t = float(Data.progression().bossFirst) - 0.05
+		await _steps(4)
+		var b := w.boss
+		if b != null:
+			# 站在鼠王南边（鼠王面朝镜头），镜头焦点往北挪 1.1 米，鼠王落在画面中部、不被顶部比分条挡住；
+			# 南边站不下就站北边（看到的是背影）。拍摄期间把鼠王钉在原地，弹幕照常
+			for cand in [[PI * 0.5, 200.0], [PI * 0.5, 240.0], [-PI * 0.5, 190.0], [-PI * 0.5, 230.0]]:
+				h.x = b.x + cos(float(cand[0])) * float(cand[1])
+				h.y = b.y + sin(float(cand[0])) * float(cand[1])
+				if w.map.has_los(b.x, b.y, h.x, h.y) and not w.map.overlaps_solid(h.x, h.y, h.r):
+					mv.cam_focus_offset = Vector3(0, 0, -1.1) if float(cand[0]) > 0.0 else Vector3.ZERO
+					break
+			h.px = h.x
+			h.py = h.y
+			h.inp.aim = atan2(b.y - h.y, b.x - h.x)
+			var bx := b.x
+			var by := b.y
+			for k in 150:
+				b.x = bx
+				b.y = by
+				await _steps(1)
+			await shot("b2_boss")
+			for k in 60:
+				b.x = bx
+				b.y = by
+				await _steps(1)
+			await shot("b2_boss_2")
+			w.deal_dmg(b, 99999.0, {"team": "blue", "owner": h, "x": b.x, "y": b.y})
+			await _steps(30)
+			await shot("b2_boss_down")
+			mv.cam_focus_offset = Vector3.ZERO
+	if not parts.has("gadgets"):
+		return
 	# 4) 道具 + 宠物展示
 	_clear_fx(w)
 	for e in w.mobs:
@@ -435,11 +455,30 @@ func _style() -> void:
 	var n := int(args.get("n", 10))
 	await _wait(t0, true)
 	for i in n:
+		# 等到本地玩家在交战（活着、血量过半、附近有看得见的敌人）再拍，最多多等 20 秒，免得拍到在鼠窝回血
+		for k in 20:
+			if _in_action(mv):
+				break
+			await _wait(1.0, true)
 		await shot("style_%02d" % i)
 		mv.hud.visible = false
 		await shot("style_%02d_clean" % i)
 		mv.hud.visible = true
 		await _wait(every, true)
+
+
+func _in_action(mv: MatchView) -> bool:
+	var h := mv.local
+	if h == null or not h.alive or h.hp < h.max_hp * 0.5:
+		return false
+	var w := mv.world
+	for e in w.hams:
+		if e.alive and e.team != h.team and w.vis[h.team].has(e.id) and Vector2(e.x - h.x, e.y - h.y).length() < 650.0:
+			return true
+	for m in w.minions:
+		if not m.dead and m.team != h.team and w.vis[h.team].has(m.id) and Vector2(m.x - h.x, m.y - h.y).length() < 550.0:
+			return true
+	return false
 
 
 func _gameplay() -> void:

@@ -188,6 +188,7 @@ static func apply(w: SimWorld, h: SimHamster, i: int) -> void:
 			h.mark_hold = 0.0
 			h.mark_acc = 0.0
 			h.flame_t = 0.0
+			h.fire_cd = 0.0    # 换上新枪立刻能开火（不继承旧枪的射击冷却）
 		"gad":
 			h.gadget = {"id": c.id, "lvl": 1, "cd": 0.0}
 			h.beacon = {}
