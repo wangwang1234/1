@@ -268,34 +268,9 @@ static func apply_mask(n: Node, mask: int) -> void:
 
 func _setup_env() -> void:
 	env = WorldEnvironment.new()
-	var e := Environment.new()
-	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color(0.05, 0.035, 0.08)
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color(0.40, 0.34, 0.62)
-	e.ambient_light_energy = 0.42
-	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_exposure = 1.0
-	e.glow_enabled = true
-	e.glow_intensity = 0.55
-	e.glow_strength = 1.0
-	e.glow_bloom = 0.0
-	e.glow_hdr_threshold = 1.15
-	e.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
-	e.adjustment_enabled = true
-	e.adjustment_saturation = 1.08
-	e.adjustment_contrast = 1.04
-	env.environment = e
+	env.environment = VisualStyle.environment()
 	add_child(env)
-	moon = DirectionalLight3D.new()
-	moon.name = "Moon"
-	moon.light_color = Color(0.55, 0.62, 1.0)
-	moon.light_energy = 0.32
-	moon.rotation_degrees = Vector3(-62, -35, 0)
-	moon.shadow_enabled = true
-	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	moon.directional_shadow_max_distance = 22.0
-	moon.light_specular = 0.0
+	moon = VisualStyle.moon()
 	add_child(moon)
 
 

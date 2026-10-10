@@ -10,7 +10,7 @@ from mathutils import Vector
 
 from . import materials
 
-GAME_PITCH_DEG = 56.0   # 与 Godot 镜头一致（ART_BIBLE 第 2 节）
+GAME_PITCH_DEG = 52.0   # 与 Godot 镜头一致（ART_BIBLE 第 2 节）
 GAME_FOV_DEG = 34.0
 
 

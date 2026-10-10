@@ -28,13 +28,15 @@ const FLOORS := {"study": "env/env_floor_wood", "shelf": "env/env_floor_wood", "
 	"sofa": "env/env_floor_wood_dusty", "living": "env/env_floor_carpet", "gift": "env/env_floor_carpet"}
 
 var map: SimMap
-var _batches := {}          # 模块路径 -> Array[Transform3D]
+var _batches := {}          # 模块路径 + 空间格 -> {path, transforms}，避免整张地图一起提交
 var pad_tops: Array = []    # [{node, base_y}]
 var rng := RandomNumberGenerator.new()
 var art: Dictionary = {}
 var _big := Vector2(-1e9, -1e9)    # 大礼箱位置（礼物区中心）
 var _flicker: Array = []           # [{light, base}]
 var _t := 0.0
+var decor_placements: Array[Dictionary] = [] # 审阅与碰撞净空测试使用，厘米坐标
+var surface_placements: Array[Dictionary] = [] # 台面组合：完整落在既有静态掩体内
 
 
 func build(m: SimMap, seed_: int = 1234) -> void:
@@ -45,14 +47,20 @@ func build(m: SimMap, seed_: int = 1234) -> void:
 		if bool(c.big):
 			_big = Vector2(float(c.x), float(c.y))
 	_build_floor()
+	StudyFloor.build(self, map)
 	_build_bounds()
 	_build_obstacles()
 	_build_pads()
 	_build_base_rugs()
 	_build_zone_props()
+	_build_surface_dressing()
+	_build_room_accents()
+	_build_decor_clusters()
 	_scatter_decor()
 	_flush()
 	_build_lights()
+	RoomArchitecture.build(self, map)
+	RoomLighting.build_study(self, map)
 
 
 func zone(x: float, y: float) -> String:
@@ -85,17 +93,21 @@ func _process(delta: float) -> void:
 
 func _add(module: String, xf: Transform3D) -> void:
 	var p := M + module + ".glb"
-	if not _batches.has(p):
-		_batches[p] = []
-	(_batches[p] as Array).append(xf)
+	var cell_size := float(VisualStyle.section("composition").batchSizeMeters)
+	var cell := Vector2i(floori(xf.origin.x / cell_size), floori(xf.origin.z / cell_size))
+	var key := "%s_%d_%d" % [p, cell.x, cell.y]
+	if not _batches.has(key):
+		_batches[key] = {"path": p, "transforms": []}
+	(_batches[key].transforms as Array).append(xf)
 
 
 func _flush() -> void:
-	for p in _batches:
-		var xfs: Array = _batches[p]
+	for key in _batches:
+		var p: String = _batches[key].path
+		var xfs: Array = _batches[key].transforms
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
-		var outline := 0.0 if String(p).contains("floor") or String(p).contains("rug_") else (1.3 if String(p).contains("deco") else 1.6)
+		var outline := 0.0 if String(p).contains("floor") or String(p).contains("rug") else (1.3 if String(p).contains("deco") else 1.6)
 		mm.mesh = ToonMaterials.merged_mesh(p, outline)
 		mm.instance_count = xfs.size()
 		for i in xfs.size():
@@ -103,8 +115,10 @@ func _flush() -> void:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
 		mmi.name = String(p).get_file().get_basename()
-		if String(p).contains("floor") or String(p).contains("rug_") or String(p).contains("deco"):
-			# 地面、地毯、小装饰不投影：几乎看不出来，却要在月光和每盏台灯的阴影里各画一遍
+		var flat := String(p).contains("floor") or String(p).contains("rug")
+		var thin_decor := String(p).contains("deco") and mm.mesh.get_aabb().size.y < float(VisualStyle.section("decor").get("shadowMinHeightMeters", 0.045))
+		if flat or thin_decor:
+			# 纸张和薄碎屑不进入阴影通道；有明显厚度的装饰保留受光投影。
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mmi)
 	_batches.clear()
@@ -127,7 +141,8 @@ func _build_floor() -> void:
 			var k: String = FLOORS.get(z, "env/env_floor_carpet")
 			kinds[Vector2i(int(x / tile), int(y / tile))] = k
 			var rot := Basis(Vector3.UP, PI * 0.5 * (rng.randi() % 4)) if not k.contains("wood") else Basis(Vector3.UP, PI * (rng.randi() % 2))
-			_add(k, Transform3D(rot, w(x + tile * 0.5, y + tile * 0.5)))
+			if not (RoomArchitecture.has_study_wall(map) and x + tile * 0.5 < 1300.0):
+				_add(k, Transform3D(rot, w(x + tile * 0.5, y + tile * 0.5)))
 			y += tile
 		x += tile
 	# 地毯流苏边：地毯格旁边不是地毯的那几条边
@@ -156,7 +171,8 @@ func _build_bounds() -> void:
 		if not fr.is_empty() and cx > float(fr.wallFrom) and cx < float(fr.wallTo):
 			_add("env/env_fridge", Transform3D(Basis.IDENTITY, w(cx, map.min_y + 40.0)))
 		else:
-			_add("env/env_wall", Transform3D(Basis.IDENTITY, w(cx, map.min_y + 40.0)))
+			if not (RoomArchitecture.has_study_wall(map) and cx < 1300.0):
+				_add("env/env_wall", Transform3D(Basis.IDENTITY, w(cx, map.min_y + 40.0)))
 			_add("env/env_shelf", Transform3D(Basis.IDENTITY, w(cx, map.min_y + 82.0)))
 		if zone(cx, map.max_y - 80.0) == "sofa":
 			_add("env/env_sofa_skirt", Transform3D(Basis(Vector3.UP, PI), w(cx, map.max_y - 22.0)))
@@ -169,6 +185,9 @@ func _build_bounds() -> void:
 		var b := Basis(Vector3.UP, PI * 0.5 if side == 0 else -PI * 0.5)
 		var y := map.min_y
 		while y < map.max_y - 1.0:
+			if side == 0 and RoomArchitecture.has_study_wall(map) and y + seg * 0.5 < 1400.0:
+				y += seg
+				continue
 			var mod := "env/env_cabinet" if zone(xx, y + seg * 0.5) == "kitchen" else "env/env_wall"
 			_add(mod, Transform3D(b, w(xx, y + seg * 0.5)))
 			y += seg
@@ -179,6 +198,46 @@ func _build_zone_props() -> void:
 	if _big.x > map.min_x and _big.x < map.max_x and _big.y > map.min_y and _big.y < map.max_y:
 		var r := float(art.get("giftR", 300)) / 250.0
 		_add("env/env_rug_party", Transform3D(Basis.IDENTITY.scaled(Vector3(r, 1.0, r)), w(_big.x, _big.y, 0.006)))
+
+
+func _build_surface_dressing() -> void:
+	# 台面组合的包围盒为 96×55 cm；不新增高于玩家的独立地面障碍。
+	var cfg := VisualStyle.section("composition")
+	for solid in map.solids:
+		if solid.prop != null or solid.kind != "counter" or solid.circle:
+			continue
+		var long_x: bool = solid.w >= solid.h
+		var length_: float = solid.w if long_x else solid.h
+		var depth: float = solid.h if long_x else solid.w
+		var count := maxi(1, floori(length_ / float(cfg.surfaceSpacingCm)))
+		var step := length_ / count
+		var scale_ := minf(1.0, minf((step - 8.0) / 96.0, (depth - 8.0) / 55.0))
+		if scale_ < 0.5:
+			continue
+		for i in count:
+			var t := (float(i) + 0.5) * step
+			var p := Vector2(solid.x + (t if long_x else solid.w * 0.5), solid.y + (solid.h * 0.5 if long_x else t))
+			var z := zone(p.x, p.y)
+			var variants: Array = cfg.surfaces.get(z, cfg.surfaces.living)
+			var module := String(variants[i % variants.size()])
+			var b := Basis.IDENTITY if long_x else Basis(Vector3.UP, PI * 0.5)
+			_add("env/env_dress_" + module, Transform3D(b.scaled(Vector3.ONE * scale_), w(p.x, p.y, solid.ht * 0.01 + 0.008)))
+			surface_placements.append({"module": module, "position": p, "scale": scale_, "long_x": long_x,
+				"bounds": Rect2(solid.x, solid.y, solid.w, solid.h), "height": solid.ht * 0.01 + 0.008})
+
+
+func _build_room_accents() -> void:
+	# 平铺织物只覆盖地板，不影响战斗碰撞；与鼠窝、炮台、弹射板保持同样净空。
+	for item: Array in VisualStyle.section("composition").rugs:
+		var p := Vector2(float(item[0]), float(item[1]))
+		var s := float(item[2])
+		var radius := 137.0 * s
+		if not _decoration_clear(p, radius):
+			continue
+		var a := deg_to_rad(float(item[3]))
+		var module := String(item[4]) if item.size() > 4 else "rug"
+		_add("env/env_dress_" + module, Transform3D(Basis(Vector3.UP, a).scaled(Vector3(s, 1.0, s)), w(p.x, p.y, 0.005)))
+		decor_placements.append({"module": "dress_" + module, "position": p, "radius": radius, "angle": a, "scale": s})
 
 
 func _build_lights() -> void:
@@ -193,7 +252,7 @@ func _build_lights() -> void:
 		l.light_energy = float(L.energy)
 		l.omni_range = float(L.range)
 		l.omni_attenuation = 1.2
-		l.light_specular = 0.0
+		l.light_specular = 0.5
 		l.shadow_enabled = false
 		l.position = w(x, y, float(L.get("h", 1.0)))
 		add_child(l)
@@ -292,7 +351,7 @@ func _build_base_rugs() -> void:
 func _scatter_decor() -> void:
 	## 装饰：靠边、靠障碍物更密，路中间稀疏。不参与碰撞。
 	var area := (map.max_x - map.min_x) * (map.max_y - map.min_y)
-	var n := int(area * 0.0001 * float(art.get("decoPerM2", 0.34)) * 1.2)
+	var n := int(area * 0.0001 * float(art.get("decoPerM2", 0.34)) * float(VisualStyle.section("decor").looseDensityScale))
 	var placed := 0
 	var tries := 0
 	while placed < n and tries < n * 8:
@@ -323,8 +382,8 @@ func _scatter_decor() -> void:
 			continue
 		var d: Array = _pick_deco(z)
 		var s := float(d[1]) * rng.randf_range(0.85, 1.1)
-		_add("env/env_deco_" + String(d[0]), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * s), w(x, y, 0.004)))
-		placed += 1
+		if _place_decor(String(d[0]), s, Vector2(x, y), rng.randf() * TAU):
+			placed += 1
 
 
 func _pick_deco(z: String) -> Array:
@@ -338,3 +397,66 @@ func _pick_deco(z: String) -> Array:
 		if r < 0:
 			return d
 	return list[0]
+
+
+func _decor_radius(module: String, scale_: float) -> float:
+	var footprints: Dictionary = VisualStyle.section("decor").footprintsCm
+	return float(footprints.get(module, 25.0)) * scale_
+
+
+func _decoration_clear(p: Vector2, radius: float) -> bool:
+	# 以整件物体的包围半径检查，避免叉子、纸张穿进掩体或铺到地图之外。
+	if p.x - radius < map.min_x or p.x + radius > map.max_x or p.y - radius < map.min_y or p.y + radius > map.max_y:
+		return false
+	if map.overlaps_solid(p.x, p.y, radius + 4.0):
+		return false
+	for team: String in ["blue", "red"]:
+		if p.distance_to(map.base_pos[team]) < 240.0 + radius:
+			return false
+		for tp: Vector2 in map.turret_pos[team]:
+			if p.distance_to(tp) < 90.0 + radius:
+				return false
+	for pad in map.pads:
+		if p.distance_to(Vector2(pad.x, pad.y)) < 60.0 + radius:
+			return false
+	for old: Dictionary in decor_placements:
+		if p.distance_to(old.position) < (radius + float(old.radius)) * 0.7:
+			return false
+	return true
+
+
+func _place_decor(module: String, scale_: float, p: Vector2, angle: float) -> bool:
+	var radius := _decor_radius(module, scale_)
+	if not _decoration_clear(p, radius):
+		return false
+	_add("env/env_deco_" + module, Transform3D(Basis(Vector3.UP, angle).scaled(Vector3.ONE * scale_), w(p.x, p.y, 0.004)))
+	decor_placements.append({"module": module, "position": p, "radius": radius, "angle": angle, "scale": scale_})
+	return true
+
+
+func _build_decor_clusters() -> void:
+	# 少量成组物件交代人的生活痕迹；靠掩体摆放，交战路面保留空白。
+	var cfg := VisualStyle.section("decor")
+	var recipes: Dictionary = cfg.recipes
+	var anchors: Array[Vector2] = []
+	var budget := int(cfg.clusters)
+	for attempt in budget * 30:
+		if anchors.size() >= budget:
+			break
+		var p := Vector2(rng.randf_range(map.min_x + 160.0, map.max_x - 160.0), rng.randf_range(map.min_y + 160.0, map.max_y - 160.0))
+		if not _decoration_clear(p, 70.0):
+			continue
+		if not map.overlaps_solid(p.x, p.y, 220.0) and p.y > map.min_y + 300.0 and p.y < map.max_y - 250.0:
+			continue
+		var spaced := true
+		for previous: Vector2 in anchors:
+			if p.distance_to(previous) < 310.0:
+				spaced = false
+		if not spaced:
+			continue
+		anchors.append(p)
+		var recipe: Array = recipes.get(zone(p.x, p.y), recipes["living"])
+		var angle := rng.randf() * TAU
+		for item: Array in recipe.slice(0, int(cfg.members)):
+			var offset := Vector2(float(item[2]), float(item[3])).rotated(angle) * float(cfg.clusterRadiusCm) / 45.0
+			_place_decor(String(item[0]), float(item[1]), p + offset, angle + rng.randf_range(-0.2, 0.2))

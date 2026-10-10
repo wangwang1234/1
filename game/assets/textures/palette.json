@@ -590,5 +590,37 @@
 "tile_white_dim": [
 9,
 3
+],
+"dress_sage": [
+9,
+4
+],
+"dress_clay": [
+9,
+5
+],
+"dress_ink": [
+9,
+6
+],
+"dress_paper": [
+9,
+7
+],
+"dress_felt": [
+9,
+8
+],
+"dress_ochre": [
+9,
+9
+],
+"dress_coffee": [
+9,
+10
+],
+"dress_biscuit": [
+9,
+11
 ]
 }
