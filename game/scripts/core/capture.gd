@@ -12,7 +12,7 @@ extends Node
 ##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）；--tabs a,b 只拍部分分页
 ##   arsenal    批次 2：18 把武器在局里开火的样子（各带一条 9 级路线）；--weapons a,b 只拍部分
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
-##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰（--parts zones,structs,overview）
+##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
@@ -471,6 +471,39 @@ func _b3map() -> void:
 			h.inp.aim = atan2(s.y - h.y, s.x - h.x)
 			await _steps(70)
 			await shot("b3_" + String(st[2]))
+	if parts.has("fx"):
+		# 新特效：冰冻（冰晶 + 六边形）、护盾（六边形）、急救（加号）、燃烧瓶（火舌）、传送（光柱）、升级（光柱）、闪电
+		_clear_fx(w)
+		var spot := _open_spot(w, 90.0)
+		var foe := w.spawn_minion("red", w.map.lanes.keys()[0])
+		foe.x = spot.x + 220.0
+		foe.y = spot.y
+		foe.hp = 99999.0
+		foe.max_hp = 99999.0
+		foe.stun = 999.0
+		var shots := [["freeze", 220, 0, 52], ["molotov", 260, 0, 80], ["eshield", 0, 0, 5], ["medkit", 0, 0, 10]]
+		for g in shots:
+			h.x = spot.x
+			h.y = spot.y
+			h.px = h.x
+			h.py = h.y
+			h.hp = h.max_hp * 0.5
+			h.gadget = {"id": g[0], "lvl": 1, "cd": 0.0}
+			h.inp.aim_x = spot.x + float(g[1])
+			h.inp.aim_y = spot.y + float(g[2])
+			h.aim = 0.0
+			h.inp.aim = 0.0
+			SimGadgets.use(w, h)
+			await _steps(int(g[3]))
+			await shot("b3_fx_" + String(g[0]))
+		# 传送光柱 + 升级光柱 + 闪电（直接发表现层事件）
+		var p0 := mv._wpos(spot.x, spot.y, 0)
+		mv.wfx.pillar(p0 + Vector3(-1.0, 0, 0), Color("#7fe3ff"))
+		mv.wfx.pillar(p0 + Vector3(1.0, 0, 0), Color("#ffd166"), 1.4, 0.35)
+		for k in 3:
+			mv.wfx.bolt(p0 + Vector3(-0.5, 0.3, 0.5 * k - 0.5), p0 + Vector3(2.0, 0.2, 0.5 * k - 0.5))
+		await _frames(4)
+		await shot("b3_fx_pillar_bolt")
 	if parts.has("overview"):
 		# 整张地图俯瞰（正交，关掉界面）
 		var cam := Camera3D.new()

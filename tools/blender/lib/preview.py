@@ -136,8 +136,8 @@ def render(path, objs, view="game", res=640, yaw_deg=0.0, transparent=False, mar
         fov = math.radians(30)
         cam.data.angle = fov
         dist = size * margin / (2 * math.tan(fov / 2))
-        yaw = {"front": 0, "side": 90, "back": 180, "three_quarter": 35, "turntable": yaw_deg, "top": 0, "icon_side": 72}.get(view, yaw_deg)
-        elev = {"top": 89.0, "three_quarter": 22.0, "turntable": 12.0, "icon_side": 18.0}.get(view, 6.0)
+        yaw = {"front": 0, "side": 90, "back": 180, "three_quarter": 35, "turntable": yaw_deg, "top": 0, "icon_side": 72, "icon3q": 30}.get(view, yaw_deg)
+        elev = {"top": 89.0, "three_quarter": 22.0, "turntable": 12.0, "icon_side": 18.0, "icon3q": 30.0}.get(view, 6.0)
         y = math.radians(yaw)
         e = math.radians(elev)
         eye = c + Vector((math.sin(y) * math.cos(e) * dist, math.cos(y) * math.cos(e) * dist, math.sin(e) * dist))

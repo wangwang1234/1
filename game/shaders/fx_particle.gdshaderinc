@@ -1,5 +1,6 @@
 // 特效粒子公共代码（见 fx_particle_add / fx_particle_mix）。
 // INSTANCE_CUSTOM.x = 形状：0 圆（硬边） 1 四角星 2 拉长条 3 卡通烟团（带亮暗两阶） 4 绒毛 5 方块碎屑
+//                     6 冰晶（菱形两阶） 7 六边形框（护盾） 8 加号（治疗） 9 火舌（水滴形，带亮芯）
 // INSTANCE_CUSTOM.y = 生命进度 0..1；COLOR = 颜色 + 透明度
 uniform float intensity = 1.0;
 
@@ -41,6 +42,30 @@ void fragment() {
 	} else if (shape == 4) {
 		float d = length(p * vec2(1.0, 1.6));
 		a = 1.0 - smoothstep(0.7, 0.9, d);
+	} else if (shape == 6) {
+		float dd = abs(p.x) * 1.7 + abs(p.y);
+		a = 1.0 - smoothstep(0.86, 0.92, dd);
+		c = mix(c * 0.8, mix(c, vec3(1.0), 0.6), step(p.x, 0.0) * step(0.0, -p.y + 0.1));
+		a *= 1.0 - smoothstep(0.6, 1.0, k);
+	} else if (shape == 7) {
+		vec2 q = abs(p);
+		float hx = max(q.x * 0.866 + q.y * 0.5, q.y);
+		a = smoothstep(0.62, 0.68, hx) * (1.0 - smoothstep(0.84, 0.9, hx));
+	} else if (shape == 8) {
+		vec2 q = abs(p);
+		float bar = max(step(q.x, 0.26) * step(q.y, 0.82), step(q.y, 0.26) * step(q.x, 0.82));
+		float edge = max(step(q.x, 0.36) * step(q.y, 0.92), step(q.y, 0.36) * step(q.x, 0.92));
+		a = edge;
+		c = mix(c * 0.45, mix(c, vec3(1.0), 0.25), bar);
+	} else if (shape == 9) {
+		// 火舌：下圆上尖（UV 的 y 朝下，p.y > 0 是下方）
+		float y = p.y;
+		float w = y > 0.25 ? sqrt(max(0.0, 0.42 - (y - 0.25) * (y - 0.25))) : 0.65 * pow(clamp((y + 0.95) / 1.2, 0.0, 1.0), 0.9);
+		a = step(abs(p.x), w) * step(-0.95, y) * step(y, 0.9);
+		float wi = w * 0.5;
+		float core = step(abs(p.x), wi) * step(-0.4, y) * step(y, 0.7);
+		c = mix(c, vec3(1.0, 0.95, 0.6), core * 0.85);
+		a *= 1.0 - smoothstep(0.7, 1.0, k);
 	} else {
 		a = step(abs(p.x), 0.7) * step(abs(p.y), 0.7);
 	}

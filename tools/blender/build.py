@@ -29,7 +29,7 @@ PALETTE = os.path.join(ROOT, "game", "assets", "textures", "palette.png")
 
 
 class Built:
-    def __init__(self, roots, animations=False, previews=None, outline=0.0035, extra_exports=None, after_export=None, item_previews=None):
+    def __init__(self, roots, animations=False, previews=None, outline=0.0035, extra_exports=None, after_export=None, item_previews=None, preview_objs=None):
         self.roots = roots                  # 导出的根物体列表
         self.animations = animations
         self.previews = previews            # [(后缀, 视角, {参数})]；None = 默认一组
@@ -37,6 +37,7 @@ class Built:
         self.extra_exports = extra_exports or []   # [(文件名, [物体])] 同一脚本导出多个 glb
         self.after_export = after_export     # 预览前回调（例如摆姿势）
         self.item_previews = item_previews   # [(视角, {参数})]：给 extra_exports 里每个物件单独渲染一张 <资产>_<物件>_<视角>.png
+        self.preview_objs = preview_objs or []   # 只参与预览渲染、不导出的物体（例如图标）
 
 
 class Ctx:
@@ -114,6 +115,9 @@ def build_one(name, cat, path, args):
                 if r not in objs:
                     objs.append(r)
                     objs.extend(r.children_recursive)
+        for r in res.preview_objs:
+            if r not in objs:
+                objs.append(r)
         preview.prepare(objs, res.outline)
         specs = res.previews if res.previews is not None else DEFAULT_PREVIEWS
         for (suffix, view, kw) in specs:

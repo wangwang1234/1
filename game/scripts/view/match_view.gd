@@ -641,6 +641,7 @@ func _dispatch(events: Array) -> void:
 					var p8 := _wpos(h5.x, h5.y, 30)
 					fx.stars(p8, Color("#ffe27a"), 10)
 					fx.ring(_wpos(h5.x, h5.y, 3), 0.16, 2.2, 0.4, Color("#ffd166"), 0.3)
+					wfx.pillar(_wpos(h5.x, h5.y, 0), Color("#ffd166"), 1.4, 0.35)
 				if is_local_id(h5.id if h5 != null else -1):
 					Audio.play2d("levelup", -3.0, 0.0)
 			"choices":
@@ -873,8 +874,11 @@ func _dispatch_b2(t: String, ev: Dictionary) -> void:
 				"eshield":
 					Audio.play3d("shield_up", p, -2.0)
 					fx.ring(p, 0.1, 1.6, 0.4, Color("#7fe3ff"), 0.3)
+					fx.hexes(_wpos(h.x, h.y, 5), 0.32, 10)
 				"medkit":
 					Audio.play3d("heal", p, -3.0)
+					fx.pluses(_wpos(h.x, h.y, 10), 8)
+					fx.ring(_wpos(h.x, h.y, 3), 0.1, 1.2, 0.4, Color("#8de0a6"), 0.25)
 				"jetpack":
 					Audio.play3d("jet", p, -2.0)
 					fx.dust(_wpos(h.x, h.y), Vector3.ZERO, 8, 1.6)
@@ -892,6 +896,7 @@ func _dispatch_b2(t: String, ev: Dictionary) -> void:
 				var p2 := _wpos(x, y, 3)
 				fx.ring(p2, 0.03, 2.4, 0.4, Color("#7fe3ff"), 0.3)
 				fx.stars(p2 + Vector3(0, 0.2, 0), Color("#9fe8ff"), 14, 1.6)
+				wfx.pillar(_wpos(x, y, 0), Color("#7fe3ff"))
 				fx.flash_light(p2 + Vector3(0, 0.3, 0), Color("#9fe8ff"), 2.0, 3.0, 0.2)
 			Audio.play3d("teleport", _wpos(float(ev.x1), float(ev.y1)), -2.0)
 		"smoke":
@@ -910,9 +915,11 @@ func _dispatch_b2(t: String, ev: Dictionary) -> void:
 			var r := float(ev.r) * 0.01
 			Audio.play3d("freeze", p4, -2.0)
 			fx.ring(p4, 0.04, r * 2.2 / 0.35, 0.35, Color("#bfefff"), 0.3)
-			for i in fx._n(20):
+			for i in fx._n(10):
 				var d := fx.rand_dir()
 				fx.spawn(p4, d * randf_range(0.6, 2.6) + Vector3(0, randf_range(0.4, 1.6), 0), randf_range(0.4, 0.8), randf_range(0.05, 0.09), Color("#cfefff"), FxSystem.S_STAR, true, 2.5, 2.0)
+			fx.shards(p4, 18, 2.6)
+			fx.hexes(_wpos(float(ev.x), float(ev.y), 4), r * 0.6, 8, Color("#bfefff"))
 			fx.flash_light(p4, Color("#bfefff"), 2.0, 3.0, 0.2)
 		"molotov":
 			var p5 := _wpos(float(ev.x), float(ev.y), 8)
@@ -1041,9 +1048,7 @@ func _dispatch_b2(t: String, ev: Dictionary) -> void:
 		"zap":
 			var a2 := _wpos(float(ev.x0), float(ev.y0), float(ev.get("h0", 20.0)))
 			var b2 := _wpos(float(ev.x1), float(ev.y1), float(ev.get("h1", 16.0)))
-			var mid := (a2 + b2) * 0.5 + Vector3(randf_range(-0.1, 0.1), randf_range(0.0, 0.1), randf_range(-0.1, 0.1))
-			wfx.add_beam(a2, mid, 0.03, Color("#9fe8ff"), 0.14, 1.0)
-			wfx.add_beam(mid, b2, 0.03, Color("#9fe8ff"), 0.14, 1.0)
+			wfx.bolt(a2, b2)
 			Audio.play3d("zap", b2, -8.0, 0.1, 0.1)
 		"pet_fire":
 			Audio.play3d("shot_pistol", _wpos(float(ev.x), float(ev.y)), -14.0, 0.2, 0.1)

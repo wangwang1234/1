@@ -153,14 +153,14 @@ static func entries(key: String) -> Array:
 			for id in Data.abilities():
 				var a: Dictionary = Data.abilities()[id]
 				out.append({"name": a.get("name", id), "desc": a.get("desc", ""), "stats": ["可以叠加 %d 次" % int(a.get("max", 1))],
-					"badge": String(a.get("ic", String(a.get("name", "?")).left(1))), "badge_col": UiTheme.ability_group_color(id)})
+					"badge": String(a.get("ic", String(a.get("name", "?")).left(1))), "badge_col": UiTheme.ability_group_color(id), "badge_icon": "abl_" + String(id)})
 		"talent":
 			var lv: Array = Data.progression().get("talentLevels", [10, 20, 30])
 			var lv_txt := "、".join(lv.map(func(x: Variant) -> String: return str(int(x))))
 			for id in Data.talents():
 				var t: Dictionary = Data.talents()[id]
 				out.append({"name": t.get("name", id), "rar": "天赋", "rar_col": Color("#ff6fd0"), "desc": t.get("desc", ""), "stats": ["第 %s 级三选一" % lv_txt],
-					"badge": String(t.get("name", "?")).left(1), "badge_col": Color("#ff6fd0")})
+					"badge": String(t.get("name", "?")).left(1), "badge_col": Color("#ff6fd0"), "badge_icon": "tal_" + String(id)})
 		"pet":
 			for id in Data.pets():
 				var p: Dictionary = Data.pets()[id]
@@ -232,7 +232,7 @@ func _card(e: Dictionary) -> Control:
 	frame.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	h.add_child(frame)
 	if e.has("badge"):
-		frame.add_child(_badge(String(e.badge), e.get("badge_col", UiTheme.GOLD)))
+		frame.add_child(_badge(String(e.badge), e.get("badge_col", UiTheme.GOLD), UiTheme.icon(String(e.get("badge_icon", "")))))
 	else:
 		var pic := TextureRect.new()
 		pic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -283,7 +283,7 @@ func _card(e: Dictionary) -> Control:
 	return card
 
 
-func _badge(text: String, col: Color) -> Control:
+func _badge(text: String, col: Color, tex: Texture2D = null) -> Control:
 	var c := Control.new()
 	c.custom_minimum_size = Vector2(PIC - 4, PIC - 4)
 	c.draw.connect(func() -> void:
@@ -293,6 +293,9 @@ func _badge(text: String, col: Color) -> Control:
 		c.draw_circle(ctr, r, col.darkened(0.45))
 		c.draw_circle(ctr, r * 0.86, col)
 		c.draw_arc(ctr, r * 0.86, PI * 1.1, PI * 1.6, 16, Color(1, 1, 1, 0.45), r * 0.1, true)
+		if tex:
+			c.draw_texture_rect(tex, Rect2(ctr - Vector2(r, r) * 1.25, Vector2(r, r) * 2.5), false)
+			return
 		UiTheme.fonts()
 		var fs := int(r * 1.05)
 		var f := UiTheme.display_font

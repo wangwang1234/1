@@ -12,7 +12,7 @@ const MAX_SHELL := 160
 const MAX_TRACER := 500
 const MAX_GEM := 300
 
-enum { S_CIRCLE, S_STAR, S_STREAK, S_SMOKE, S_FUR, S_CHUNK }
+enum { S_CIRCLE, S_STAR, S_STREAK, S_SMOKE, S_FUR, S_CHUNK, S_SHARD, S_HEX, S_PLUS, S_FLAME }
 
 class Particle:
 	var pos := Vector3.ZERO
@@ -372,7 +372,36 @@ func stars(pos: Vector3, color: Color, n: int, speed: float = 1.1) -> void:
 
 
 func burn(pos: Vector3) -> void:
-	spawn(pos + Vector3(_rng.randf_range(-0.06, 0.06), _rng.randf_range(0.05, 0.25), _rng.randf_range(-0.06, 0.06)), Vector3(0, _rng.randf_range(0.3, 0.7), 0), _rng.randf_range(0.25, 0.45), _rng.randf_range(0.07, 0.11), Color(1.0, 0.55, 0.15), S_CIRCLE, true, -0.6, 2.5, -0.15)
+	spawn(pos + Vector3(_rng.randf_range(-0.06, 0.06), _rng.randf_range(0.05, 0.25), _rng.randf_range(-0.06, 0.06)), Vector3(0, _rng.randf_range(0.3, 0.7), 0), _rng.randf_range(0.25, 0.45), _rng.randf_range(0.08, 0.12), Color(1.0, _rng.randf_range(0.45, 0.62), 0.15), S_FLAME, true, -0.6, 2.5, -0.12)
+
+
+func flames(pos: Vector3, radius: float, n: int) -> void:
+	## 卡通火舌：一片区域里随机冒几条（燃烧瓶火池、着火的东西）
+	for i in _n(n):
+		var a := _rng.randf() * TAU
+		var r := sqrt(_rng.randf()) * radius
+		var sz := _rng.randf_range(0.12, 0.22) * (0.6 + 0.4 * (1.0 - r / maxf(radius, 0.01)))
+		spawn(pos + Vector3(cos(a) * r, sz * 0.6, sin(a) * r), Vector3(0, _rng.randf_range(0.4, 0.9), 0), _rng.randf_range(0.35, 0.6), sz, Color(1.0, _rng.randf_range(0.4, 0.6), 0.12), S_FLAME, true, -0.5, 2.0, -0.18)
+
+
+func shards(pos: Vector3, n: int, speed: float = 2.0, color: Color = Color("#cfefff")) -> void:
+	## 冰晶碎片：朝四周飞，落地停住
+	for i in _n(n):
+		var d := (rand_dir() + Vector3(0, _rng.randf_range(0.4, 1.4), 0)).normalized()
+		spawn(pos, d * _rng.randf_range(0.5, 1.0) * speed, _rng.randf_range(0.5, 0.9), _rng.randf_range(0.05, 0.1), color, S_SHARD, false, 7.0, 1.0, 0.0, true)
+
+
+func hexes(pos: Vector3, radius: float, n: int, color: Color = Color("#7fe3ff")) -> void:
+	## 护盾：一圈六边形小格子往上飘散
+	for i in _n(n):
+		var a := float(i) / maxf(1.0, n) * TAU
+		spawn(pos + Vector3(cos(a) * radius, _rng.randf_range(0.05, 0.4), sin(a) * radius), Vector3(cos(a) * 0.3, _rng.randf_range(0.3, 0.7), sin(a) * 0.3), _rng.randf_range(0.4, 0.7), _rng.randf_range(0.08, 0.13), color, S_HEX, true, -0.2, 2.0, 0.05)
+
+
+func pluses(pos: Vector3, n: int, color: Color = Color("#8de0a6")) -> void:
+	## 治疗：绿色加号往上冒
+	for i in _n(n):
+		spawn(pos + Vector3(_rng.randf_range(-0.25, 0.25), _rng.randf_range(0.0, 0.3), _rng.randf_range(-0.25, 0.25)), Vector3(_rng.randf_range(-0.1, 0.1), _rng.randf_range(0.6, 1.1), _rng.randf_range(-0.1, 0.1)), _rng.randf_range(0.6, 0.9), _rng.randf_range(0.07, 0.11), color, S_PLUS, false, -0.3, 1.5)
 
 
 # ---------------------------------------------------------------------------
@@ -520,7 +549,7 @@ func _upd_particles(list: Array, mm: MultiMesh, delta: float, cam: Basis) -> voi
 		mm.set_instance_transform(k, Transform3D(b, p.pos))
 		var c := p.color
 		var lf := p.life / p.max_life
-		if p.shape == S_STAR or p.shape == S_STREAK or p.shape == S_CIRCLE:
+		if p.shape == S_STAR or p.shape == S_STREAK or p.shape == S_CIRCLE or p.shape == S_HEX or p.shape == S_PLUS:
 			c.a *= clampf(lf * 1.6, 0.0, 1.0)
 		mm.set_instance_color(k, c)
 		mm.set_instance_custom_data(k, Color(float(p.shape), 1.0 - lf, 0, 0))

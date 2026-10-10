@@ -327,7 +327,11 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 		c.draw_colored_polygon(pts, Color(0.04, 0.02, 0.08, 0.7))
 	c.draw_arc(gpos, gr, 0, TAU, 40, Color(1, 1, 1, 0.3) if gcd > 0.0 else Color("#c77dff"), 3 * s, true)
 	var gid := String(h.gadget.id)
-	_txt(c, gpos + Vector2(-gr, 8 * s), String(GICON.get(gid, "?")), 20 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, true, gr * 2.0)
+	var gic := UiTheme.icon("gad_" + gid)
+	if gic:
+		c.draw_texture_rect(gic, Rect2(gpos - Vector2(gr, gr) * 1.15, Vector2(gr, gr) * 2.3), false, Color(1, 1, 1, 0.55 if gcd > 0.0 else 1.0))
+	else:
+		_txt(c, gpos + Vector2(-gr, 8 * s), String(GICON.get(gid, "?")), 20 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, true, gr * 2.0)
 	_txt(c, gpos + Vector2(12, 24) * s, pin.gadget_key(), 15 * s, UiTheme.CREAM)
 	for d in int(h.gadget.lvl) - 1:
 		c.draw_circle(gpos + Vector2(-gr + 4 * s + d * 7 * s, -gr - 3 * s), 2.6 * s, Color("#c77dff"))
@@ -384,8 +388,12 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 		c.draw_circle(Vector2(ax + 14 * s, ay), 14 * s, cc)
 		if l >= 9:
 			c.draw_arc(Vector2(ax + 14 * s, ay), 17 * s, 0, TAU, 32, UiTheme.CREAM, 2.5 * s, true)
-		var nm := String(paths[i].name)
-		_txt(c, Vector2(ax, ay + 6 * s), nm.substr(0, 1), 15 * s, UiTheme.INK, HORIZONTAL_ALIGNMENT_CENTER, true, 28 * s, 0)
+		var eic := UiTheme.evo_icon(h.weapon_id, i)
+		if eic:
+			c.draw_circle(Vector2(ax + 14 * s, ay), 12 * s, Color(0.1, 0.07, 0.16, 0.9))
+			c.draw_texture_rect(eic, Rect2(Vector2(ax - 2 * s, ay - 16 * s), Vector2(32, 32) * s), false)
+		else:
+			_txt(c, Vector2(ax, ay + 6 * s), String(paths[i].name).substr(0, 1), 15 * s, UiTheme.INK, HORIZONTAL_ALIGNMENT_CENTER, true, 28 * s, 0)
 		# 小进度点：每 3 级一颗
 		for d in 3:
 			var on := l >= (d + 1) * 3
@@ -396,7 +404,11 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 			break
 		c.draw_circle(Vector2(ax + 14 * s, ay), 14 * s, Color(0.12, 0.3, 0.18, 0.95))
 		c.draw_arc(Vector2(ax + 14 * s, ay), 14 * s, 0, TAU, 32, Color("#5fd38a"), 2.0 * s, true)
-		_txt(c, Vector2(ax, ay + 6 * s), String(PET_ICON.get(p.type, "宠")), 15 * s, Color("#bff5cf"), HORIZONTAL_ALIGNMENT_CENTER, true, 28 * s, 3)
+		var pic := UiTheme.icon("pet_" + String(p.type))
+		if pic:
+			c.draw_texture_rect(pic, Rect2(Vector2(ax - 2 * s, ay - 16 * s), Vector2(32, 32) * s), false)
+		else:
+			_txt(c, Vector2(ax, ay + 6 * s), String(PET_ICON.get(p.type, "宠")), 15 * s, Color("#bff5cf"), HORIZONTAL_ALIGNMENT_CENTER, true, 28 * s, 3)
 		for d in p.lvl:
 			c.draw_circle(Vector2(ax + 7 * s + d * 7 * s, ay + 21 * s), 2.2 * s, Color("#5fd38a"))
 		ax += 34 * s
@@ -405,7 +417,11 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 			break
 		c.draw_circle(Vector2(ax + 14 * s, ay), 14 * s, Color(0.35, 0.1, 0.3, 0.95))
 		c.draw_arc(Vector2(ax + 14 * s, ay), 14 * s, 0, TAU, 32, Color("#ff6fd0"), 2.0 * s, true)
-		_txt(c, Vector2(ax, ay + 6 * s), String(Data.talents().get(tid, {}).get("name", "?")).left(1), 15 * s, Color("#ffd0f2"), HORIZONTAL_ALIGNMENT_CENTER, true, 28 * s, 3)
+		var tic := UiTheme.icon("tal_" + String(tid))
+		if tic:
+			c.draw_texture_rect(tic, Rect2(Vector2(ax - 2 * s, ay - 16 * s), Vector2(32, 32) * s), false)
+		else:
+			_txt(c, Vector2(ax, ay + 6 * s), String(Data.talents().get(tid, {}).get("name", "?")).left(1), 15 * s, Color("#ffd0f2"), HORIZONTAL_ALIGNMENT_CENTER, true, 28 * s, 3)
 		ax += 34 * s
 	for id in h.ab.keys():
 		if ax > x + w - 34 * s:
@@ -425,8 +441,12 @@ func _ability_badge(c: Control, p: Vector2, r: float, id: String, lv: int) -> vo
 	var col := UiTheme.ability_group_color(id)
 	c.draw_circle(p, r, Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.95))
 	c.draw_arc(p, r, 0, TAU, 32, col, 2.0 * _s(), true)
-	var ic := String(Data.abilities().get(id, {}).get("ic", "?"))
-	_txt(c, p + Vector2(-r, r * 0.45), ic, r * 1.15, col.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, true, r * 2.0, 3)
+	var tex := UiTheme.icon("abl_" + id)
+	if tex:
+		c.draw_texture_rect(tex, Rect2(p - Vector2(r, r) * 1.15, Vector2(r, r) * 2.3), false)
+	else:
+		var ic := String(Data.abilities().get(id, {}).get("ic", "?"))
+		_txt(c, p + Vector2(-r, r * 0.45), ic, r * 1.15, col.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, true, r * 2.0, 3)
 	if lv > 1:
 		for i in mini(lv, 5):
 			c.draw_circle(p + Vector2(-r * 0.7 + i * r * 0.35, r + 3), 1.6 * _s(), col)
@@ -847,7 +867,13 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 			"evo":
 				c.draw_circle(ic_c, 36 * s, Color(col.r, col.g, col.b, 0.18))
 				c.draw_arc(ic_c, 36 * s, 0, TAU, 40, col, 3 * s, true)
-				if icons.has(h.weapon_id):
+				var pidx := int(L.get("path", -1))
+				var etex := UiTheme.evo_icon(h.weapon_id, pidx)
+				if etex:
+					c.draw_texture_rect(etex, Rect2(ic_c - Vector2(42, 42) * s, Vector2(84, 84) * s), false)
+					if icons.has(h.weapon_id):
+						c.draw_texture_rect(icons[h.weapon_id], Rect2(ic_c + Vector2(4, 10) * s, Vector2(44, 44) * s), false)
+				elif icons.has(h.weapon_id):
 					c.draw_texture_rect(icons[h.weapon_id], Rect2(ic_c - Vector2(40, 40) * s, Vector2(80, 80) * s), false)
 			"weap":
 				if icons.has(String(cd.id)):
@@ -866,7 +892,11 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 						glyph = String(Data.talents().get(String(cd.id), {}).get("name", "天")).left(1)
 				c.draw_circle(ic_c, 30 * s, Color(col.r * 0.35, col.g * 0.35, col.b * 0.35, 0.95))
 				c.draw_arc(ic_c, 30 * s, 0, TAU, 32, col, 2.0 * s, true)
-				_txt(c, ic_c + Vector2(-30 * s, 30 * s * 0.45), glyph, 30 * s * 1.15, col.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, true, 60 * s, 3)
+				var ctex := UiTheme.card_icon(String(cd.t), String(cd.id))
+				if ctex:
+					c.draw_texture_rect(ctex, Rect2(ic_c - Vector2(38, 38) * s, Vector2(76, 76) * s), false)
+				else:
+					_txt(c, ic_c + Vector2(-30 * s, 30 * s * 0.45), glyph, 30 * s * 1.15, col.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, true, 60 * s, 3)
 		# 名字 + 描述
 		var tx := r.position.x + 108 * s
 		_txt(c, Vector2(tx, r.position.y + 78 * s), String(L.name), 26 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_LEFT, true)

@@ -221,8 +221,9 @@ func _sync_fires(w: SimWorld, delta: float) -> void:
 			if _rng.randf() < delta * 14.0 * fx.fx_scale:
 				var a := _rng.randf() * TAU
 				var rr := sqrt(_rng.randf()) * r
-				fx.spawn(c + Vector3(cos(a) * rr, _rng.randf_range(0.02, 0.1), sin(a) * rr * 0.8), Vector3(_rng.randf_range(-0.1, 0.1), _rng.randf_range(0.4, 0.9), _rng.randf_range(-0.1, 0.1)),
-					_rng.randf_range(0.3, 0.6), _rng.randf_range(0.14, 0.26) * (1.0 - k * 0.5), Color(1.0, _rng.randf_range(0.4, 0.7), 0.15), FxSystem.S_CIRCLE, true, -0.4, 2.0, -0.2)
+				var fs := _rng.randf_range(0.14, 0.26) * (1.0 - k * 0.5)
+				fx.spawn(c + Vector3(cos(a) * rr, fs * 0.55, sin(a) * rr * 0.8), Vector3(_rng.randf_range(-0.1, 0.1), _rng.randf_range(0.4, 0.9), _rng.randf_range(-0.1, 0.1)),
+					_rng.randf_range(0.3, 0.6), fs, Color(1.0, _rng.randf_range(0.4, 0.7), 0.15), FxSystem.S_FLAME if j == 0 else FxSystem.S_CIRCLE, true, -0.4, 2.0, -0.2)
 		if _rng.randf() < delta * 5.0:
 			fx.spawn(c + Vector3(_rng.randf_range(-r, r) * 0.6, _rng.randf_range(0.2, 0.4), _rng.randf_range(-r, r) * 0.5), Vector3(0, 0.45, 0), _rng.randf_range(1.0, 1.6), _rng.randf_range(0.2, 0.34), Color(0.23, 0.2, 0.25, 0.7), FxSystem.S_SMOKE, false, -0.3, 1.0, 0.2)
 		if not _fire_lights.has(fid) and _fire_lights.size() < 8:
@@ -379,3 +380,26 @@ func _sync_simple(w: SimWorld, delta: float) -> void:
 		if not want.has(key):
 			(_simple[key] as Node).queue_free()
 			_simple.erase(key)
+
+
+func bolt(a: Vector3, b: Vector3, col: Color = Color("#9fe8ff"), w: float = 0.03, life: float = 0.14, segs: int = 5) -> void:
+	## 锯齿闪电：a→b 之间折几段，末端炸一点火花
+	var prev := a
+	var side := (b - a).cross(Vector3.UP).normalized()
+	for i in range(1, segs + 1):
+		var t := float(i) / segs
+		var p := a.lerp(b, t)
+		if i < segs:
+			var j := (a.distance_to(b) * 0.12) * (1.0 if i % 2 == 0 else -1.0) * _rng.randf_range(0.5, 1.2)
+			p += side * j + Vector3(0, _rng.randf_range(-0.03, 0.06), 0)
+		add_beam(prev, p, w, col, life, 1.0)
+		prev = p
+	fx.spawn(b, Vector3.ZERO, 0.08, 0.12, col.lightened(0.4), FxSystem.S_STAR, true, 0, 0)
+
+
+func pillar(pos: Vector3, col: Color, h: float = 2.2, life: float = 0.45) -> void:
+	## 光柱（传送、复活）：一根竖直的粗光束 + 往上飘的光点
+	add_beam(pos, pos + Vector3(0, h, 0), 0.28, col, life, 0.9)
+	add_beam(pos, pos + Vector3(0, h * 0.7, 0), 0.12, col.lightened(0.5), life * 0.8, 1.0)
+	for i in fx._n(10):
+		fx.spawn(pos + Vector3(_rng.randf_range(-0.2, 0.2), _rng.randf_range(0.0, 0.4), _rng.randf_range(-0.2, 0.2)), Vector3(0, _rng.randf_range(1.2, 2.6), 0), _rng.randf_range(0.4, 0.7), 0.03, col.lightened(0.3), FxSystem.S_STREAK, true, -1.0, 0.5, 0.0, false, 0.8)

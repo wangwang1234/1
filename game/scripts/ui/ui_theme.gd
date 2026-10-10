@@ -16,6 +16,7 @@ const CARD_COLORS := {"进化": Color("#ff9a3c"), "强化": Color("#5fb0ff"), "�
 const PATH_COLORS := [Color("#ff9a3c"), Color("#5fb0ff"), Color("#c77dff")]
 
 static var body_font: Font
+static var _icons := {}
 static var display_font: Font
 static var _theme: Theme
 
@@ -154,3 +155,37 @@ static func ability_group_color(id: String) -> Color:
 	if id in ["rage", "crit", "rate", "frost", "chain"]:
 		return Color("#ff8a7a")
 	return Color("#c9a2ff")
+
+
+static func icon(name: String) -> Texture2D:
+	## 图标（res://assets/icons/<名>.png，tools/blender/assets/icons/icon_kit.py 渲染）。没有就返回 null
+	if not _icons.has(name):
+		var p := "res://assets/icons/%s.png" % name
+		_icons[name] = load(p) if ResourceLoader.exists(p) else null
+	return _icons[name]
+
+
+static func evo_icon(weapon_id: String, path_idx: int) -> Texture2D:
+	## 进化路线图标 = 这条路线的配件（按路线色）
+	var types: Array = Data.evolutions().get("attachmentType", {}).get(weapon_id, [])
+	if path_idx < 0 or path_idx >= types.size():
+		return null
+	return icon("evo_%s_%s" % [String(types[path_idx]), ["a", "b", "c"][path_idx]])
+
+
+static func card_icon(t: String, id: String, weapon_id: String = "", path_idx: int = -1) -> Texture2D:
+	## 升级卡 / HUD 用：按卡片类型取图标
+	match t:
+		"gad", "glvl":
+			return icon("gad_" + id)
+		"pet":
+			return icon("pet_" + id)
+		"tal":
+			return icon("tal_" + id)
+		"abil":
+			return icon("abl_" + id)
+		"weap":
+			return icon("wpn_" + id)
+		"evo":
+			return evo_icon(weapon_id, path_idx)
+	return null
