@@ -2,9 +2,9 @@
   "_doc": "书房渲染样板：连续环境材质、角色柔和阶调、窗光、空间补光与环境反射。仅用于表现。",
   "environment": {
     "ambientColor": "#9daecc",
-    "ambientEnergy": 0.32,
+    "ambientEnergy": 0.18,
     "moonColor": "#a7bddf",
-    "moonEnergy": 0.18,
+    "moonEnergy": 0.14,
     "moonRotation": [
       -48,
       -32,
@@ -26,7 +26,7 @@
       "horizonColor": "#77849b",
       "groundColor": "#151420",
       "groundHorizonColor": "#6b5a48",
-      "energy": 0.52
+      "energy": 0.3
     },
     "aoLightAffect": 0.12,
     "indirectRadius": 1.15
@@ -50,15 +50,17 @@
     "selfGlow": 0.012,
     "rimBoost": 0.018,
     "rimTeamMix": 0.25,
-    "flashlightEnergyLocal": 1.0,
-    "flashlightEnergyOther": 0.75,
+    "flashlightEnergyLocal": 3.0,
+    "flashlightEnergyOther": 2.0,
     "flashlightSpecular": 0.55,
-    "beamStrength": 0.006,
+    "beamStrength": 0.06,
     "portraitYawDegrees": 198.0,
     "portraitLightEnergy": 1.1,
     "portraitAmbientEnergy": 0.5,
     "portraitKeyColor": "#ffe7ca",
-    "portraitAmbientColor": "#b6c4df"
+    "portraitAmbientColor": "#b6c4df",
+    "flashlightAttenuation": 0.75,
+    "flashlightConeAttenuation": 1.2
   },
   "materials": {
     "object": {
@@ -656,7 +658,7 @@
           16.5
         ],
         "color": "#c7cfdf",
-        "energy": 2.0,
+        "energy": 0.8,
         "range": 13.0,
         "angle": 57.0,
         "attenuation": 0.8,
@@ -714,5 +716,44 @@
         "intensity": 0.5
       }
     ]
+  },
+  "quality": {
+    "_doc": "画质档位（设置 → 画面 → 画质；手机默认 low，电脑默认 high）。ssao/ssil 屏幕空间环境光遮蔽 / 间接光；ssaoHalf 半分辨率；dof 景深；motionBlur 动态模糊；shadowSplits 月光阴影分级数（1/2/4）；softShadow 软阴影质量 0～5；roomShadows 房间补光是否投影；reflections 静态反射探针；msaa 0/2/4",
+    "low": {
+      "ssao": false,
+      "ssaoHalf": true,
+      "ssil": false,
+      "dof": false,
+      "motionBlur": false,
+      "shadowSplits": 1,
+      "softShadow": 1,
+      "roomShadows": false,
+      "reflections": false,
+      "msaa": 0
+    },
+    "medium": {
+      "ssao": true,
+      "ssaoHalf": true,
+      "ssil": false,
+      "dof": false,
+      "motionBlur": false,
+      "shadowSplits": 2,
+      "softShadow": 2,
+      "roomShadows": true,
+      "reflections": true,
+      "msaa": 2
+    },
+    "high": {
+      "ssao": true,
+      "ssaoHalf": false,
+      "ssil": true,
+      "dof": true,
+      "motionBlur": true,
+      "shadowSplits": 4,
+      "softShadow": 4,
+      "roomShadows": true,
+      "reflections": true,
+      "msaa": 4
+    }
   }
 }

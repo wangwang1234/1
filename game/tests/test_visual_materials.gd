@@ -97,3 +97,26 @@ func test_merged_furniture_keeps_wood_and_metal_surfaces() -> void:
 	check(merged_modes.has("0_1"), "木柜应有哑光木材表面")
 	check(merged_modes.has("3_0"), "把手应保留金属表面")
 	instance.free()
+
+
+func test_graphics_quality_tiers() -> void:
+	## 画质档位：低档关掉屏幕空间效果和多级阴影，高档全开；数据里三档齐全
+	var Q: Dictionary = VisualStyle.section("quality")
+	for k in ["low", "medium", "high"]:
+		check(Q.has(k), "画质档 %s 存在" % k)
+	var old := VisualStyle.quality
+	VisualStyle.quality = "low"
+	var e := VisualStyle.environment()
+	check(not e.ssao_enabled and not e.ssil_enabled, "低档关掉环境光遮蔽和间接光")
+	var m := VisualStyle.moon()
+	eq(m.directional_shadow_mode, DirectionalLight3D.SHADOW_ORTHOGONAL, "低档月光阴影不分级")
+	m.free()
+	VisualStyle.quality = "high"
+	e = VisualStyle.environment()
+	check(e.ssao_enabled and e.ssil_enabled, "高档全开")
+	m = VisualStyle.moon()
+	eq(m.directional_shadow_mode, DirectionalLight3D.SHADOW_PARALLEL_4_SPLITS, "高档 4 级阴影")
+	m.free()
+	VisualStyle.quality = "nope"
+	check(VisualStyle.environment().ssao_enabled, "未知档位按高档处理")
+	VisualStyle.quality = old

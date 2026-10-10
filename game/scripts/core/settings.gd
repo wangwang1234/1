@@ -14,6 +14,7 @@ var shake := 1.0
 var show_fps := false
 var vsync := true
 var render_scale := 1.0
+var graphics := "low" if OS.has_feature("mobile") else "high"    # 画质：low / medium / high（visual_style.json 的 quality）
 var aim_assist := "normal"    # 手动瞄准辅助：off / light / normal / strong（rules.json 的 aimAssist.levels）
 var lobby := {}               # 开局大厅上次的选择
 
@@ -39,6 +40,7 @@ func load_cfg() -> void:
 	vsync = bool(c.get_value("video", "vsync", vsync))
 	render_scale = float(c.get_value("video", "scale", render_scale))
 	aim_assist = String(c.get_value("game", "aim_assist", aim_assist))
+	graphics = String(c.get_value("video", "graphics", graphics))
 	lobby = c.get_value("lobby", "last", {})
 
 
@@ -55,12 +57,15 @@ func save_cfg() -> void:
 	c.set_value("video", "vsync", vsync)
 	c.set_value("video", "scale", render_scale)
 	c.set_value("game", "aim_assist", aim_assist)
+	c.set_value("video", "graphics", graphics)
 	c.set_value("lobby", "last", lobby)
 	c.save(PATH)
 
 
 func apply() -> void:
 	PlayerInput.assist_level = float(Data.rule("aimAssist.levels." + aim_assist, 1.0))
+	VisualStyle.quality = graphics
+	VisualStyle.apply_quality()
 	_bus("Master", master_volume)
 	_bus("SFX", sfx_volume)
 	_bus("UI", sfx_volume)
@@ -73,6 +78,8 @@ func apply() -> void:
 	var tree := get_tree()
 	if tree != null and tree.root != null:
 		tree.root.scaling_3d_scale = clampf(render_scale, 0.5, 1.0)
+		var msaa := int(VisualStyle.q().get("msaa", 4))
+		tree.root.msaa_3d = Viewport.MSAA_4X if msaa >= 4 else (Viewport.MSAA_2X if msaa >= 2 else Viewport.MSAA_DISABLED)
 
 
 func _bus(nm: String, v: float, base_db: float = 0.0) -> void:

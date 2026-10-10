@@ -11,7 +11,7 @@ static func inside_map(pos: Vector3, map: SimMap) -> bool:
 
 
 static func add_reflection(parent: Node3D, item: Dictionary, map: SimMap) -> void:
-	if not bool(item.enabled) or not inside_map(vector(item.position), map):
+	if not bool(item.enabled) or not bool(VisualStyle.q().get("reflections", true)) or not inside_map(vector(item.position), map):
 		return
 	var probe := ReflectionProbe.new()
 	probe.name = String(item.get("name", "StaticRoomReflection"))
@@ -59,7 +59,7 @@ static func build_study(parent: Node3D, map: SimMap) -> void:
 		light.light_energy = float(item.energy)
 		light.light_specular = float(item.specular)
 		light.light_size = float(item.size)
-		light.shadow_enabled = bool(item.shadow)
+		light.shadow_enabled = bool(item.shadow) and bool(VisualStyle.q().get("roomShadows", true))
 		light.shadow_bias = 0.025
 		light.shadow_normal_bias = 0.15
 		room.add_child(light)

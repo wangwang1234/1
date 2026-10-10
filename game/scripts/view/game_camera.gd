@@ -29,7 +29,7 @@ func _ready() -> void:
 	_noise.seed = 7
 	_noise.frequency = 1.0
 	var dof: Dictionary = VisualStyle.section("camera").get("depthOfField", {})
-	if bool(dof.get("enabled", false)):
+	if bool(dof.get("enabled", false)) and bool(VisualStyle.q().get("dof", true)):
 		_camera_attributes = CameraAttributesPractical.new()
 		_camera_attributes.dof_blur_near_enabled = true
 		_camera_attributes.dof_blur_far_enabled = true
@@ -37,7 +37,7 @@ func _ready() -> void:
 		_camera_attributes.dof_blur_near_transition = float(dof.transition)
 		_camera_attributes.dof_blur_far_transition = float(dof.transition)
 		attributes = _camera_attributes
-	if not Capture.args.has("no-motion") and RenderingServer.get_current_rendering_method() == "forward_plus":
+	if not Capture.args.has("no-motion") and bool(VisualStyle.q().get("motionBlur", true)) and RenderingServer.get_current_rendering_method() == "forward_plus":
 		motion_blur = SubtleMotionBlur.new()
 		var effects := Compositor.new()
 		effects.compositor_effects = [motion_blur]

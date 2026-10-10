@@ -41,6 +41,7 @@ func _ready() -> void:
 		v.add_child(page)
 		pages[key] = page
 	var pv: VBoxContainer = pages.video
+	_seg(pv, "画质", Settings.graphics, [["low", "低"], ["medium", "中"], ["high", "高"]], func(x: String) -> void: Settings.graphics = x)
 	_slider(pv, "特效强度", Settings.fx_strength, 0.3, 1.5, func(x: float) -> void: Settings.fx_strength = x)
 	_slider(pv, "屏幕震动", Settings.shake, 0.0, 1.5, func(x: float) -> void: Settings.shake = x)
 	_slider(pv, "渲染精度", Settings.render_scale, 0.5, 1.0, func(x: float) -> void: Settings.render_scale = x)

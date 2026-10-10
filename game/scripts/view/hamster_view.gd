@@ -221,8 +221,8 @@ func _setup_light() -> void:
 	flashlight.light_color = Color(1.0, 0.93, 0.78)
 	var style := VisualStyle.section("character")
 	flashlight.light_energy = float(style.flashlightEnergyLocal if is_local else style.flashlightEnergyOther)
-	flashlight.spot_attenuation = 1.0
-	flashlight.spot_angle_attenuation = 1.4
+	flashlight.spot_attenuation = float(style.get("flashlightAttenuation", 1.0))
+	flashlight.spot_angle_attenuation = float(style.get("flashlightConeAttenuation", 1.4))
 	flashlight.shadow_enabled = is_local
 	flashlight.shadow_bias = 0.05
 	flashlight.light_specular = float(style.flashlightSpecular)
