@@ -41,6 +41,7 @@ var minion_views := {}
 var struct_views := {}
 var prop_views := {}
 var crate_views := {}
+var _quiet_acc := {}           # 本地玩家的持续伤害（激光）按目标攒起来定时冒数字
 var autoplay := false          # 截图/录屏时让本地玩家也由 AI 控制
 var hitstop := 0.0
 var cam_focus_offset := Vector3.ZERO    # 镜头焦点额外偏移（米）；只给截图取景用，游戏里恒为 0
@@ -267,34 +268,9 @@ static func apply_mask(n: Node, mask: int) -> void:
 
 func _setup_env() -> void:
 	env = WorldEnvironment.new()
-	var e := Environment.new()
-	e.background_mode = Environment.BG_COLOR
-	e.background_color = Color(0.05, 0.035, 0.08)
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color(0.40, 0.34, 0.62)
-	e.ambient_light_energy = 0.42
-	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
-	e.tonemap_exposure = 1.0
-	e.glow_enabled = true
-	e.glow_intensity = 0.55
-	e.glow_strength = 1.0
-	e.glow_bloom = 0.0
-	e.glow_hdr_threshold = 1.15
-	e.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
-	e.adjustment_enabled = true
-	e.adjustment_saturation = 1.08
-	e.adjustment_contrast = 1.04
-	env.environment = e
+	env.environment = VisualStyle.environment()
 	add_child(env)
-	moon = DirectionalLight3D.new()
-	moon.name = "Moon"
-	moon.light_color = Color(0.55, 0.62, 1.0)
-	moon.light_energy = 0.32
-	moon.rotation_degrees = Vector3(-62, -35, 0)
-	moon.shadow_enabled = true
-	moon.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
-	moon.directional_shadow_max_distance = 22.0
-	moon.light_specular = 0.0
+	moon = VisualStyle.moon()
 	add_child(moon)
 
 
@@ -379,7 +355,7 @@ func _physics_process(dt: float) -> void:
 			var mp := get_viewport().get_mouse_position()
 			if split:
 				mp = pl.box.get_local_mouse_position()
-			pl.input.poll(pl.ham, pl.cam, mp, not pl.ham.choices.is_empty(), world)
+			pl.input.poll(pl.ham, pl.cam, mp, not pl.ham.choices.is_empty() and pl.hud.card_at(mp) >= 0, world)
 	var steps := 1
 	if time_scale < 1.0:
 		# 慢动作：按比例跳过逻辑帧
@@ -407,6 +383,7 @@ func _physics_process(dt: float) -> void:
 
 
 func _process(delta: float) -> void:
+	_flush_quiet(delta)
 	if world == null:
 		return
 	var alpha := Engine.get_physics_interpolation_fraction()
@@ -721,6 +698,19 @@ func _dispatch(events: Array) -> void:
 				_dispatch_b2(t, ev)
 
 
+func _flush_quiet(delta: float) -> void:
+	for id in _quiet_acc.keys():
+		var acc: Dictionary = _quiet_acc[id]
+		acc.t = float(acc.t) + delta
+		if float(acc.t) < 0.35:
+			continue
+		_quiet_acc.erase(id)
+		var amt := int(round(float(acc.amt)))
+		if amt > 0:
+			var p := _wpos(float(acc.x), float(acc.y), float(acc.r) * 2.4 + 12.0)
+			fx.number(p, str(amt), Color("#ff8a8a") if String(acc.kind) == "ham" else Color("#ffffff"), 0.8)
+
+
 func _on_damage(ev: Dictionary) -> void:
 	var id := int(ev.id)
 	var e: SimEntity = world.entities.get(id)
@@ -737,6 +727,15 @@ func _on_damage(ev: Dictionary) -> void:
 			Audio.play2d("hurt", -6.0, 0.08, 0.08)
 		elif seen and not bool(ev.quiet):
 			Audio.play3d("hurt", p, -10.0, 0.1, 0.1)
+	if seen and Settings.show_damage_numbers and bool(ev.quiet) and not bool(ev.crit) and is_local_id(int(ev.get("by", -1))):
+		# 持续伤害（激光每秒 10 跳）：攒起来每 0.35 秒冒一个合计数字，不然本地玩家打中了也看不到反馈
+		var acc: Dictionary = _quiet_acc.get(id, {"amt": 0.0, "t": 0.0})
+		acc.amt = float(acc.amt) + float(ev.amount)
+		acc.x = float(ev.x)
+		acc.y = float(ev.y)
+		acc.r = float(ev.r)
+		acc.kind = String(ev.kind)
+		_quiet_acc[id] = acc
 	if seen and Settings.show_damage_numbers and (not bool(ev.quiet) or bool(ev.crit)):
 		var amt := int(round(float(ev.amount)))
 		if amt <= 0:

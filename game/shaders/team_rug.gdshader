@@ -24,8 +24,5 @@ void light() {
 	float ndl = dot(NORMAL, LIGHT);
 	float lit = smoothstep(0.25, 0.32, ndl);
 	float a = ATTENUATION;
-	if (!LIGHT_IS_DIRECTIONAL) {
-		a = smoothstep(0.02, 0.05, a) * 0.35 + smoothstep(0.18, 0.24, a) * 0.35 + smoothstep(0.5, 0.58, a) * 0.3;
-	}
 	DIFFUSE_LIGHT += LIGHT_COLOR / PI * lit * a;
 }

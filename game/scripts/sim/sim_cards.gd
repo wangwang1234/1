@@ -136,13 +136,11 @@ static func label(h: SimHamster, c: Dictionary) -> Dictionary:
 			var i := PK.find(c.k)
 			var p: Dictionary = Data.evolutions().paths[h.weapon_id][i]
 			var lv := h.evo_lv(c.k) + 1
-			var desc := String(p.perLevel)
+			# 每一级都有自己的效果（evolutions.json 的 lv）；第 9 级是质变
+			var texts: Array = p.get("lv", [])
+			var desc := String(texts[mini(lv, texts.size()) - 1]) if not texts.is_empty() else String(p.perLevel)
 			if lv >= 9:
-				desc = "质变：" + String(p.lv9)
-			elif lv == 3:
-				desc = String(p.perLevel) + "；" + String(p.lv3)
-			elif lv == 6:
-				desc = String(p.perLevel) + "；" + String(p.lv6)
+				desc = "质变：" + desc
 			return {"type": "进化", "name": p.name, "badge": "质变" if lv >= 9 else "", "desc": desc, "path": i, "pathColor": Data.evolutions().pathColors[i], "weapon": h.weapon_id}
 		"weap":
 			var W := Data.weapon(c.id)

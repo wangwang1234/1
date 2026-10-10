@@ -53,8 +53,8 @@ func add_beam(a: Vector3, b: Vector3, w: float, col: Color, life: float, core: f
 
 
 func slash(pos: Vector3, a: float, reach: float, arc: float, dir: float, col: Color = Color("#d8f0ff"), life: float = 0.18) -> void:
-	## 刀光：沿弧线摆一圈短光束，0.18 秒淡出
-	var n := 9
+	## 刀光：沿弧线摆一圈短光束，0.18 秒淡出（旋风斩是一整圈，段数加倍）
+	var n := 9 if arc < 3.0 else 20
 	for i in n:
 		var k0 := float(i) / n
 		var k1 := float(i + 1) / n

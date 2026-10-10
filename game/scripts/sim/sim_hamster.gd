@@ -16,6 +16,7 @@ class HamInput:
 	var aim_x := 0.0      # 鼠标指向的地面点（投掷落点用）
 	var aim_y := 0.0
 	var has_aim_point := false
+	var assist := 0.0    # 手动瞄准辅助强度（玩家设置；0 = 关，AI 不用）
 
 
 class AiState:
@@ -35,6 +36,17 @@ class AiState:
 	var inv := {}            # 听到声音去侦察：{x, y, t}
 	var jungle_t := 20.0     # 下次考虑去打野的时间
 	var camp := {}           # 要去打的营地
+	var prof := {}           # 难度参数（difficulty.json 的一档，SimWorld.ai_profile）
+	var react_t := 0.0       # 发现新仓鼠目标后的反应时间：倒计时结束前不开火
+	var last_tid := 0        # 上一个目标的 id（换目标时重新计反应时间）
+	var burst_t := 0.0       # 点射节奏：>0 在连射，<0 在停顿
+	var dodge_t := 0.0       # 下次检查飞来子弹的倒计时
+	var dodge_x := 0.0       # 正在躲闪的侧移方向（dodge_left > 0 时有效）
+	var dodge_y := 0.0
+	var dodge_left := 0.0
+	var seen := {}           # 最后一次看到仓鼠目标的位置：{x, y}
+	var goal_t := 0.0        # 战术判断（捡东西 / 支援 / 被围）的下次检查倒计时
+	var pick := {}           # 正要去捡的东西 / 去支援的位置：{x, y, why}
 
 
 var ctl := "ai"               # player / ai
@@ -75,7 +87,9 @@ var blind_t := 0.0
 var air := {}                 # 弹射飞行：{t, dur, x0, y0, x1, y1, hgt}
 var z := 0.0
 var pad_cd := 0.0
+var base_heal_t := 0.0         # 鼠窝回血的下一跳倒计时
 var last_shot_t := -9.0
+var trig_n := 0               # 扣扳机次数（连发的追加弹不算）：“每第 N 次”类进化按它计数
 var shot_n := 0
 var ramp := 0.0
 var burst_n := 0

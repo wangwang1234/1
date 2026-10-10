@@ -1,0 +1,7 @@
+{
+	"draw_calls": 623,
+	"note": "软件渲染仅供画面与绘制规模检查，不代表目标电脑帧率",
+	"primitives": 2168060,
+	"renderer": "forward_plus",
+	"resolution": "(1600, 900)"
+}

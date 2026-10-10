@@ -1,6 +1,6 @@
 class_name Lobby
 extends PanelContainer
-## 开局大厅（GDD 第 16 节）：模式（单人 / 双人同屏）、地图、玩家队伍和形象、2P 操作方式、两队 AI 补位人数、初始武器（测试用）。
+## 开局大厅（GDD 第 16 节）：模式（单人 / 双人同屏）、地图、AI 难度、玩家队伍和形象、2P 操作方式、两队 AI 补位人数、初始武器（测试用）。
 ## 选择记在 Settings.lobby 里，下次打开保持上次的设置。
 
 signal start_requested(opts: Dictionary)
@@ -8,7 +8,7 @@ signal closed
 signal skin_changed(skin: String)
 
 const DEFAULTS := {"duo": false, "mode": "full", "p1_team": "blue", "p2_team": "red", "p2_input": "pad", "skin": "gold", "skin2": "pudding",
-	"ai_blue": 4, "ai_red": 5, "ai_auto": true, "weapon": "pistol"}
+	"ai_blue": 4, "ai_red": 5, "ai_auto": true, "weapon": "pistol", "difficulty": "normal"}
 ## AI 自动配平时每队凑满几只（完整地图 5 对 5，中路小图 3 对 3）
 const TEAM_SIZE := {"full": 5, "slice": 3}
 
@@ -33,6 +33,11 @@ func _ready() -> void:
 	v.add_child(title)
 	rows.mode = _seg(v, "模式", "duo", [[false, "单人"], [true, "双人同屏"]])
 	rows.map = _seg(v, "地图", "mode", [["full", "完整地图（三条兵线）"], ["slice", "中路小图"]])
+	var DF: Dictionary = Data.difficulty()
+	var dopts: Array = []
+	for k: String in DF.order:
+		dopts.append([k, String(DF.levels[k].name)])
+	rows.difficulty = _seg(v, "AI 难度", "difficulty", dopts)
 	rows.p1_team = _seg(v, "玩家1 队伍" if bool(o.duo) else "队伍", "p1_team", [["blue", "蓝队"], ["red", "红队"]])
 	rows.skin = _seg(v, "玩家1 形象" if bool(o.duo) else "形象", "skin", _skin_opts())
 	rows.p2_team = _seg(v, "玩家2 队伍", "p2_team", [["blue", "蓝队"], ["red", "红队"]])
@@ -196,7 +201,9 @@ func _refresh() -> void:
 			t += "玩家2（方向键）：方向键移动（自动瞄准）· 回车射击 · 右 Shift 翻滚 · / 换弹 · . 道具 · 8/9/0 选卡"
 	var nb := int(o.ai_blue) + (1 if String(o.p1_team) == "blue" else 0) + (1 if duo and String(o.p2_team) == "blue" else 0)
 	var nr := int(o.ai_red) + (1 if String(o.p1_team) == "red" else 0) + (1 if duo and String(o.p2_team) == "red" else 0)
-	help.text = "%s\n本局：蓝队 %d 只 vs 红队 %d 只" % [t, nb, nr]
+	var DL: Dictionary = Data.difficulty().levels
+	var dl: Dictionary = DL.get(String(o.difficulty), DL.normal)
+	help.text = "%s\n本局：蓝队 %d 只 vs 红队 %d 只 · %s：%s" % [t, nb, nr, String(dl.name), String(dl.desc)]
 
 
 func _start() -> void:

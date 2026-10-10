@@ -120,6 +120,10 @@ def build_one(name, cat, path, args):
                 objs.append(r)
         preview.prepare(objs, res.outline)
         specs = res.previews if res.previews is not None else DEFAULT_PREVIEWS
+        if args.get("preview_filter"):
+            import fnmatch
+            patterns = args["preview_filter"].split(",")
+            specs = [s for s in specs if any(fnmatch.fnmatch(s[0], pattern) for pattern in patterns)]
         for (suffix, view, kw) in specs:
             kw = dict(kw)
             light = kw.pop("light", "studio")
@@ -171,6 +175,9 @@ def parse(argv):
             args["no_preview"] = True
         elif a == "--preview-only":
             args["preview_only"] = True
+        elif a == "--preview-filter":
+            args["preview_filter"] = argv[i+1]
+            i += 1
         elif a == "--list":
             args["list"] = True
         i += 1

@@ -6,6 +6,7 @@ extends Node
 ##   --mode full|slice    地图（默认 full = 完整三路地图；slice = 批次 1 的中路小图）
 ##   --duo                本地双人分屏（2P 默认用手柄，--p2 keys2 改用方向键）
 ##   --seed N             随机种子（默认按时间）
+##   --difficulty easy|normal|hard|hell   AI 难度（默认 normal，见 difficulty.json）
 ##   --skin gold|pudding|silver|stripe   --weapon <武器 id>（见 weapons.json）
 ##   --quit-after S       S 秒后自动退出（无人值守跑局用，退出码 0 = 无报错）
 ## 截图 / 录屏 / 帧率测试见 Capture 自动加载（--capture ...）。
@@ -26,7 +27,7 @@ var _busy := false
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	args = parse_args(OS.get_cmdline_user_args())
-	for k: String in ["skin", "weapon", "mode"]:
+	for k: String in ["skin", "weapon", "mode", "difficulty"]:
 		if args.has(k):
 			opts[k] = String(args[k])
 	if args.has("seed"):
@@ -149,7 +150,7 @@ func make_cfg(o: Dictionary) -> Dictionary:
 		for p in players:
 			hum[p.team] = int(hum.get(p.team, 0)) + 1
 		ai = {"blue": maxi(0, size - int(hum.get("blue", 0))), "red": maxi(0, size - int(hum.get("red", 0)))}
-	return {"mode": mode, "seed": sd, "autoplay": bool(o.get("autoplay", false)), "players": players, "ai": ai}
+	return {"mode": mode, "seed": sd, "autoplay": bool(o.get("autoplay", false)), "players": players, "ai": ai, "difficulty": String(o.get("difficulty", "normal"))}
 
 
 func start_match(o: Dictionary, instant: bool = false) -> void:

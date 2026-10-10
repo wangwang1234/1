@@ -139,9 +139,15 @@ static func entries(key: String) -> Array:
 					else:
 						st.append("射程 %d" % int(w.range))
 				var paths := []
+				var path_tips := []
 				for p in evo.get(id, []):
 					paths.append(String(p.get("name", "")))
-				out.append({"name": w.get("name", id), "desc": ("开局默认武器。" if id == "pistol" else "") + String(w.get("desc", "")), "stats": st, "paths": paths,
+					var lines := []
+					var lv: Array = p.get("lv", [])
+					for i in lv.size():
+						lines.append("%d 级：%s%s" % [i + 1, "质变：" if i == 8 else "", String(lv[i])])
+					path_tips.append("\n".join(lines))
+				out.append({"name": w.get("name", id), "desc": ("开局默认武器。" if id == "pistol" else "") + String(w.get("desc", "")), "stats": st, "paths": paths, "path_tips": path_tips,
 					"icon": "res://assets/icons/wpn_%s.png" % id, "snap": "res://assets/models/weapons/wpn_%s.glb" % id, "yaw": -PI * 0.5})
 		"gadget":
 			for id in Data.gadgets():
@@ -278,7 +284,12 @@ func _card(e: Dictionary) -> Control:
 		pr.add_child(UiTheme.label("进化路线", 18, UiTheme.SUB, false, 0))
 		for i in (e.paths as Array).size():
 			var col: Color = UiTheme.PATH_COLORS[i % UiTheme.PATH_COLORS.size()]
-			pr.add_child(UiTheme.label(String(e.paths[i]), 18, col, false, 3))
+			var pl := UiTheme.label(String(e.paths[i]), 18, col, false, 3)
+			var tips: Array = e.get("path_tips", [])
+			if i < tips.size():
+				pl.tooltip_text = String(tips[i])     # 悬停看这条路线 9 级各是什么
+				pl.mouse_filter = Control.MOUSE_FILTER_PASS
+			pr.add_child(pl)
 		info.add_child(pr)
 	return card
 

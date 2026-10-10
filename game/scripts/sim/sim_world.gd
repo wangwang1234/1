@@ -16,6 +16,8 @@ var t := 0.0
 var tick := 0
 var map := SimMap.new()
 var mode := "slice"
+var difficulty := "normal"       # AI 难度（difficulty.json 的 levels 键）
+var human_teams := {}            # 有真人玩家的队伍
 var R: Dictionary = {}
 
 var hams: Array[SimHamster] = []
@@ -71,6 +73,14 @@ func setup(cfg: Dictionary) -> void:
 	seed_value = int(cfg.get("seed", 1))
 	rng.seed = seed_value
 	mode = String(cfg.get("mode", "slice"))
+	var DF: Dictionary = Data.difficulty()
+	difficulty = String(cfg.get("difficulty", DF.get("default", "normal")))
+	if not (DF.levels as Dictionary).has(difficulty):
+		difficulty = String(DF.get("default", "normal"))
+	human_teams = {}
+	for p: Dictionary in cfg.get("players", []):
+		if String(p.get("ctl", "player")) == "player":
+			human_teams[String(p.get("team", "blue"))] = true
 	map.build(mode)
 	map.field_cache_max = int(R.ai.nav.cache)
 	map.field_near = int(R.ai.nav.borrow)
@@ -236,6 +246,7 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 		h.ai.lane = String(lanes[idx % lanes.size()]) if not lanes.is_empty() else "mid"
 		h.ai.dash_t = rand(1.0, 3.0)
 		h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
+		h.ai.prof = ai_profile(team)
 	SimHamsterLogic.calc_stats(h)
 	h.hp = h.max_hp
 	h.ammo = SimWeapons.mag_size(h)
@@ -244,6 +255,17 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 	hams.append(h)
 	_register(h)
 	return h
+
+
+func ai_profile(team: String) -> Dictionary:
+	## 这一队 AI 用哪一档难度：玩家对面用所选难度，玩家队友用该档的 ally；没有真人或两队都有真人时用所选难度
+	var L: Dictionary = Data.difficulty().levels
+	var lvl := difficulty
+	if human_teams.has(team) and human_teams.size() == 1:
+		lvl = String((L[difficulty] as Dictionary).get("ally", difficulty))
+	var p: Dictionary = (L.get(lvl, L[difficulty]) as Dictionary).duplicate()
+	p.id = lvl
+	return p
 
 
 # ---------------------------------------------------------------------------
@@ -714,7 +736,7 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 	var crit := false
 	if o != null:
 		var cc := float(o.st.get("crit", 0.0)) + float(src.get("critAdd", 0.0))
-		if not quiet and (bool(src.get("forceCrit", false)) or (cc > 0.0 and rnd() < cc)):
+		if (not quiet or bool(src.get("canCrit", false))) and (bool(src.get("forceCrit", false)) or (cc > 0.0 and rnd() < cc)):
 			dmg *= float(o.st.get("critDmg", 2.0))
 			crit = true
 		if quiet and o.tal.has("berserk") and o.hp < o.max_hp * 0.4:
@@ -727,7 +749,9 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 		if fa != null and t - th.last_shot_t < float(SimWeapons.special(th, "firingWindow")):
 			dmg *= 1.0 - float(fa)
 		if o != null:
-			dmg = minf(dmg, th.max_hp * float(Data.progression().get("pvpHitCap", 0.55)))
+			# 单发对玩家的伤害上限（狙击类武器更低：满血要 3 枪）
+			var cap := float(src.get("pvpCap", 0.0))
+			dmg = minf(dmg, th.max_hp * (cap if cap > 0.0 else float(Data.progression().get("pvpHitCap", 0.55))))
 		dmg *= 1.0 - float(th.st.get("armor", 0.0))
 		if th.hp - dmg <= 0.0 and th.tal.has("undying") and not th.undy_used:
 			th.undy_used = true
@@ -816,6 +840,8 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 		"minion":
 			tg.dead = true
 			xp_near(o, tg, float(R.minion.xp))
+			if killer != null:
+				drop_loot(tg.x, tg.y, R.minion.drop)    # 仓鼠打死的小兵才掉瓜子 / 奶酪（小兵互殴不掉，免得兵线上堆满）
 			emit({"t": "kill", "id": tg.id, "kind": "minion", "x": tg.x, "y": tg.y, "team": tg.team, "killer": killer.id if killer != null else -1})
 		"turret":
 			tg.dead = true
@@ -1310,6 +1336,8 @@ func lob_boom(b: SimLob) -> void:
 				SimGadgets.flash_bang(self, b.x, b.y, b.team)
 			"fire":
 				add_fire(b.x, b.y, float(GR.get("fire", {}).get("r", 80)), float(GR.get("fire", {}).get("life", 3)), b.team, b.owner, float(GR.get("fire", {}).get("dps", 14)), "gl")
+			"ice":
+				SimGadgets.freeze_at(self, b.x, b.y, float(GR.get("ice", {}).get("r", 100)), b.team, b.owner)
 		if b.gas_r > 0.0:
 			add_zone({"x": b.x, "y": b.y, "r": b.gas_r, "until": t + b.gas_life, "team": b.team, "owner": b.owner, "dps": b.gas_dps, "gas": true, "slow": b.gas_slow, "kind": "gas"})
 	else:
@@ -1728,6 +1756,15 @@ func _make_crate(spot: Dictionary) -> SimCrate:
 	return c
 
 
+func drop_loot(x: float, y: float, D: Dictionary) -> void:
+	## 小怪掉落：D.gems = [最少, 最多] 颗瓜子，每颗 D.gemXp 经验；D.cheese = 掉一块加血奶酪的概率
+	var g: Array = D.get("gems", [0, 0])
+	for i in rand_int(int(g[0]), int(g[1])):
+		drop_gem(x, y, float(D.gemXp))
+	if rnd() < float(D.get("cheese", 0.0)):
+		_add_item("cheese", x, y, 0.0)
+
+
 func drop_gem(x: float, y: float, xp: float) -> void:
 	if items.size() > int(R.items.gemMax):
 		return
@@ -1808,8 +1845,8 @@ func _upd_items(dt: float) -> void:
 		else:
 			if g.t >= float(I.pickupDelay):
 				for h in hams:
-					if not h.alive or Vector2(h.x - g.x, h.y - g.y).length() > h.r + 14.0:
-						continue
+					if not h.alive or h.hp >= h.max_hp or Vector2(h.x - g.x, h.y - g.y).length() > h.r + 14.0:
+						continue     # 满血走过去不会吃掉奶酪，留给需要的人
 					h.hp = minf(h.max_hp, h.hp + float(I.cheeseHeal))
 					emit({"t": "cheese", "id": h.id})
 					emit({"t": "pop", "x": h.x, "y": h.y, "h": h.r * 2.8, "text": "+%d" % int(I.cheeseHeal), "color": "#8de0a6", "size": 16})

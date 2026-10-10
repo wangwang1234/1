@@ -38,41 +38,46 @@ func _step(w: SimWorld, sec: float) -> void:
 
 func test_params_sample() -> void:
 	var P := SimWeapons.params_for("deagle", [6, 0, 0])
-	near(float(P.kb), 2.02, 0.001, "沙鹰 A6 击退")
-	near(float(P.dmg), 1.24, 0.001, "沙鹰 A6 伤害")
-	eq(float(P.slow), 0.5, "沙鹰 A6 减速")
+	near(float(P.kb), 2.0, 0.001, "沙鹰 A1+A4 击退")
+	eq(float(P.slow), 0.5, "沙鹰 A2 减速")
+	eq(int(P.special.heavyEvery), 4, "沙鹰 A5 重弹")
+	near(float(P.shockR), 80.0, 0.001, "沙鹰 A3+A6 震波")
 	P = SimWeapons.params_for("deagle", [0, 3, 0])
-	eq(float(P.spread), 0.0, "沙鹰 B3 零散布")
+	eq(float(P.spread), 0.0, "沙鹰 B1 零散布")
 	P = SimWeapons.params_for("smg", [6, 0, 0])
-	near(float(P.spread), 1.36, 0.001, "冲锋枪 A6 散布")
-	near(float(P.rate), 1.18, 0.001, "冲锋枪 A6 射速")
-	eq(int(P.n), 2, "冲锋枪 A6 多 2 发")
+	eq(int(P.special.twin), 3, "冲锋枪 A6 四管")
+	eq(int(P.special.fanEvery), 4, "冲锋枪 A4 扇形弹每 4 发")
+	eq(int(P.special.fanN), 5, "冲锋枪 A5 扇形弹 5 发")
 	P = SimWeapons.params_for("smg", [0, 0, 6])
-	eq(float(P.bounceK), 1.2, "冲锋枪 C6 反弹加伤")
+	eq(float(P.bounceK), 1.2, "冲锋枪 C4 反弹加伤")
+	eq(int(P.bounce), 2, "冲锋枪 C3 反弹 2 次")
 	P = SimWeapons.params_for("dual", [0, 0, 9])
-	near(float(P.rl), 0.3, 0.001, "双持 C9 换弹下限 0.3")
+	near(float(P.rl), 0.8, 0.001, "双持 C1 换弹")
+	eq(int(P.special.lastN), 6, "双持 C9 最后 6 发")
 	P = SimWeapons.params_for("rocket", [4, 0, 0])
-	near(float(P.home), 2.8, 0.001, "火箭 A4 追踪")
-	near(float(P.spd), 0.85, 0.001, "火箭 A 降速")
+	near(float(P.home), 2.2, 0.001, "火箭 A1+A2 追踪")
+	near(float(P.spd), 0.85 * 1.25, 0.001, "火箭 A1 降速、A4 提速")
 	P = SimWeapons.params_for("flame", [9, 0, 0])
-	near(float(P.dmg), 1.725, 0.001, "喷火 A9 伤害")
-	near(float(P.kb), 4.0, 0.001, "喷火 A6 击退")
+	near(float(P.dmg), 1.8, 0.001, "喷火 A3×A9 伤害")
+	near(float(P.slow), 0.4, 0.001, "喷火 A5 减速")
+	eq(int(P.special.flameN), 2, "喷火 A6 三喷嘴")
 	P = SimWeapons.params_for("rail", [3, 0, 0])
-	near(float(P.charge), 0.765, 0.001, "电磁 A3 蓄力")
-	P = SimWeapons.params_for("laser", [0, 0, 3])
-	near(float(P.cost), 0.72, 0.001, "激光 C3 耗能")
-	P = SimWeapons.params_for("minigun", [9, 0, 0])
+	near(float(P.charge), 0.7225, 0.001, "电磁 A1×A3 蓄力")
+	P = SimWeapons.params_for("laser", [0, 0, 4])
+	near(float(P.cost), 0.55, 0.001, "激光 C1+C4 耗能")
+	eq(int(P.special.reloadRing), 8, "激光 C3 换电池环形弹")
 	var h := SimHamster.new()
 	h.weapon_id = "minigun"
 	h.evo = {"a": 9, "b": 0, "c": 0}
-	near(SimWeapons.spin_mul(h), 0.3, 0.001, "加特林 A9 预热下限")
+	near(SimWeapons.spin_mul(h), 0.56, 0.001, "加特林 A1×A4 预热")
 	P = SimWeapons.params_for("revolver", [4, 0, 0])
-	near(float(P.bounceK), 1.24, 0.001, "左轮 A4 反弹系数")
-	eq(int(P.bounce), 1, "左轮 A3 多反弹一次")
+	near(float(P.bounceK), 1.4, 0.001, "左轮 A4 反弹系数")
+	eq(int(P.bounce), 1, "左轮 A1 多反弹一次")
+	eq(int(P.special.rico), 1, "左轮 A3 弹射")
 	var h2 := SimHamster.new()
 	h2.weapon_id = "lmg"
 	h2.evo = {"a": 6, "b": 0, "c": 0}
-	eq(SimWeapons.mag_size(h2), 187, "轻机枪 A6 弹匣")
+	eq(SimWeapons.mag_size(h2), 130, "轻机枪 A1 弹匣 +30")
 
 
 func test_every_path_has_effects() -> void:
@@ -111,7 +116,7 @@ func test_rocket_cluster_and_multi() -> void:
 	_step(w2, 0.05)
 	h2.inp.fire = false
 	_step(w2, 0.6)
-	check(w2.lobs.filter(func(L): return L.kind == "bomb").size() == 4, "C6 散出 4 颗子炸弹")
+	check(w2.lobs.filter(func(L): return L.kind == "bomb").size() == 6, "C6 散出 6 颗子炸弹")
 
 
 func test_katana_swing_and_deflect() -> void:
@@ -182,7 +187,7 @@ func test_gl_lob_and_sticky() -> void:
 	h2.inp.fire = true
 	_step(w2, 0.05)
 	h2.inp.fire = false
-	check(w2.lobs.size() == 1 and w2.lobs[0].sticky, "B 黏弹")
+	check(w2.lobs.size() == 2 and w2.lobs.all(func(L): return L.sticky), "B 黏弹（B4 起一次 2 颗）")
 	_step(w2, 1.2)
 	h2.fire_cd = 0.0
 	h2.inp.fire = true

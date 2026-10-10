@@ -1,0 +1,6 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ok   test_visual_layout.test_layout_keeps_simulation_state_and_is_reproducible (289 ms)
+  ok   test_visual_layout.test_decorations_clear_solids_pads_and_objectives (387 ms)
+测试：2 项，失败 0 项，用时 0.8 秒
+[audio] 载入 74 种音效

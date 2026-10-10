@@ -26,7 +26,7 @@ static func calc_stats(h: SimHamster) -> void:
 	st.magnet = float(U.magnet) * (1.0 + float(A.magnet.magnet) * lv.call("magnet"))
 	st.chain = float(A.chain.chain) * lv.call("chain") + (0.3 if T.has("storm") else 0.0)
 	st.frost = lv.call("frost")
-	st.dmg = (1.0 + float(A.rage.dmg) * lv.call("rage")) * (1.0 + float(HR.dmgPerLevel) * (h.lvl - 1)) * (float(Data.progression().bossReward.crownDamage) if h.crown_t > 0.0 else 1.0) * (1.15 if giant else 1.0)
+	st.dmg = (1.0 + float(A.rage.dmg) * lv.call("rage")) * (1.0 + float(HR.dmgPerLevel) * (h.lvl - 1)) * (float(Data.progression().bossReward.crownDamage) if h.crown_t > 0.0 else 1.0) * (1.15 if giant else 1.0) * (float(h.ai.prof.get("dmgMul", 1.0)) if h.ai != null else 1.0)
 	st.rate = (1.0 + float(A.rate.rate) * lv.call("rate")) * (1.2 if T.has("overdrive") else 1.0)
 	st.rl = 1.0 / 1.5 if T.has("bottomless") else 1.0
 	st.armor = float(A.armor.armor) * lv.call("armor")
@@ -103,6 +103,10 @@ static func respawn(w: SimWorld, h: SimHamster) -> void:
 		h.ai.state = "push"
 		h.ai.target = null
 		h.ai.inv = {}
+		h.ai.seen = {}
+		h.ai.pick = {}
+		h.ai.dodge_left = 0.0
+		h.ai.last_tid = 0
 	w.emit({"t": "respawn", "id": h.id, "x": h.x, "y": h.y, "team": h.team})
 	w.toast(h, "复活！", "#8de0a6", 1.2)
 
@@ -282,13 +286,22 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 		if k >= 1.0:
 			w.land(h)
 		return
-	# 回血：再生 + 鼠窝附近
-	var ob: Vector2 = w.map.base_pos[h.team]
+	# 回血：再生（连续）+ 鼠窝附近（按跳回：每 baseHealTick 秒回一次，合计每秒 baseHealPct 最大生命）
 	var heal := float(st.regen)
-	if Vector2(h.x - ob.x, h.y - ob.y).length() < float(HR.baseHealRadius):
-		heal += float(HR.baseHeal)
 	if heal > 0.0 and h.hp < h.max_hp:
 		h.hp = minf(h.max_hp, h.hp + heal * dt)
+	var ob: Vector2 = w.map.base_pos[h.team]
+	if Vector2(h.x - ob.x, h.y - ob.y).length() < float(HR.baseHealRadius) and h.hp < h.max_hp:
+		h.base_heal_t -= dt
+		if h.base_heal_t <= 0.0:
+			var tick := float(HR.baseHealTick)
+			h.base_heal_t += tick
+			var amt := minf(h.max_hp - h.hp, h.max_hp * float(HR.baseHealPct) * tick)
+			h.hp += amt
+			w.emit({"t": "base_heal", "id": h.id, "x": h.x, "y": h.y, "amt": amt})
+			w.emit({"t": "pop", "x": h.x, "y": h.y, "h": h.r * 2.6, "text": "+%d" % ceili(amt), "color": "#8de0a6", "size": 13})
+	else:
+		h.base_heal_t = 0.0     # 一进鼠窝范围立刻回第一跳
 	if int(st.shield) > 0 and h.shield < int(st.shield):
 		h.shield_t -= dt
 		if h.shield_t <= 0.0:
@@ -300,6 +313,8 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 			SimCards.apply(w, h, inp.card)
 		inp.card = -1
 	h.aim = inp.aim
+	if inp.assist > 0.0 and inp.fire:
+		h.aim = SimWeapons.aim_assist(w, h, inp.aim, inp.assist)
 	if inp.dash:
 		if h.dash_cd <= 0.0 and h.roll_t <= 0.0:
 			start_dash(w, h)
@@ -345,6 +360,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 			h.reload_t = 0.0
 			h.ammo = SimWeapons.mag_size(h)
 			w.emit({"t": "reload_done", "id": h.id})
+			SimWeapons.on_reload(w, h)
 	if inp.reload:
 		inp.reload = false
 		if mag > 0 and h.ammo < SimWeapons.mag_size(h):

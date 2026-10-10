@@ -48,902 +48,1158 @@
    {
     "key": "a",
     "name": "快枪手",
-    "perLevel": "射速 +7%",
-    "lv3": "子弹飞得更快",
-    "lv6": "弹匣 +4",
-    "lv9": "扇射：每次扣扳机连发 3 枪",
+    "perLevel": "子弹飞得更快、更直",
+    "lv3": "双击：每次扣扳机连打 2 发",
+    "lv6": "每第 5 发是重弹：更大、伤害 ×2.5、穿透 2",
+    "lv9": "扇射：每第 3 次扣扳机再喷出 5 发扇形弹",
     "effects": {
-     "perLevel": {"rate": 0.07},
      "at": {
-      "3": {"spdMul": 1.25},
-      "6": {"magAdd": 4},
-      "9": {
-       "special": {"burst": 2, "burstGap": 0.07}
-      }
+      "1": {"spdMul": 1.25, "spreadMul": 0.6},
+      "2": {"special": {"lastN": 3, "lastDmg": 1.5}},
+      "3": {"special": {"burst": 1, "burstGap": 0.08}},
+      "4": {"magAdd": 6},
+      "5": {"special": {"killHaste": 2}},
+      "6": {"special": {"heavyEvery": 5, "heavyDmg": 2.5}},
+      "7": {"special": {"burst": 2}},
+      "8": {"special": {"rollRefill": 1.0}},
+      "9": {"special": {"fanEvery": 3, "fanN": 5, "fanAng": 0.3, "fanDmg": 0.7}}
      }
-    }
+    },
+    "lv": [
+     "子弹飞得更快、更直",
+     "弹匣最后 3 发伤害 ×1.5",
+     "双击：每次扣扳机连打 2 发",
+     "弹匣 +6",
+     "击杀后 2 秒射速 +30%",
+     "每第 5 发是重弹：更大、伤害 ×2.5、穿透 2",
+     "双击变三连发",
+     "翻滚时瞬间装满弹匣",
+     "扇射：每第 3 次扣扳机再喷出 5 发扇形弹"
+    ]
    },
    {
     "key": "b",
     "name": "穿甲弹头",
-    "perLevel": "伤害 +7%",
-    "lv3": "穿透 +1",
-    "lv6": "穿透再 +1",
-    "lv9": "暴击率 +25%",
+    "perLevel": "子弹穿透 1 个敌人",
+    "lv3": "再穿透 1 个",
+    "lv6": "弹射：命中后弹向附近另一个敌人",
+    "lv9": "每第 6 发必暴击，子弹能穿过 1 层薄障碍",
     "effects": {
-     "perLevel": {"dmg": 0.07},
      "at": {
+      "1": {"pierce": 1},
+      "2": {"kb": 0.6},
       "3": {"pierce": 1},
-      "6": {"pierce": 1},
-      "9": {"crit": 0.25}
+      "4": {"slow": 0.4},
+      "5": {"crit": 0.15},
+      "6": {"special": {"rico": 1, "ricoR": 220, "ricoDmg": 0.7}},
+      "7": {"special": {"rico": 2}},
+      "8": {"special": {"killRefund": 1}},
+      "9": {"wp": 1, "special": {"critEvery": 6}}
      }
-    }
+    },
+    "lv": [
+     "子弹穿透 1 个敌人",
+     "打中把敌人震退得更远",
+     "再穿透 1 个",
+     "命中让敌人减速",
+     "暴击率 +15%",
+     "弹射：命中后弹向附近另一个敌人",
+     "弹射 +1 次",
+     "击杀立即返还子弹",
+     "每第 6 发必暴击，子弹能穿过 1 层薄障碍"
+    ]
    },
    {
     "key": "c",
     "name": "战术强光",
-    "perLevel": "手电更远 +10%",
-    "lv3": "光束更宽",
-    "lv6": "照到的敌人受伤 +10%",
+    "perLevel": "手电照得更远更宽",
+    "lv3": "手电照到的敌人受伤 +15%",
+    "lv6": "照到的敌人受伤 +30%",
     "lv9": "光里 200 内的敌人被晃瞎",
     "effects": {
-     "perLevel": {"lightRange": 0.1},
      "at": {
-      "3": {"lightCos": -0.06},
-      "6": {
-       "special": {"litDmg": 0.1}
-      },
-      "9": {
-       "special": {"dazzle": 200, "dazzleCos": 0.8, "dazzleEvery": 0.3, "dazzleCd": 2, "dazzleStun": 0.5, "dazzleBlind": 0.7}
-      }
+      "1": {"lightRange": 0.3, "lightCos": -0.04},
+      "2": {"mark": 1},
+      "3": {"special": {"litDmg": 0.15}},
+      "4": {"special": {"reloadRing": 8, "ringDmg": 0.8}},
+      "5": {"ign": 0.15},
+      "6": {"special": {"litDmg": 0.3}},
+      "7": {"special": {"killHeal": 0.1}},
+      "8": {"special": {"reloadRing": 14}},
+      "9": {"special": {"dazzle": 200, "dazzleCos": 0.8, "dazzleEvery": 0.3, "dazzleCd": 2, "dazzleStun": 0.5, "dazzleBlind": 0.7}}
      }
-    }
+    },
+    "lv": [
+     "手电照得更远更宽",
+     "打中的敌人全队可见 1 秒",
+     "手电照到的敌人受伤 +15%",
+     "换弹完成时向四周射出 8 发子弹",
+     "强光灼烧：15% 几率点燃",
+     "照到的敌人受伤 +30%",
+     "击杀回复 10% 生命",
+     "环形弹 14 发",
+     "光里 200 内的敌人被晃瞎"
+    ]
    }
   ],
   "deagle": [
    {
     "key": "a",
     "name": "重型弹",
-    "perLevel": "击退 +12%、伤害 +4%",
-    "lv3": "命中减速",
-    "lv6": "击退再 +30%",
-    "lv9": "撞墙眩晕：打到墙上的敌人晕 0.8 秒",
+    "perLevel": "击退大幅增强",
+    "lv3": "命中时震退身边的敌人",
+    "lv6": "震波更大，还会眩晕 0.2 秒",
+    "lv9": "撞墙眩晕：被打到墙上的敌人晕 0.8 秒",
     "effects": {
-     "perLevel": {"kb": 0.12, "dmg": 0.04},
      "at": {
-      "3": {"slow": 0.5},
-      "6": {"kb": 0.3},
-      "9": {
-       "special": {"wallSlam": 34, "slamProbeR": 4, "slamStun": 0.8, "slamDmg": 20}
-      }
+      "1": {"kb": 0.5},
+      "2": {"slow": 0.5},
+      "3": {"shockR": 50, "special": {"shockKb": 200}},
+      "4": {"kb": 0.5},
+      "5": {"special": {"heavyEvery": 4, "heavyDmg": 2.0}},
+      "6": {"shockR": 30, "special": {"shockStun": 0.2}},
+      "7": {"special": {"killBlast": 80, "killBlastDmg": 30}},
+      "8": {"special": {"heavyEvery": 3}},
+      "9": {"special": {"wallSlam": 34, "slamProbeR": 4, "slamStun": 0.8, "slamDmg": 20}}
      }
-    }
+    },
+    "lv": [
+     "击退大幅增强",
+     "命中让敌人减速",
+     "命中时震退身边的敌人",
+     "击退再增强",
+     "每第 4 发是重弹：更大、伤害 ×2、穿透 2",
+     "震波更大，还会眩晕 0.2 秒",
+     "击杀时尸体爆炸",
+     "重弹改为每第 3 发",
+     "撞墙眩晕：被打到墙上的敌人晕 0.8 秒"
+    ]
    },
    {
     "key": "b",
     "name": "稳定握把",
-    "perLevel": "射速 +7%",
-    "lv3": "开枪零散布",
-    "lv6": "弹匣 +2",
-    "lv9": "快速补枪：0.5 秒内第二枪伤害 +50%",
+    "perLevel": "开枪零散布",
+    "lv3": "快速补枪：0.5 秒内的第二枪伤害 +50%",
+    "lv6": "弹匣 +3",
+    "lv9": "三连发，补枪伤害 ×2",
     "effects": {
-     "perLevel": {"rate": 0.07, "flipK": -0.08},
      "at": {
-      "3": {"spreadMul": 0},
-      "6": {"magAdd": 2},
-      "9": {
-       "special": {"quickShot": 0.5, "quickDmg": 1.5}
-      }
+      "1": {"spreadMul": 0},
+      "2": {"flipK": -0.4, "rate": 0.15},
+      "3": {"special": {"quickShot": 0.5, "quickDmg": 1.5}},
+      "4": {"spdMul": 1.3},
+      "5": {"crit": 0.15},
+      "6": {"magAdd": 3},
+      "7": {"special": {"rollRefill": 1.0}},
+      "8": {"special": {"burst": 1, "burstGap": 0.1}},
+      "9": {"special": {"burst": 2, "quickDmg": 2.0}}
      }
-    }
+    },
+    "lv": [
+     "开枪零散布",
+     "后坐力减半，射速 +15%",
+     "快速补枪：0.5 秒内的第二枪伤害 +50%",
+     "子弹飞得更快",
+     "暴击率 +15%",
+     "弹匣 +3",
+     "翻滚时瞬间装满弹匣",
+     "双击：每次扣扳机连打 2 发",
+     "三连发，补枪伤害 ×2"
+    ]
    },
    {
     "key": "c",
     "name": "处决者",
-    "perLevel": "打残血伤害 +8%",
-    "lv3": "残血线提高到 50%",
-    "lv6": "处决伤害再 +15%",
-    "lv9": "击杀立即返还子弹并重置射击",
+    "perLevel": "打 40% 血以下的敌人伤害 +30%",
+    "lv3": "击杀立即返还子弹并重置射击",
+    "lv6": "击杀回复 10% 生命",
+    "lv9": "对残血敌人枪枪暴击",
     "effects": {
-     "base": {"execHp": 0.4},
-     "perLevel": {"execDmg": 0.08},
      "at": {
-      "3": {"execHp": 0.1},
-      "6": {"execMul": 0.15},
-      "9": {
-       "special": {"killRefund": 1}
-      }
+      "1": {"execHp": 0.4, "execDmg": 0.3},
+      "2": {"execHp": 0.1},
+      "3": {"special": {"killRefund": 1}},
+      "4": {"special": {"killHaste": 2}},
+      "5": {"execDmg": 0.3},
+      "6": {"special": {"killHeal": 0.1}},
+      "7": {"execMul": 0.3},
+      "8": {"special": {"killBlast": 90, "killBlastDmg": 35}},
+      "9": {"special": {"execCrit": 1}}
      }
-    }
+    },
+    "lv": [
+     "打 40% 血以下的敌人伤害 +30%",
+     "残血线提高到 50%",
+     "击杀立即返还子弹并重置射击",
+     "击杀后 2 秒射速 +30%",
+     "处决伤害再 +30%",
+     "击杀回复 10% 生命",
+     "处决伤害 ×1.3",
+     "击杀时尸体爆炸",
+     "对残血敌人枪枪暴击"
+    ]
    }
   ],
   "ak47": [
    {
     "key": "a",
     "name": "特种弹药",
-    "perLevel": "伤害 +4%",
-    "lv3": "燃烧弹：15% 几率点燃",
-    "lv6": "穿甲弹：穿透 +1，打建筑 +30%",
+    "perLevel": "燃烧弹：15% 几率点燃",
+    "lv3": "穿甲弹：穿透 +1，打建筑 +30%",
+    "lv6": "每第 10 发是爆裂弹",
     "lv9": "三种弹轮流装填：燃烧、穿甲、爆裂",
     "effects": {
-     "perLevel": {"dmg": 0.04},
      "at": {
-      "3": {"ign": 0.15},
-      "6": {
-       "pierce": 1,
-       "special": {"structDmg": 0.3}
-      },
-      "9": {
-       "special": {"ammoCycle": 3, "cyclePierce": 2, "blastR": 45, "blastDmg": 0.5}
-      }
+      "1": {"ign": 0.15},
+      "2": {"special": {"nadeR": 70, "nadeDmg": 30, "nadeRange": 360, "nadeEvery": 12}},
+      "3": {"pierce": 1, "special": {"structDmg": 0.3}},
+      "4": {"ignK": 1.5},
+      "5": {"special": {"nadeEvery": 8}},
+      "6": {"special": {"explEvery": 10, "blastR": 45, "blastDmg": 0.5}},
+      "7": {"ign": 0.15},
+      "8": {"special": {"nadeR": 95, "nadeDmg": 40}},
+      "9": {"special": {"ammoCycle": 3, "cyclePierce": 2, "blastR": 45, "blastDmg": 0.5}}
      }
-    }
+    },
+    "lv": [
+     "燃烧弹：15% 几率点燃",
+     "枪挂榴弹：每第 12 发打出一颗小榴弹",
+     "穿甲弹：穿透 +1，打建筑 +30%",
+     "燃烧伤害 +50%",
+     "榴弹改为每第 8 发",
+     "每第 10 发是爆裂弹",
+     "点燃几率 30%",
+     "榴弹炸得更大更狠",
+     "三种弹轮流装填：燃烧、穿甲、爆裂"
+    ]
    },
    {
     "key": "b",
     "name": "大弹鼓",
-    "perLevel": "弹匣 +12%",
-    "lv3": "换弹快 15%",
-    "lv6": "弹匣再 +20%",
-    "lv9": "压制火力：连射时伤害逐渐升高，最多 +40%",
+    "perLevel": "弹匣 +10",
+    "lv3": "双管：并排两条弹道",
+    "lv6": "每第 6 发多喷 3 发扇形弹",
+    "lv9": "压制火力：三管齐射，连射伤害最多 +50%",
     "effects": {
-     "perLevel": {"magMul": 0.12},
      "at": {
-      "3": {"rlMul": 0.85},
-      "6": {"magMul": 0.2},
-      "9": {
-       "special": {"rampDmg": 0.02, "rampMax": 0.4}
-      }
+      "1": {"magAdd": 10},
+      "2": {"rlMul": 0.75},
+      "3": {"special": {"twin": 1, "twinGap": 10, "twinDmg": 0.4}},
+      "4": {"magAdd": 10},
+      "5": {"special": {"rampDmg": 0.015, "rampMax": 0.25}},
+      "6": {"special": {"fanN": 3, "fanAng": 0.25, "fanDmg": 0.5, "fanEvery": 6}},
+      "7": {"special": {"twinDmg": 0.6}},
+      "8": {"special": {"rollRefill": 0.5}},
+      "9": {"special": {"twin": 2, "rampMax": 0.5}}
      }
-    }
+    },
+    "lv": [
+     "弹匣 +10",
+     "换弹快 25%",
+     "双管：并排两条弹道",
+     "弹匣再 +10",
+     "连射越久伤害越高，最多 +25%",
+     "每第 6 发多喷 3 发扇形弹",
+     "副管伤害提高",
+     "翻滚补满半个弹匣",
+     "压制火力：三管齐射，连射伤害最多 +50%"
+    ]
    },
    {
     "key": "c",
     "name": "精准射手",
-    "perLevel": "散布 -7%、有效射程 +8%",
-    "lv3": "子弹更快",
-    "lv6": "暴击率 +10%",
-    "lv9": "停顿后的第一枪伤害翻倍并穿透",
+    "perLevel": "散布减半",
+    "lv3": "远距离不掉伤害",
+    "lv6": "停顿 0.5 秒后的第一枪伤害翻倍并穿透",
+    "lv9": "神射：命中后弹向附近另外 2 个敌人",
     "effects": {
-     "perLevel": {"spreadMul": -0.07, "eff": 0.08},
-     "spreadFloor": 0.3,
      "at": {
-      "3": {"spdMul": 1.2},
-      "6": {"crit": 0.1},
-      "9": {
-       "special": {"firstShot": 0.5, "firstDmg": 2, "firstPierce": 2}
-      }
+      "1": {"spreadMul": 0.5},
+      "2": {"spdMul": 1.25},
+      "3": {"eff": 0.7},
+      "4": {"crit": 0.1},
+      "5": {"mark": 2},
+      "6": {"special": {"firstShot": 0.5, "firstDmg": 2, "firstPierce": 2}},
+      "7": {"pierce": 1},
+      "8": {"special": {"critEvery": 5}},
+      "9": {"special": {"rico": 2, "ricoR": 260, "ricoDmg": 0.7}}
      }
-    }
+    },
+    "lv": [
+     "散布减半",
+     "子弹飞得更快",
+     "远距离不掉伤害",
+     "暴击率 +10%",
+     "打中的敌人全队可见 2 秒",
+     "停顿 0.5 秒后的第一枪伤害翻倍并穿透",
+     "子弹穿透 1 个敌人",
+     "每第 5 发必暴击",
+     "神射：命中后弹向附近另外 2 个敌人"
+    ]
    }
   ],
   "smg": [
    {
     "key": "a",
-    "name": "扇面扫射",
-    "perLevel": "覆盖更宽、射速 +3%",
-    "lv3": "每次多射 1 发",
-    "lv6": "再多射 1 发",
+    "name": "多管弹幕",
+    "perLevel": "双管：并排两条弹道",
+    "lv3": "三管齐射",
+    "lv6": "四管齐射",
     "lv9": "子弹飞到一半分裂成两颗",
     "effects": {
-     "perLevel": {"spreadMul": 0.06, "rate": 0.03},
      "at": {
-      "3": {"n": 1},
-      "6": {"n": 1},
-      "9": {
-       "special": {"splitAt": 150, "splitAng": 0.2, "splitDmg": 0.7}
-      }
+      "1": {"special": {"twin": 1, "twinGap": 10, "twinDmg": 0.35}},
+      "2": {"special": {"fanN": 3, "fanAng": 0.3, "fanDmg": 0.6, "fanEvery": 6}},
+      "3": {"special": {"twin": 2}},
+      "4": {"special": {"fanEvery": 4}},
+      "5": {"special": {"fanN": 5, "fanAng": 0.4}},
+      "6": {"special": {"twin": 3}},
+      "7": {"special": {"twinDmg": 0.45}},
+      "8": {"pierce": 1},
+      "9": {"special": {"splitAt": 150, "splitAng": 0.2, "splitDmg": 0.7}}
      }
-    }
+    },
+    "lv": ["双管：并排两条弹道", "每第 6 发多喷 3 发扇形弹", "三管齐射", "扇形弹改为每第 4 发", "扇形弹 5 发", "四管齐射", "副管伤害提高", "子弹穿透 1 个敌人", "子弹飞到一半分裂成两颗"]
    },
    {
     "key": "b",
     "name": "跑射",
-    "perLevel": "开火时移速 +4%",
-    "lv3": "换弹快 20%",
-    "lv6": "翻滚冷却 -20%",
-    "lv9": "翻滚瞬间换弹，之后 3 秒射速 +30%",
+    "perLevel": "开火时移速 +10%",
+    "lv3": "翻滚冷却 -20%",
+    "lv6": "翻滚瞬间换好弹",
+    "lv9": "翻滚子弹 16 发，翻滚后 3 秒射速 +30%",
     "effects": {
-     "perLevel": {"fireMove": 0.04},
      "at": {
-      "3": {"rlMul": 0.8},
-      "6": {"dashCdMul": 0.8},
-      "9": {
-       "special": {"rollReload": 1, "hasteT": 3}
-      }
+      "1": {"fireMove": 0.1},
+      "2": {"special": {"dashMine": 1, "dashMineR": 70, "dashMineDmg": 30}},
+      "3": {"dashCdMul": 0.8},
+      "4": {"special": {"kataSpd": 1000, "kataRange": 300, "kataKb": 40, "kataR": 4.5, "gunKata": 6}},
+      "5": {"special": {"killHaste": 2}},
+      "6": {"special": {"rollReload": 1, "hasteT": 0}},
+      "7": {"special": {"gunKata": 10}},
+      "8": {"special": {"dashMineR": 95, "dashMineDmg": 45}},
+      "9": {"special": {"gunKata": 16, "hasteT": 3}}
      }
-    }
+    },
+    "lv": [
+     "开火时移速 +10%",
+     "翻滚时在原地留下一颗小炸弹",
+     "翻滚冷却 -20%",
+     "翻滚时向四周射出 6 发子弹",
+     "击杀后 2 秒射速 +30%",
+     "翻滚瞬间换好弹",
+     "翻滚子弹 10 发",
+     "翻滚炸弹更大更狠",
+     "翻滚子弹 16 发，翻滚后 3 秒射速 +30%"
+    ]
    },
    {
     "key": "c",
     "name": "跳弹",
-    "perLevel": "子弹撞墙反弹、伤害 +3%",
-    "lv3": "反弹 2 次",
-    "lv6": "反弹后伤害 +20%",
+    "perLevel": "子弹撞墙反弹 1 次",
+    "lv3": "撞墙反弹 2 次",
+    "lv6": "命中 10% 几率放出闪电链",
     "lv9": "反弹后自动追踪敌人",
     "effects": {
-     "base": {"bounce": 1},
-     "perLevel": {"dmg": 0.03},
      "at": {
+      "1": {"bounce": 1},
+      "2": {"special": {"rico": 1, "ricoR": 200, "ricoDmg": 0.6}},
       "3": {"bounce": 1},
-      "6": {"bounceK": 1.2},
+      "4": {"bounceK": 1.2},
+      "5": {"special": {"rico": 2}},
+      "6": {"special": {"chainChance": 0.1, "chainK": 0.5}},
+      "7": {"bounce": 1},
+      "8": {"special": {"chainChance": 0.2}},
       "9": {"homeAfter": 3.2}
      }
-    }
+    },
+    "lv": ["子弹撞墙反弹 1 次", "弹射：命中后弹向附近另一个敌人", "撞墙反弹 2 次", "反弹后伤害 +20%", "弹射 +1 次", "命中 10% 几率放出闪电链", "撞墙反弹 3 次", "闪电链几率 20%", "反弹后自动追踪敌人"]
    }
   ],
   "shotgun": [
    {
     "key": "a",
     "name": "鹿弹",
-    "perLevel": "弹丸更集中、伤害 +3%",
-    "lv3": "+1 弹丸",
-    "lv6": "再 +1 弹丸",
-    "lv9": "弹丸穿透 1 个敌人",
+    "perLevel": "弹丸更集中",
+    "lv3": "弹丸穿透 1 个敌人",
+    "lv6": "+2 弹丸",
+    "lv9": "每一枪都带一颗爆炸独头弹",
     "effects": {
-     "perLevel": {"spreadMul": -0.04, "dmg": 0.03},
-     "spreadFloor": 0.5,
      "at": {
-      "3": {"n": 1},
-      "6": {"n": 1},
-      "9": {"pierce": 1}
+      "1": {"spreadMul": 0.75},
+      "2": {"n": 1},
+      "3": {"pierce": 1},
+      "4": {"n": 1},
+      "5": {"special": {"heavyEvery": 3, "heavyDmg": 4, "heavyPierce": 2}},
+      "6": {"n": 2},
+      "7": {"special": {"rico": 1, "ricoR": 160, "ricoDmg": 0.5}},
+      "8": {"spreadMul": 0.75},
+      "9": {"special": {"heavyEvery": 1, "heavyBoom": 1, "blastR": 50, "blastDmg": 0.6}}
      }
-    }
+    },
+    "lv": ["弹丸更集中", "+1 弹丸", "弹丸穿透 1 个敌人", "+1 弹丸", "每第 3 枪中间夹一颗独头重弹", "+2 弹丸", "弹丸命中后弹向附近敌人", "弹丸更集中", "每一枪都带一颗爆炸独头弹"]
    },
    {
     "key": "b",
     "name": "龙息弹",
-    "perLevel": "点燃几率 +7%",
+    "perLevel": "20% 几率点燃",
     "lv3": "燃烧伤害 +50%",
-    "lv6": "被点燃的敌人减速",
+    "lv6": "击杀时尸体爆炸",
     "lv9": "每一枪都在前方留下一片火海",
     "effects": {
-     "perLevel": {"ign": 0.07},
-     "base": {"ign": 0.15},
      "at": {
+      "1": {"ign": 0.2},
+      "2": {"special": {"fireField": 140, "fieldR": 45, "fieldLife": 1.5, "fieldDps": 10}},
       "3": {"ignK": 1.5},
-      "6": {
-       "special": {"burnSlow": 1}
-      },
-      "9": {
-       "special": {"fireField": 170, "fieldR": 70, "fieldLife": 2.5, "fieldDps": 16}
-      }
+      "4": {"special": {"burnSlow": 1}},
+      "5": {"ign": 0.2},
+      "6": {"special": {"killBlast": 80, "killBlastDmg": 30}},
+      "7": {"special": {"burnSpread": 2}},
+      "8": {"ignK": 2.0},
+      "9": {"special": {"fireField": 170, "fieldR": 70, "fieldLife": 2.5, "fieldDps": 16}}
      }
-    }
+    },
+    "lv": ["20% 几率点燃", "每一枪在前方留下小火苗", "燃烧伤害 +50%", "被点燃的敌人减速", "点燃几率 40%", "击杀时尸体爆炸", "燃烧会传染给身边的敌人", "燃烧伤害 ×2", "每一枪都在前方留下一片火海"]
    },
    {
     "key": "c",
     "name": "冲击弹",
-    "perLevel": "击退 +15%",
-    "lv3": "命中短暂眩晕",
-    "lv6": "击退再 +30%",
-    "lv9": "贴脸一枪把人轰飞并眩晕",
+    "perLevel": "击退大幅增强",
+    "lv3": "贴脸一枪把人轰飞",
+    "lv6": "撞墙眩晕：被打到墙上的敌人晕 0.6 秒",
+    "lv9": "贴脸一枪轰飞并眩晕 0.8 秒",
     "effects": {
-     "perLevel": {"kb": 0.15},
      "at": {
-      "3": {"stun": 0.25},
-      "6": {"kb": 0.3},
-      "9": {
-       "special": {"pointBlank": 90, "pbKb": 520, "pbStun": 0.8}
-      }
+      "1": {"kb": 0.5},
+      "2": {"stun": 0.2},
+      "3": {"special": {"pointBlank": 90, "pbKb": 400, "pbStun": 0.3}},
+      "4": {"dashCdMul": 0.75},
+      "5": {"shockR": 50, "special": {"shockKb": 200}},
+      "6": {"special": {"wallSlam": 34, "slamProbeR": 4, "slamStun": 0.6, "slamDmg": 15}},
+      "7": {"stun": 0.1},
+      "8": {"shockR": 30},
+      "9": {"special": {"pbKb": 520, "pbStun": 0.8}}
      }
-    }
+    },
+    "lv": ["击退大幅增强", "命中短暂眩晕", "贴脸一枪把人轰飞", "翻滚冷却 -25%", "命中时震退身边的敌人", "撞墙眩晕：被打到墙上的敌人晕 0.6 秒", "眩晕更久", "震波更大", "贴脸一枪轰飞并眩晕 0.8 秒"]
    }
   ],
   "sniper": [
    {
     "key": "a",
     "name": "鹰眼",
-    "perLevel": "手电和视野更远 +12%",
+    "perLevel": "瞄准线更长，手电更远",
     "lv3": "瞄准线上的敌人全队可见",
     "lv6": "瞄准视野更宽",
     "lv9": "命中的敌人全队可见 5 秒",
     "effects": {
      "base": {"aimLen": 600},
-     "perLevel": {"range": 0.12, "lightRange": 0.12, "aimLen": 60},
      "at": {
-      "3": {
-       "special": {"aimLine": 40}
-      },
-      "6": {
-       "special": {"aimLine": 70}
-      },
-      "9": {"mark": 5}
+      "1": {"aimLen": 60, "lightRange": 0.3},
+      "2": {"mark": 2},
+      "3": {"special": {"aimLine": 40}},
+      "4": {"range": 0.2},
+      "5": {"slow": 0.5},
+      "6": {"special": {"aimLine": 70}},
+      "7": {"special": {"killRefund": 1}},
+      "8": {"lightRange": 0.3},
+      "9": {"mark": 3}
      }
-    }
+    },
+    "lv": ["瞄准线更长，手电更远", "打中的敌人全队可见 2 秒", "瞄准线上的敌人全队可见", "射程 +20%", "命中让敌人减速", "瞄准视野更宽", "击杀立刻上膛", "手电再远", "命中的敌人全队可见 5 秒"]
    },
    {
     "key": "b",
     "name": "贯穿",
-    "perLevel": "伤害 +5%",
-    "lv3": "穿透 +1",
-    "lv6": "穿透再 +1",
-    "lv9": "能穿过薄障碍",
+    "perLevel": "再穿透 1 个敌人",
+    "lv3": "再穿透 1 个",
+    "lv6": "再穿透 2 个",
+    "lv9": "命中后在敌人之间弹射 2 次",
     "effects": {
-     "perLevel": {"dmg": 0.05},
      "at": {
+      "1": {"pierce": 1},
+      "2": {"spdMul": 1.25},
       "3": {"pierce": 1},
-      "6": {"pierce": 1},
-      "9": {"wp": 1}
+      "4": {"slow": 0.4},
+      "5": {"wp": 1},
+      "6": {"pierce": 2},
+      "7": {"special": {"chainChance": 0.15, "chainK": 0.5}},
+      "8": {"special": {"structDmg": 0.4}},
+      "9": {"special": {"rico": 2, "ricoR": 300, "ricoDmg": 0.6}}
      }
-    }
+    },
+    "lv": ["再穿透 1 个敌人", "子弹飞得更快", "再穿透 1 个", "被打穿的敌人减速", "能穿过 1 层薄障碍", "再穿透 2 个", "命中 15% 几率放出闪电链", "打建筑伤害 +40%", "命中后在敌人之间弹射 2 次"]
    },
    {
     "key": "c",
     "name": "屏息",
-    "perLevel": "静止瞄准伤害 +8%",
-    "lv3": "瞄准蓄力更快",
-    "lv6": "蓄满时暴击率 +15%",
-    "lv9": "蓄满必暴击",
+    "perLevel": "站定 0.6 秒后伤害 +20%",
+    "lv3": "站定时暴击率 +15%",
+    "lv6": "击杀后 2 秒射速 +30%",
+    "lv9": "站定时枪枪暴击",
     "effects": {
-     "base": {"stillT": 0.6},
-     "perLevel": {"stillDmg": 0.08},
      "at": {
-      "3": {"stillT": -0.2},
-      "6": {"stillCrit": 0.15},
-      "9": {
-       "special": {"stillForce": 1}
-      }
+      "1": {"stillT": 0.6, "stillDmg": 0.2},
+      "2": {"stillT": -0.2},
+      "3": {"stillCrit": 0.15},
+      "4": {"stillDmg": 0.15},
+      "5": {"rlMul": 0.75},
+      "6": {"special": {"killHaste": 2}},
+      "7": {"stillCrit": 0.15},
+      "8": {"magAdd": 1},
+      "9": {"special": {"stillForce": 1}}
      }
-    }
+    },
+    "lv": [
+     "站定 0.6 秒后伤害 +20%",
+     "站定只要 0.4 秒",
+     "站定时暴击率 +15%",
+     "站定伤害再 +15%",
+     "换弹快 25%",
+     "击杀后 2 秒射速 +30%",
+     "站定暴击率再 +15%",
+     "弹匣 +1",
+     "站定时枪枪暴击"
+    ]
    }
   ],
   "lmg": [
    {
     "key": "a",
     "name": "弹链",
-    "perLevel": "弹匣 +12%、换弹快 6%",
-    "lv3": "弹匣再 +15%",
-    "lv6": "换弹再快 15%",
+    "perLevel": "弹匣 +30",
+    "lv3": "双管：并排两条弹道",
+    "lv6": "枪挂榴弹：每第 15 发打出一颗小榴弹",
     "lv9": "站着不动开火不耗子弹",
     "effects": {
-     "perLevel": {"magMul": 0.12, "rlMul": -0.06},
      "at": {
-      "3": {"magMul": 0.15},
-      "6": {"rlMul": 0.85},
-      "9": {
-       "special": {"stillFree": 25}
-      }
+      "1": {"magAdd": 30},
+      "2": {"special": {"reloadShock": 110}},
+      "3": {"special": {"twin": 1, "twinGap": 11, "twinDmg": 0.4}},
+      "4": {"special": {"reloadRing": 12, "ringDmg": 0.7}},
+      "5": {"rlMul": 0.75},
+      "6": {"special": {"nadeR": 80, "nadeDmg": 35, "nadeRange": 360, "nadeEvery": 15}},
+      "7": {"magAdd": 40},
+      "8": {"special": {"twin": 2}},
+      "9": {"special": {"stillFree": 25}}
      }
-    }
+    },
+    "lv": [
+     "弹匣 +30",
+     "换弹完成时震开身边的敌人",
+     "双管：并排两条弹道",
+     "换弹完成时向四周射出 12 发子弹",
+     "换弹快 25%",
+     "枪挂榴弹：每第 15 发打出一颗小榴弹",
+     "弹匣再 +40",
+     "三管齐射",
+     "站着不动开火不耗子弹"
+    ]
    },
    {
     "key": "b",
     "name": "压制",
-    "perLevel": "命中减速更久",
-    "lv3": "命中处周围也被减速",
+    "perLevel": "命中让敌人减速",
+    "lv3": "命中处周围的敌人也被减速",
     "lv6": "减速更强",
     "lv9": "被压制的敌人受到伤害 +20%",
     "effects": {
-     "base": {"slow": 0.35},
-     "perLevel": {"slow": 0.06},
      "at": {
-      "3": {
-       "special": {"slowSplash": 70, "slowSplashK": 0.6}
-      },
+      "1": {"slow": 0.35},
+      "2": {"slow": 0.2},
+      "3": {"special": {"slowSplash": 70, "slowSplashK": 0.6}},
+      "4": {"special": {"heavyEvery": 8, "heavyDmg": 2.5}},
+      "5": {"special": {"slowSplash": 100}},
       "6": {"slow": 0.3},
-      "9": {
-       "special": {"supp": 1.2}
-      }
+      "7": {"special": {"killBlast": 80, "killBlastDmg": 30}},
+      "8": {"special": {"heavyEvery": 5}},
+      "9": {"special": {"supp": 1.2}}
      }
-    }
+    },
+    "lv": ["命中让敌人减速", "减速更久", "命中处周围的敌人也被减速", "每第 8 发是重弹：更大、伤害 ×2.5、穿透 2", "减速范围更大", "减速更强", "击杀时尸体爆炸", "重弹改为每第 5 发", "被压制的敌人受到伤害 +20%"]
    },
    {
     "key": "c",
     "name": "架枪",
-    "perLevel": "站定后伤害 +5%",
-    "lv3": "架枪更快",
-    "lv6": "架枪时射速 +15%",
+    "perLevel": "站定架枪后伤害 +15%",
+    "lv3": "架枪时射速 +15%",
+    "lv6": "每第 8 发是重弹：更大、伤害 ×2.5、穿透 2",
     "lv9": "架枪时正面挡住子弹",
     "effects": {
-     "perLevel": {"deployDmg": 0.05},
      "at": {
-      "3": {"deployNeed": -0.15},
-      "6": {
-       "special": {"deployRate": 1.15}
-      },
-      "9": {
-       "special": {"frontShield": 52, "shieldArc": 0.9}
-      }
+      "1": {"deployDmg": 0.15},
+      "2": {"deployNeed": -0.15},
+      "3": {"special": {"deployRate": 1.15}},
+      "4": {"pierce": 1},
+      "5": {"special": {"fanN": 3, "fanAng": 0.25, "fanDmg": 0.6, "fanEvery": 6}},
+      "6": {"special": {"heavyEvery": 8, "heavyDmg": 2.5}},
+      "7": {"deployDmg": 0.2},
+      "8": {"special": {"killHeal": 0.08}},
+      "9": {"special": {"frontShield": 52, "shieldArc": 0.9}}
      }
-    }
+    },
+    "lv": [
+     "站定架枪后伤害 +15%",
+     "架枪更快",
+     "架枪时射速 +15%",
+     "子弹穿透 1 个敌人",
+     "每第 6 发多喷 3 发扇形弹",
+     "每第 8 发是重弹：更大、伤害 ×2.5、穿透 2",
+     "架枪伤害再 +20%",
+     "击杀回复 8% 生命",
+     "架枪时正面挡住子弹"
+    ]
    }
   ],
   "rocket": [
    {
     "key": "a",
     "name": "追踪",
-    "perLevel": "火箭追踪更灵敏",
+    "perLevel": "火箭会追踪敌人",
     "lv3": "目标死了自动换下一个",
-    "lv6": "追踪范围更大",
+    "lv6": "命中处留下 2 秒小火",
     "lv9": "一次发射 3 枚火箭各锁一个目标",
     "effects": {
-     "base": {"home": 1.4},
-     "perLevel": {"home": 0.35},
      "at": {
-      "1": {"spdMul": 0.85},
-      "3": {
-       "special": {"homeCone": 3.2}
-      },
-      "6": {
-       "special": {"homeRange": 720}
-      },
-      "9": {
-       "special": {"multi": 3, "multiSpread": 0.25, "multiDmg": 0.6, "multiRange": 820, "multiCone": 1.2, "multiCd": 1.3}
-      }
+      "1": {"home": 1.4, "spdMul": 0.85},
+      "2": {"home": 0.8},
+      "3": {"special": {"homeCone": 3.2}},
+      "4": {"spdMul": 1.25},
+      "5": {"special": {"homeRange": 480}},
+      "6": {"special": {"crater": 0.4, "craterLife": 2, "craterDps": 10}},
+      "7": {"special": {"blastSlow": 0.8}},
+      "8": {"home": 1.0},
+      "9": {"special": {"multi": 3, "multiSpread": 0.25, "multiDmg": 0.6, "multiRange": 540, "multiCone": 1.2, "multiCd": 1.3}}
      }
-    }
+    },
+    "lv": ["火箭会追踪敌人", "追踪更灵敏", "目标死了自动换下一个", "火箭飞得更快", "追踪范围更大", "命中处留下 2 秒小火", "爆炸让敌人减速", "追踪再灵敏", "一次发射 3 枚火箭各锁一个目标"]
    },
    {
     "key": "b",
     "name": "大当量",
-    "perLevel": "爆炸范围 +9%、伤害 +5%",
-    "lv3": "爆炸击退更强",
-    "lv6": "爆炸减速敌人",
-    "lv9": "爆炸留下燃烧弹坑",
+    "perLevel": "爆炸范围 +25%",
+    "lv3": "爆炸让敌人减速",
+    "lv6": "火坑更大更久",
+    "lv9": "火箭飞到一半分裂成三枚",
     "effects": {
-     "perLevel": {"aoe": 0.09, "aoeDmg": 0.05},
      "at": {
-      "3": {"kb": 0.4},
-      "6": {
-       "special": {"blastSlow": 1.2}
-      },
-      "9": {
-       "special": {"crater": 0.7, "craterLife": 4, "craterDps": 18}
-      }
+      "1": {"aoe": 0.25},
+      "2": {"kb": 0.4},
+      "3": {"special": {"blastSlow": 1.2}},
+      "4": {"special": {"killBlast": 90, "killBlastDmg": 30}},
+      "5": {"special": {"crater": 0.4, "craterLife": 2, "craterDps": 10}},
+      "6": {"special": {"crater": 0.7, "craterLife": 4, "craterDps": 18}},
+      "7": {"magAdd": 1},
+      "8": {"aoe": 0.2},
+      "9": {"special": {"splitAt": 200, "splitAng": 0.25, "splitDmg": 0.6}}
      }
-    }
+    },
+    "lv": ["爆炸范围 +25%", "爆炸击退更强", "爆炸让敌人减速", "击杀时尸体再爆一次", "命中处留下 2 秒小火", "火坑更大更久", "弹匣 +1：连发两枚", "爆炸范围再 +20%", "火箭飞到一半分裂成三枚"]
    },
    {
     "key": "c",
     "name": "集束",
-    "perLevel": "爆炸散出子炸弹、伤害 +8%",
-    "lv3": "子炸弹 +1",
-    "lv6": "子炸弹再 +1",
+    "perLevel": "爆炸散出 2 颗子炸弹",
+    "lv3": "子炸弹伤害提高",
+    "lv6": "子炸弹 +2",
     "lv9": "一次发射两枚火箭",
     "effects": {
-     "base": {"cluster": 0.25},
-     "perLevel": {"cluster": 0.02},
      "at": {
-      "1": {
-       "special": {"bombs": 2}
-      },
-      "3": {
-       "special": {"bombs": 3}
-      },
-      "6": {
-       "special": {"bombs": 4}
-      },
-      "9": {
-       "special": {"twin": 0.12}
-      }
+      "1": {"cluster": 0.25, "special": {"bombs": 2}},
+      "2": {"special": {"bombs": 3}},
+      "3": {"cluster": 0.1},
+      "4": {"special": {"bombs": 4}},
+      "5": {"special": {"blastSlow": 0.8}},
+      "6": {"special": {"bombs": 6}},
+      "7": {"cluster": 0.1},
+      "8": {"rlMul": 0.75},
+      "9": {"special": {"twin": 0.12}}
      }
-    }
+    },
+    "lv": ["爆炸散出 2 颗子炸弹", "子炸弹 +1", "子炸弹伤害提高", "子炸弹 +1", "爆炸让敌人减速", "子炸弹 +2", "子炸弹伤害再提高", "换弹快 25%", "一次发射两枚火箭"]
    }
   ],
   "katana": [
    {
     "key": "a",
     "name": "弹反",
-    "perLevel": "格挡范围 +8%、反弹伤害 +10%",
+    "perLevel": "反弹的子弹伤害提高",
     "lv3": "反弹的子弹追踪射手",
     "lv6": "翻滚时也能格挡",
     "lv9": "完美格挡：反弹伤害 ×3 并无敌 0.6 秒",
     "effects": {
-     "perLevel": {"arc": 0.08, "deflect": 0.1},
      "at": {
-      "3": {
-       "special": {"deflectHome": 3.5}
-      },
-      "6": {
-       "special": {"rollDeflect": 1}
-      },
-      "9": {
-       "special": {"perfectWindow": 0.08, "perfectMul": 3, "perfectIframes": 0.6}
-      }
+      "1": {"deflect": 0.3},
+      "2": {"arc": 0.15},
+      "3": {"special": {"deflectHome": 3.5}},
+      "4": {"deflect": 0.3},
+      "5": {"special": {"leech": 0.04}},
+      "6": {"special": {"rollDeflect": 1}},
+      "7": {"special": {"spinEvery": 4}},
+      "8": {"special": {"leech": 0.08}},
+      "9": {"special": {"perfectWindow": 0.08, "perfectMul": 3, "perfectIframes": 0.6}}
      }
-    }
+    },
+    "lv": ["反弹的子弹伤害提高", "挥刀范围更宽", "反弹的子弹追踪射手", "反弹伤害再提高", "挥刀吸血 4%", "翻滚时也能格挡", "每第 4 刀是旋风斩，砍一整圈", "吸血 8%", "完美格挡：反弹伤害 ×3 并无敌 0.6 秒"]
    },
    {
     "key": "b",
     "name": "剑气",
-    "perLevel": "挥刀放出剑气，射程 +30",
+    "perLevel": "挥刀放出剑气",
     "lv3": "剑气穿透",
     "lv6": "剑气变宽",
     "lv9": "第三刀放出十字巨型剑气",
     "effects": {
-     "base": {"wave": 0.5, "waveRange": 220},
-     "perLevel": {"wave": 0.03, "waveRange": 30},
      "at": {
-      "3": {
-       "special": {"wavePierce": 99}
-      },
-      "6": {
-       "special": {"waveWide": 1.5}
-      },
-      "9": {
-       "special": {"bigEvery": 3, "bigWide": 1.8, "bigDmg": 1.5, "bigSpread": 0.5}
-      }
+      "1": {"wave": 0.5, "waveRange": 220},
+      "2": {"waveRange": 60},
+      "3": {"special": {"wavePierce": 99}},
+      "4": {"wave": 0.15},
+      "5": {"waveRange": 60},
+      "6": {"special": {"waveWide": 1.5}},
+      "7": {"slow": 0.5},
+      "8": {"wave": 0.15},
+      "9": {"special": {"bigEvery": 3, "bigWide": 1.8, "bigDmg": 1.5, "bigSpread": 0.5}}
      }
-    }
+    },
+    "lv": ["挥刀放出剑气", "剑气飞得更远", "剑气穿透", "剑气伤害提高", "剑气飞得更远", "剑气变宽", "剑气命中让敌人减速", "剑气伤害再提高", "第三刀放出十字巨型剑气"]
    },
    {
     "key": "c",
     "name": "居合",
-    "perLevel": "翻滚斩伤害 +8%",
-    "lv3": "翻滚冷却 -25%",
-    "lv6": "翻滚距离 +25%",
+    "perLevel": "翻滚斩：翻滚穿过敌人时砍一刀",
+    "lv3": "翻滚距离 +25%",
+    "lv6": "翻滚冷却再 -20%",
     "lv9": "击杀刷新翻滚",
     "effects": {
-     "base": {"iaido": 0.4},
-     "perLevel": {"iaido": 0.08},
      "at": {
-      "3": {"dashCdMul": 0.75},
-      "6": {
-       "special": {"dashSpd": 1.25}
-      },
-      "9": {
-       "special": {"killResetDash": 1}
-      }
+      "1": {"iaido": 0.5},
+      "2": {"dashCdMul": 0.8},
+      "3": {"special": {"dashSpd": 1.25}},
+      "4": {"iaido": 0.25},
+      "5": {"special": {"killHaste": 2}},
+      "6": {"dashCdMul": 0.8},
+      "7": {"iaido": 0.25},
+      "8": {"special": {"killHeal": 0.1}},
+      "9": {"special": {"killResetDash": 1}}
      }
-    }
+    },
+    "lv": ["翻滚斩：翻滚穿过敌人时砍一刀", "翻滚冷却 -20%", "翻滚距离 +25%", "翻滚斩伤害提高", "击杀后 2 秒挥刀更快", "翻滚冷却再 -20%", "翻滚斩伤害再提高", "击杀回复 10% 生命", "击杀刷新翻滚"]
    }
   ],
   "flame": [
    {
     "key": "a",
     "name": "高压喷嘴",
-    "perLevel": "射程 +7%、喷得更宽",
-    "lv3": "火焰伤害 +15%",
-    "lv6": "火焰推开敌人",
-    "lv9": "蓝色高温火柱：伤害 ×1.5",
+    "perLevel": "射程 +20%",
+    "lv3": "火焰伤害 +20%",
+    "lv6": "三喷嘴",
+    "lv9": "蓝色高温火柱：伤害 ×1.5，喷得更快",
     "effects": {
-     "perLevel": {"range": 0.07, "spreadMul": 0.05},
      "at": {
-      "3": {"dmgMul": 1.15},
-      "6": {"kb": 3},
-      "9": {
-       "dmgMul": 1.5,
-       "spdMul": 1.25,
-       "special": {"blue": 1}
-      }
+      "1": {"range": 0.2},
+      "2": {"special": {"flameN": 1, "flameAng": 0.2, "flameDmg": 0.6}},
+      "3": {"dmgMul": 1.2},
+      "4": {"spreadMul": 1.3},
+      "5": {"slow": 0.4},
+      "6": {"special": {"flameN": 2}},
+      "7": {"range": 0.15},
+      "8": {"burn": 1.0},
+      "9": {"dmgMul": 1.5, "spdMul": 1.25, "special": {"blue": 1}}
      }
-    }
+    },
+    "lv": ["射程 +20%", "双喷嘴：多一道火焰", "火焰伤害 +20%", "喷得更宽", "被火焰烧到的敌人减速", "三喷嘴", "射程再 +15%", "点燃时间更长", "蓝色高温火柱：伤害 ×1.5，喷得更快"]
    },
    {
     "key": "b",
     "name": "黏性燃料",
-    "perLevel": "燃烧时间 +0.3 秒",
-    "lv3": "火焰尽头留下火洼",
-    "lv6": "火洼更大",
+    "perLevel": "燃烧时间 +1 秒",
+    "lv3": "被火烧到的敌人减速",
+    "lv6": "火洼烧得更久",
     "lv9": "燃烧会传染给身边敌人",
     "effects": {
-     "perLevel": {"burn": 0.3},
      "at": {
-      "3": {
-       "special": {"puddle": 45, "puddleCd": 0.8, "puddleAt": 0.8, "puddleLife": 2, "puddleDps": 10}
-      },
-      "6": {
-       "special": {"puddle": 65}
-      },
-      "9": {
-       "special": {"burnSpread": 3}
-      }
+      "1": {"burn": 1},
+      "2": {"special": {"puddle": 45, "puddleCd": 0.8, "puddleAt": 0.8, "puddleLife": 2, "puddleDps": 10}},
+      "3": {"slow": 0.4},
+      "4": {"special": {"puddle": 65}},
+      "5": {"special": {"killBlast": 80, "killBlastDmg": 30}},
+      "6": {"special": {"puddleLife": 3.5}},
+      "7": {"burn": 1},
+      "8": {"special": {"puddleDps": 20}},
+      "9": {"special": {"burnSpread": 3}}
      }
-    }
+    },
+    "lv": ["燃烧时间 +1 秒", "火焰尽头留下火洼", "被火烧到的敌人减速", "火洼更大", "击杀时尸体爆炸", "火洼烧得更久", "燃烧时间再 +1 秒", "火洼伤害翻倍", "燃烧会传染给身边敌人"]
    },
    {
     "key": "c",
     "name": "热浪",
     "perLevel": "近处的敌方子弹被烧掉",
-    "lv3": "烧子弹范围更大",
-    "lv6": "整条火焰都能烧子弹",
-    "lv9": "连喷 3 秒后火焰爆发",
+    "lv3": "燃料罐 +40",
+    "lv6": "爆发改为连喷 3 秒",
+    "lv9": "火焰爆发伤害翻倍、范围再扩大",
     "effects": {
-     "base": {"heat": 0.5},
-     "perLevel": {"heat": 0.04},
      "at": {
-      "3": {"heat": 0.15},
-      "6": {
-       "special": {"heatFull": 1}
-      },
-      "9": {
-       "special": {"flameBurst": 3, "burstR": 170, "burstDmg": 90, "burstKb": 300}
-      }
+      "1": {"heat": 0.5},
+      "2": {"heat": 0.2},
+      "3": {"magAdd": 40},
+      "4": {"special": {"heatFull": 1}},
+      "5": {"special": {"flameBurst": 4, "burstR": 170, "burstDmg": 90, "burstKb": 300}},
+      "6": {"special": {"flameBurst": 3}},
+      "7": {"rlMul": 0.7},
+      "8": {"special": {"burstR": 220}},
+      "9": {"special": {"burstDmg": 180, "burstR": 260}}
      }
-    }
+    },
+    "lv": ["近处的敌方子弹被烧掉", "烧子弹范围更大", "燃料罐 +40", "整条火焰都能烧子弹", "连喷 4 秒后火焰爆发", "爆发改为连喷 3 秒", "换燃料快 30%", "爆发范围更大", "火焰爆发伤害翻倍、范围再扩大"]
    }
   ],
   "minigun": [
    {
     "key": "a",
     "name": "极速转管",
-    "perLevel": "预热快 9%、射速 +4%",
-    "lv3": "射速再 +6%",
-    "lv6": "预热再快 15%",
-    "lv9": "松开后 3 秒不降速",
+    "perLevel": "预热快 30%",
+    "lv3": "松开后 3 秒不降速",
+    "lv6": "三管齐射",
+    "lv9": "四管齐射，榴弹改为每第 10 发",
     "effects": {
-     "perLevel": {"rate": 0.04, "spinMul": -0.09},
      "at": {
-      "3": {"rate": 0.06},
-      "6": {"spinMul": 0.85},
-      "9": {
-       "special": {"keepSpin": 3}
-      }
+      "1": {"spinMul": 0.7},
+      "2": {"special": {"twin": 1, "twinGap": 11, "twinDmg": 0.25}},
+      "3": {"special": {"keepSpin": 3}},
+      "4": {"special": {"fanN": 3, "fanAng": 0.3, "fanDmg": 0.6, "fanEvery": 8}},
+      "5": {"rate": 0.1},
+      "6": {"special": {"twin": 2}},
+      "7": {"spinMul": 0.8},
+      "8": {"special": {"nadeR": 85, "nadeDmg": 40, "nadeRange": 360, "nadeEvery": 15}},
+      "9": {"special": {"twin": 3, "nadeEvery": 10}}
      }
-    }
+    },
+    "lv": [
+     "预热快 30%",
+     "双管：并排两条弹道",
+     "松开后 3 秒不降速",
+     "每第 8 发多喷 3 发扇形弹",
+     "射速 +10%",
+     "三管齐射",
+     "预热再快 20%",
+     "枪挂榴弹：每第 15 发打出一颗小榴弹",
+     "四管齐射，榴弹改为每第 10 发"
+    ]
    },
    {
     "key": "b",
     "name": "移动堡垒",
-    "perLevel": "开火时移速 +5%",
-    "lv3": "开火时不会被击退",
-    "lv6": "开火时减伤 10%",
-    "lv9": "开火时减伤 25%",
+    "perLevel": "开火时移速 +15%",
+    "lv3": "开火时正面挡住子弹",
+    "lv6": "开火时减伤 20%",
+    "lv9": "开火时减伤 30%，击杀时尸体爆炸",
     "effects": {
-     "perLevel": {"slowAdd": 0.05},
      "at": {
-      "3": {
-       "special": {"noKnockFiring": 0.3}
-      },
-      "6": {
-       "special": {"firingArmor": 0.1, "firingWindow": 0.3}
-      },
-      "9": {
-       "special": {"firingArmor": 0.25}
-      }
+      "1": {"slowAdd": 0.15},
+      "2": {"special": {"noKnockFiring": 0.3}},
+      "3": {"special": {"frontShield": 40, "shieldArc": 0.6}},
+      "4": {"special": {"leech": 0.03}},
+      "5": {"special": {"killHeal": 0.08}},
+      "6": {"special": {"firingArmor": 0.2, "firingWindow": 0.3}},
+      "7": {"special": {"frontShield": 52, "shieldArc": 0.9}},
+      "8": {"special": {"leech": 0.06}},
+      "9": {"special": {"firingArmor": 0.3, "killBlast": 80, "killBlastDmg": 30}}
      }
-    }
+    },
+    "lv": ["开火时移速 +15%", "开火时不会被击退", "开火时正面挡住子弹", "开火吸血 3%", "击杀回复 8% 生命", "开火时减伤 20%", "挡子弹的范围更宽", "吸血 6%", "开火时减伤 30%，击杀时尸体爆炸"]
    },
    {
     "key": "c",
     "name": "曳光弹幕",
     "perLevel": "命中的敌人短暂全队可见",
-    "lv3": "5% 几率点燃",
-    "lv6": "可见时间再 +1 秒",
-    "lv9": "每第 10 发是爆炸弹",
+    "lv3": "每第 10 发是爆炸弹",
+    "lv6": "命中 5% 几率放出闪电链",
+    "lv9": "爆炸弹改为每第 3 发",
     "effects": {
-     "base": {"mark": 0.5},
-     "perLevel": {"mark": 0.15},
      "at": {
-      "3": {"ign": 0.05},
-      "6": {"mark": 1},
-      "9": {
-       "special": {"explEvery": 10, "blastR": 60, "blastDmg": 0.9}
-      }
+      "1": {"mark": 0.8},
+      "2": {"ign": 0.05},
+      "3": {"special": {"explEvery": 10, "blastR": 60, "blastDmg": 0.9}},
+      "4": {"mark": 1},
+      "5": {"ign": 0.05},
+      "6": {"special": {"chainChance": 0.05, "chainK": 0.5}},
+      "7": {"special": {"explEvery": 6}},
+      "8": {"special": {"chainChance": 0.1}},
+      "9": {"special": {"explEvery": 3}}
      }
-    }
+    },
+    "lv": ["命中的敌人短暂全队可见", "5% 几率点燃", "每第 10 发是爆炸弹", "可见时间 +1 秒", "点燃几率 10%", "命中 5% 几率放出闪电链", "爆炸弹改为每第 6 发", "闪电链几率 10%", "爆炸弹改为每第 3 发"]
    }
   ],
   "autoshot": [
    {
     "key": "a",
     "name": "大弹鼓",
-    "perLevel": "弹匣 +12%",
-    "lv3": "换弹快 20%",
-    "lv6": "弹匣再 +20%",
-    "lv9": "翻滚补充一半弹匣",
+    "perLevel": "弹匣 +6",
+    "lv3": "换弹完成时震开身边的敌人",
+    "lv6": "弹匣 +8",
+    "lv9": "翻滚瞬间装满弹匣",
     "effects": {
-     "perLevel": {"magMul": 0.12},
      "at": {
-      "3": {"rlMul": 0.8},
-      "6": {"magMul": 0.2},
-      "9": {
-       "special": {"rollRefill": 0.5}
-      }
+      "1": {"magAdd": 6},
+      "2": {"special": {"rollRefill": 0.5}},
+      "3": {"special": {"reloadShock": 110}},
+      "4": {"special": {"reloadRing": 12, "ringDmg": 0.6, "ringRange": 250}},
+      "5": {"n": 1},
+      "6": {"magAdd": 8},
+      "7": {"rlMul": 0.75},
+      "8": {"n": 1},
+      "9": {"special": {"rollRefill": 1.0}}
      }
-    }
+    },
+    "lv": ["弹匣 +6", "翻滚补充一半弹匣", "换弹完成时震开身边的敌人", "换弹完成时向四周喷出 12 颗弹丸", "+1 弹丸", "弹匣 +8", "换弹快 25%", "+1 弹丸", "翻滚瞬间装满弹匣"]
    },
    {
     "key": "b",
     "name": "破片弹",
-    "perLevel": "命中小爆炸几率 +5%",
+    "perLevel": "10% 几率命中小爆炸",
     "lv3": "爆炸范围更大",
-    "lv6": "几率再 +10%",
+    "lv6": "击杀时尸体爆炸",
     "lv9": "破片会弹跳",
     "effects": {
-     "base": {"fragChance": 0.1, "fragR": 32},
-     "perLevel": {"fragChance": 0.05},
      "at": {
-      "1": {
-       "special": {"fragDmg": 0.5}
-      },
+      "1": {"fragChance": 0.1, "fragR": 32, "special": {"fragDmg": 0.5}},
+      "2": {"fragChance": 0.1},
       "3": {"fragR": 13},
-      "6": {"fragChance": 0.1},
+      "4": {"special": {"rico": 1, "ricoR": 160, "ricoDmg": 0.5}},
+      "5": {"fragChance": 0.1},
+      "6": {"special": {"killBlast": 80, "killBlastDmg": 30}},
+      "7": {"fragChance": 0.1},
+      "8": {"fragR": 12},
       "9": {
-       "special": {
-        "fragBits": 2,
-        "fragAng": 0.8,
-        "fragSpd": 600,
-        "fragBitDmg": 0.4,
-        "fragRange": 160,
-        "fragBitR": 3.5,
-        "fragBitKb": 20
-       }
+       "special": {"fragBits": 2, "fragAng": 0.8, "fragSpd": 600, "fragBitDmg": 0.4, "fragRange": 160, "fragBitR": 3.5, "fragBitKb": 20}
       }
      }
-    }
+    },
+    "lv": ["10% 几率命中小爆炸", "爆炸几率 20%", "爆炸范围更大", "弹丸命中后弹向附近敌人", "爆炸几率 30%", "击杀时尸体爆炸", "爆炸几率 40%", "爆炸再大一圈", "破片会弹跳"]
    },
    {
     "key": "c",
     "name": "风暴",
-    "perLevel": "连射越来越快（上限 +4%）",
-    "lv3": "加速更快",
-    "lv6": "加速上限再 +10%",
+    "perLevel": "连射越来越快，最多 +25%",
+    "lv3": "击杀后 2 秒射速 +30%",
+    "lv6": "连射时移速 +15%",
     "lv9": "弹匣最后 5 发变成龙息弹",
     "effects": {
-     "base": {"stormCap": 0.2, "stormRamp": 0.04},
-     "perLevel": {"stormCap": 0.04},
      "at": {
-      "3": {"stormRamp": 0.02},
-      "6": {"stormCap": 0.1},
-      "9": {
-       "special": {"dragonLast": 5, "dragonIgn": 0.6}
-      }
+      "1": {"stormCap": 0.25, "stormRamp": 0.04},
+      "2": {"stormRamp": 0.02},
+      "3": {"special": {"killHaste": 2}},
+      "4": {"stormCap": 0.2},
+      "5": {"special": {"lastN": 5, "lastDmg": 1.4}},
+      "6": {"fireMove": 0.15},
+      "7": {"special": {"fanN": 3, "fanAng": 0.3, "fanDmg": 0.6, "fanEvery": 8}},
+      "8": {"special": {"lastN": 8}},
+      "9": {"special": {"dragonLast": 5, "dragonIgn": 0.6}}
      }
-    }
+    },
+    "lv": [
+     "连射越来越快，最多 +25%",
+     "加速更快",
+     "击杀后 2 秒射速 +30%",
+     "加速上限 +20%",
+     "弹匣最后 5 发伤害 ×1.4",
+     "连射时移速 +15%",
+     "每第 8 发多喷 3 发扇形弹",
+     "最后 8 发都加伤",
+     "弹匣最后 5 发变成龙息弹"
+    ]
    }
   ],
   "amr": [
    {
     "key": "a",
     "name": "穿甲王",
-    "perLevel": "伤害 +5%",
-    "lv3": "穿透 +1",
-    "lv6": "穿透再 +1",
+    "perLevel": "再穿透 1 个敌人",
+    "lv3": "再穿透 1 个",
+    "lv6": "再穿透 2 个",
     "lv9": "无视所有障碍贯穿全图",
     "effects": {
-     "perLevel": {"dmg": 0.05},
      "at": {
+      "1": {"pierce": 1},
+      "2": {"spdMul": 1.2},
       "3": {"pierce": 1},
-      "6": {"pierce": 1},
-      "9": {
-       "special": {"wallPierce": 2, "rangeMapMul": 1.2}
-      }
+      "4": {"special": {"wallPierce": 1}},
+      "5": {"special": {"structDmg": 0.3}},
+      "6": {"pierce": 2},
+      "7": {"special": {"rico": 1, "ricoR": 260, "ricoDmg": 0.6}},
+      "8": {"special": {"wallPierce": 2}},
+      "9": {"special": {"wallPierce": 2, "rangeMapMul": 1.2}}
      }
-    }
+    },
+    "lv": ["再穿透 1 个敌人", "子弹飞得更快", "再穿透 1 个", "能穿过 1 层薄障碍", "打建筑伤害 +30%", "再穿透 2 个", "命中后弹向附近另一个敌人", "能穿过 2 层薄障碍", "无视所有障碍贯穿全图"]
    },
    {
     "key": "b",
     "name": "冲击波",
-    "perLevel": "命中时震退周围，范围 +6",
-    "lv3": "冲击波眩晕",
-    "lv6": "冲击波范围更大",
+    "perLevel": "命中时震退周围",
+    "lv3": "冲击波眩晕 0.4 秒",
+    "lv6": "冲击波范围大幅扩大",
     "lv9": "对建筑伤害翻倍",
     "effects": {
-     "base": {"shockR": 64},
-     "perLevel": {"shockR": 6},
      "at": {
-      "1": {
-       "special": {"shockKb": 220}
-      },
-      "3": {
-       "special": {"shockStun": 0.4}
-      },
+      "1": {"shockR": 64, "special": {"shockKb": 220}},
+      "2": {"shockR": 20},
+      "3": {"special": {"shockStun": 0.4}},
+      "4": {"shockR": 20},
+      "5": {"special": {"killBlast": 90, "killBlastDmg": 35}},
       "6": {"shockR": 40},
-      "9": {
-       "special": {"structDmg": 1.0}
-      }
+      "7": {"rlMul": 0.75},
+      "8": {"magAdd": 1},
+      "9": {"special": {"structDmg": 1.0}}
      }
-    }
+    },
+    "lv": ["命中时震退周围", "冲击波更大", "冲击波眩晕 0.4 秒", "冲击波再大", "击杀时尸体爆炸", "冲击波范围大幅扩大", "换弹快 25%", "弹匣 +1", "对建筑伤害翻倍"]
    },
    {
     "key": "c",
     "name": "侦察弹",
-    "perLevel": "弹道留下视野（时间 +0.3 秒）",
+    "perLevel": "弹道留下 2 秒视野",
     "lv3": "视野更宽",
-    "lv6": "视野更久",
+    "lv6": "视野再久",
     "lv9": "命中标记 8 秒",
     "effects": {
-     "base": {"scoutT": 2},
-     "perLevel": {"scoutT": 0.3},
      "at": {
-      "1": {
-       "special": {"scoutW": 60}
-      },
-      "3": {
-       "special": {"scoutW": 90}
-      },
+      "1": {"scoutT": 2, "special": {"scoutW": 60}},
+      "2": {"scoutT": 1},
+      "3": {"special": {"scoutW": 90}},
+      "4": {"mark": 3},
+      "5": {"special": {"litDmg": 0.15}},
       "6": {"scoutT": 1},
-      "9": {"mark": 8}
+      "7": {"special": {"litDmg": 0.3}},
+      "8": {"rlMul": 0.8},
+      "9": {"mark": 5}
      }
-    }
+    },
+    "lv": ["弹道留下 2 秒视野", "视野更久", "视野更宽", "打中的敌人全队可见 3 秒", "被照亮的敌人受伤 +15%", "视野再久", "被照亮的敌人受伤 +30%", "换弹快 20%", "命中标记 8 秒"]
    }
   ],
   "dual": [
    {
     "key": "a",
     "name": "连射",
-    "perLevel": "射速 +7%",
-    "lv3": "子弹更快",
-    "lv6": "弹匣 +6",
-    "lv9": "翻滚时 360° 枪斗术",
+    "perLevel": "子弹飞得更快",
+    "lv3": "双管：两把枪各多一条平行弹道",
+    "lv6": "三管：两把枪各多两条平行弹道",
+    "lv9": "枪斗术 16 发，子弹命中后还会弹射",
     "effects": {
-     "perLevel": {"rate": 0.07},
      "at": {
-      "3": {"spdMul": 1.2},
-      "6": {"magAdd": 6},
-      "9": {
-       "special": {"gunKata": 8, "kataSpd": 1100, "kataRange": 500, "kataKb": 60, "kataR": 4.5}
-      }
+      "1": {"spdMul": 1.2},
+      "2": {"rate": 0.12},
+      "3": {"special": {"twin": 1, "twinGap": 9, "twinDmg": 0.4}},
+      "4": {"special": {"kataSpd": 1100, "kataRange": 380, "kataKb": 60, "kataR": 4.5, "gunKata": 6}},
+      "5": {"special": {"fanN": 3, "fanAng": 0.3, "fanDmg": 0.6, "fanEvery": 6}},
+      "6": {"special": {"twin": 2}},
+      "7": {"rate": 0.12},
+      "8": {"special": {"gunKata": 12}},
+      "9": {"special": {"gunKata": 16, "rico": 1, "ricoR": 200, "ricoDmg": 0.6}}
      }
-    }
+    },
+    "lv": [
+     "子弹飞得更快",
+     "射速 +12%",
+     "双管：两把枪各多一条平行弹道",
+     "翻滚时 360° 枪斗术：向四周射出 6 发",
+     "每第 6 发多喷 3 发扇形弹",
+     "三管：两把枪各多两条平行弹道",
+     "射速再 +12%",
+     "枪斗术 12 发",
+     "枪斗术 16 发，子弹命中后还会弹射"
+    ]
    },
    {
     "key": "b",
     "name": "左右开弓",
-    "perLevel": "副手自动瞄第二个目标（+8%）",
+    "perLevel": "副手 30% 几率自动瞄第二个目标",
     "lv3": "自动瞄准范围更大",
     "lv6": "副手伤害 +20%",
     "lv9": "两把枪各锁一个目标",
     "effects": {
-     "base": {"altChance": 0.25},
-     "perLevel": {"altChance": 0.08},
      "at": {
-      "1": {
-       "special": {"altR": 450}
-      },
-      "3": {
-       "special": {"altR": 600}
-      },
-      "6": {
-       "special": {"offDmg": 1.2}
-      },
-      "9": {
-       "special": {"altAlways": 1}
-      }
+      "1": {"altChance": 0.3, "special": {"altR": 450}},
+      "2": {"altChance": 0.2},
+      "3": {"special": {"altR": 600}},
+      "4": {"pierce": 1},
+      "5": {"altChance": 0.2},
+      "6": {"special": {"offDmg": 1.2}},
+      "7": {"special": {"chainChance": 0.1, "chainK": 0.5}},
+      "8": {"special": {"offDmg": 1.4}},
+      "9": {"special": {"altAlways": 1}}
      }
-    }
+    },
+    "lv": ["副手 30% 几率自动瞄第二个目标", "几率 50%", "自动瞄准范围更大", "子弹穿透 1 个敌人", "几率 70%", "副手伤害 +20%", "命中 10% 几率放出闪电链", "副手伤害 +40%", "两把枪各锁一个目标"]
    },
    {
     "key": "c",
     "name": "快速装填",
-    "perLevel": "换弹快 8%",
-    "lv3": "弹匣 +4",
-    "lv6": "击杀补 25% 弹匣",
-    "lv9": "弹匣打空时翻滚瞬间装满",
+    "perLevel": "换弹快 20%",
+    "lv3": "击杀补 25% 弹匣",
+    "lv6": "弹匣打空时翻滚瞬间装满",
+    "lv9": "弹匣最后 6 发伤害翻倍",
     "effects": {
-     "perLevel": {"rlMul": -0.08},
-     "rlFloor": 0.3,
      "at": {
-      "3": {"magAdd": 4},
-      "6": {
-       "special": {"killAmmo": 0.25}
-      },
-      "9": {
-       "special": {"emptyRollReload": 1}
-      }
+      "1": {"rlMul": 0.8},
+      "2": {"special": {"reloadShock": 110}},
+      "3": {"special": {"killAmmo": 0.25}},
+      "4": {"special": {"reloadRing": 8, "ringDmg": 0.8}},
+      "5": {"magAdd": 6},
+      "6": {"special": {"emptyRollReload": 1}},
+      "7": {"special": {"reloadRing": 14}},
+      "8": {"special": {"killAmmo": 0.5}},
+      "9": {"special": {"lastN": 6, "lastDmg": 2.0}}
      }
-    }
+    },
+    "lv": [
+     "换弹快 20%",
+     "换弹完成时震开身边的敌人",
+     "击杀补 25% 弹匣",
+     "换弹完成时向四周射出 8 发子弹",
+     "弹匣 +6",
+     "弹匣打空时翻滚瞬间装满",
+     "环形弹 14 发",
+     "击杀补 50% 弹匣",
+     "弹匣最后 6 发伤害翻倍"
+    ]
    }
   ],
   "revolver": [
    {
     "key": "a",
     "name": "跳弹大师",
-    "perLevel": "反弹伤害 +6%",
-    "lv3": "多反弹 1 次",
-    "lv6": "再多反弹 1 次",
-    "lv9": "反弹后自动追踪",
+    "perLevel": "撞墙多反弹 1 次",
+    "lv3": "弹射：命中后弹向附近另一个敌人",
+    "lv6": "弹射 +1 次",
+    "lv9": "反弹后自动追踪敌人",
     "effects": {
-     "base": {"bounceK": 1.0},
-     "perLevel": {"bounceK": 0.06},
      "at": {
-      "3": {"bounce": 1},
-      "6": {"bounce": 1},
+      "1": {"bounce": 1},
+      "2": {"bounceK": 1.2},
+      "3": {"special": {"rico": 1, "ricoR": 240, "ricoDmg": 0.7}},
+      "4": {"bounceK": 1.4},
+      "5": {"bounce": 1},
+      "6": {"special": {"rico": 2}},
+      "7": {"slow": 0.4},
+      "8": {"special": {"ricoDmg": 1.0}},
       "9": {"homeAfter": 3.6}
      }
-    }
+    },
+    "lv": ["撞墙多反弹 1 次", "反弹后伤害 +20%", "弹射：命中后弹向附近另一个敌人", "反弹后伤害 +40%", "撞墙再多反弹 1 次", "弹射 +1 次", "命中让敌人减速", "弹射不掉伤害", "反弹后自动追踪敌人"]
    },
    {
     "key": "b",
     "name": "神枪手",
-    "perLevel": "按住标记目标、松开连射（伤害 +5%）",
-    "lv3": "标记更快",
-    "lv6": "标记的子弹穿透",
+    "perLevel": "按住标记目标，松开一口气连射",
+    "lv3": "标记的子弹伤害 +30%",
+    "lv6": "标记范围更大",
     "lv9": "标记速度翻倍且必暴击",
     "effects": {
-     "perLevel": {"deDmg": 0.05},
      "at": {
       "1": {
        "special": {
@@ -957,262 +1213,272 @@
         "releaseCd": 0.45
        }
       },
-      "3": {
-       "special": {"markIv": 0.25}
-      },
-      "6": {
-       "special": {"dePierce": 1}
-      },
-      "9": {
-       "special": {"markIv": 0.125, "deForce": 1}
-      }
+      "2": {"special": {"markIv": 0.25}},
+      "3": {"deDmg": 0.3},
+      "4": {"special": {"deRefill": 2}},
+      "5": {"special": {"dePierce": 1}},
+      "6": {"special": {"markR": 900, "markCone": 0.8}},
+      "7": {"deDmg": 0.3},
+      "8": {"rlMul": 0.75},
+      "9": {"special": {"markIv": 0.125, "deForce": 1}}
      }
-    }
+    },
+    "lv": ["按住标记目标，松开一口气连射", "标记更快", "标记的子弹伤害 +30%", "连射完立刻装回 2 发", "标记的子弹穿透", "标记范围更大", "标记的子弹伤害再 +30%", "换弹快 25%", "标记速度翻倍且必暴击"]
    },
    {
     "key": "c",
     "name": "重弹头",
-    "perLevel": "伤害 +6%，命中硬直",
-    "lv3": "击退更强",
-    "lv6": "打断对方换弹",
-    "lv9": "每第 6 发必暴击",
+    "perLevel": "命中硬直：敌人减速",
+    "lv3": "每第 6 发必暴击",
+    "lv6": "撞墙眩晕：被打到墙上的敌人晕 0.6 秒",
+    "lv9": "重弹改为每第 3 发，命中还会爆炸",
     "effects": {
-     "base": {"slow": 0.3},
-     "perLevel": {"dmg": 0.06},
      "at": {
-      "3": {"kb": 0.4},
-      "6": {
-       "special": {"reloadJam": 0.5}
-      },
-      "9": {
-       "special": {"critEvery": 6}
-      }
+      "1": {"slow": 0.3},
+      "2": {"kb": 0.4},
+      "3": {"special": {"critEvery": 6}},
+      "4": {"special": {"reloadJam": 0.5}},
+      "5": {"special": {"heavyEvery": 4, "heavyDmg": 2.5}},
+      "6": {"special": {"wallSlam": 34, "slamProbeR": 4, "slamStun": 0.6, "slamDmg": 15}},
+      "7": {"crit": 0.1},
+      "8": {"special": {"critEvery": 3}},
+      "9": {"special": {"heavyEvery": 3, "heavyBoom": 1, "blastR": 55, "blastDmg": 0.6}}
      }
-    }
+    },
+    "lv": [
+     "命中硬直：敌人减速",
+     "击退更强",
+     "每第 6 发必暴击",
+     "打断对方换弹",
+     "每第 4 发是重弹：更大、伤害 ×2.5、穿透 2",
+     "撞墙眩晕：被打到墙上的敌人晕 0.6 秒",
+     "暴击率 +10%",
+     "必暴击改为每第 3 发",
+     "重弹改为每第 3 发，命中还会爆炸"
+    ]
    }
   ],
   "gl": [
    {
     "key": "a",
     "name": "弹跳",
-    "perLevel": "引信更长、弹得更远",
-    "lv3": "榴弹更快",
-    "lv6": "爆炸范围更大",
+    "perLevel": "榴弹落地弹 1 次，引信更长",
+    "lv3": "榴弹更快，弹 2 次",
+    "lv6": "弹 3 次",
     "lv9": "第一次落地分裂成 3 颗",
     "effects": {
-     "perLevel": {"fuse": 0.15},
      "at": {
-      "1": {
-       "special": {"bounces": 1}
-      },
-      "3": {
-       "spdMul": 1.25,
-       "special": {"bounces": 2}
-      },
-      "6": {
-       "aoe": 0.2,
-       "special": {"bounces": 3}
-      },
-      "9": {
-       "special": {"bounces": 4, "splitOnBounce": 1, "splitAng": 0.7, "splitVz": 0.4}
-      }
+      "1": {"fuse": 0.15, "special": {"bounces": 1}},
+      "2": {"special": {"glMulti": 1, "glAng": 0.25, "glDmg": 0.5}},
+      "3": {"spdMul": 1.25, "special": {"bounces": 2}},
+      "4": {"fuse": 0.3},
+      "5": {"aoe": 0.2},
+      "6": {"special": {"bounces": 3}},
+      "7": {"special": {"glMulti": 2}},
+      "8": {"special": {"killBlast": 80, "killBlastDmg": 30}},
+      "9": {"special": {"bounces": 4, "splitOnBounce": 1, "splitAng": 0.7, "splitVz": 0.4}}
      }
-    }
+    },
+    "lv": ["榴弹落地弹 1 次，引信更长", "双管：一次打出 2 颗榴弹", "榴弹更快，弹 2 次", "引信再长，弹得更远", "爆炸范围 +20%", "弹 3 次", "三管：一次打出 3 颗", "击杀时尸体爆炸", "第一次落地分裂成 3 颗"]
    },
    {
     "key": "b",
     "name": "黏弹",
-    "perLevel": "伤害 +6%，榴弹会粘住",
-    "lv3": "粘住的敌人减速",
-    "lv6": "爆炸范围更大",
+    "perLevel": "榴弹会粘住敌人",
+    "lv3": "爆炸范围 +20%",
+    "lv6": "爆炸后留下一片火",
     "lv9": "再扣扳机手动引爆全部黏弹",
     "effects": {
-     "perLevel": {"dmg": 0.06},
      "at": {
-      "1": {
-       "special": {"sticky": 1}
-      },
-      "3": {
-       "special": {"stickSlow": 0.2}
-      },
-      "6": {"aoe": 0.2},
-      "9": {
-       "special": {"detonate": 1, "stickyFuse": 6, "detonateCd": 0.25}
-      }
+      "1": {"special": {"sticky": 1}},
+      "2": {"special": {"stickSlow": 0.2}},
+      "3": {"aoe": 0.2},
+      "4": {"special": {"glMulti": 1, "glAng": 0.25, "glDmg": 0.6}},
+      "5": {"special": {"killBlast": 80, "killBlastDmg": 30}},
+      "6": {"special": {"glFire": 1}},
+      "7": {"aoe": 0.2},
+      "8": {"rlMul": 0.75},
+      "9": {"special": {"detonate": 1, "stickyFuse": 6, "detonateCd": 0.25}}
      }
-    }
+    },
+    "lv": ["榴弹会粘住敌人", "被粘住的敌人减速", "爆炸范围 +20%", "双管：一次打出 2 颗榴弹", "击杀时尸体爆炸", "爆炸后留下一片火", "爆炸范围再 +20%", "换弹快 25%", "再扣扳机手动引爆全部黏弹"]
    },
    {
     "key": "c",
     "name": "特种弹",
     "perLevel": "每 3 发一颗烟雾弹",
-    "lv3": "加入闪光弹轮换",
-    "lv6": "加入燃烧弹轮换",
-    "lv9": "每颗都附带减速毒气",
+    "lv3": "每一颗都是特种弹",
+    "lv6": "每颗都附带减速毒气",
+    "lv9": "加入冰冻弹轮换：炸到的敌人被冻住",
     "effects": {
      "at": {
-      "1": {
-       "special": {
-        "specialEvery": 3,
-        "rounds": ["smoke"]
-       }
-      },
-      "3": {
-       "special": {
-        "specialEvery": 1,
-        "rounds": ["smoke", "flash"]
-       }
-      },
-      "6": {
-       "special": {
-        "rounds": ["smoke", "flash", "fire"]
-       }
-      },
-      "9": {
-       "special": {"gas": 110, "gasLife": 3, "gasDps": 6, "gasSlow": 0.5}
-      }
+      "1": {"special": {"specialEvery": 3, "rounds": ["smoke"]}},
+      "2": {"special": {"rounds": ["smoke", "flash"]}},
+      "3": {"special": {"specialEvery": 1}},
+      "4": {"special": {"rounds": ["smoke", "flash", "fire"]}},
+      "5": {"aoe": 0.2},
+      "6": {"special": {"gas": 110, "gasLife": 3, "gasDps": 6, "gasSlow": 0.5}},
+      "7": {"special": {"gas": 150}},
+      "8": {"special": {"gasLife": 5}},
+      "9": {"special": {"rounds": ["smoke", "flash", "fire", "ice"]}}
      }
-    }
+    },
+    "lv": ["每 3 发一颗烟雾弹", "烟雾、闪光轮换", "每一颗都是特种弹", "加入燃烧弹轮换", "爆炸范围 +20%", "每颗都附带减速毒气", "毒气范围更大", "毒气更久", "加入冰冻弹轮换：炸到的敌人被冻住"]
    }
   ],
   "rail": [
    {
     "key": "a",
     "name": "超载",
-    "perLevel": "蓄力快 5%、伤害 +6%",
-    "lv3": "蓄力再快 10%",
-    "lv6": "伤害再 +10%",
+    "perLevel": "蓄力快 15%",
+    "lv3": "蓄力再快 15%",
+    "lv6": "打中的敌人全队可见 3 秒",
     "lv9": "蓄满时电弧连锁",
     "effects": {
-     "perLevel": {"dmg": 0.06, "charge": -0.05},
      "at": {
-      "3": {"chargeMul": 0.9},
-      "6": {"dmg": 0.1},
-      "9": {
-       "special": {"arcChain": 0.4, "arcFull": 0.99}
-      }
+      "1": {"chargeMul": 0.85},
+      "2": {"special": {"chainChance": 0.2, "chainK": 0.4}},
+      "3": {"chargeMul": 0.85},
+      "4": {"special": {"killBlast": 90, "killBlastDmg": 35}},
+      "5": {"special": {"killChain": 40}},
+      "6": {"mark": 3},
+      "7": {"special": {"railPad": 8}},
+      "8": {"special": {"chainChance": 0.35}},
+      "9": {"special": {"arcChain": 0.4, "arcFull": 0.99}}
      }
-    }
+    },
+    "lv": ["蓄力快 15%", "命中 20% 几率放出闪电链", "蓄力再快 15%", "击杀时尸体爆炸", "击杀时从尸体放出闪电链", "打中的敌人全队可见 3 秒", "光束变粗，更容易打中", "闪电链几率 35%", "蓄满时电弧连锁"]
    },
    {
     "key": "b",
     "name": "相位",
-    "perLevel": "伤害 +3%，光束能穿 1 层墙",
+    "perLevel": "光束能穿 1 层墙",
     "lv3": "能穿 2 层墙",
     "lv6": "穿透所有墙",
     "lv9": "碰到边界反射一次",
     "effects": {
-     "perLevel": {"dmg": 0.03},
      "at": {
-      "1": {
-       "special": {"walls": 1}
-      },
-      "3": {
-       "special": {"walls": 2}
-      },
-      "6": {
-       "special": {"walls": 99}
-      },
-      "9": {
-       "special": {"reflect": 1}
-      }
+      "1": {"special": {"walls": 1}},
+      "2": {"dmg": 0.15},
+      "3": {"special": {"walls": 2}},
+      "4": {"railSlow": 0.5},
+      "5": {"special": {"leech": 0.08}},
+      "6": {"special": {"walls": 99}},
+      "7": {"special": {"killHeal": 0.1}},
+      "8": {"dmg": 0.15},
+      "9": {"special": {"reflect": 1}}
      }
-    }
+    },
+    "lv": ["光束能穿 1 层墙", "伤害 +15%", "能穿 2 层墙", "命中让敌人减速", "命中吸血 8%", "穿透所有墙", "击杀回复 10% 生命", "伤害再 +15%", "碰到边界反射一次"]
    },
    {
     "key": "c",
     "name": "磁暴",
-    "perLevel": "命中减速并拖慢换弹",
+    "perLevel": "命中减速并拖慢对方换弹",
     "lv3": "让炮台停火 1 秒",
-    "lv6": "减速更强",
-    "lv9": "地面留下电流带",
+    "lv6": "地面留下短电流带",
+    "lv9": "电流带变宽、伤害更高",
     "effects": {
-     "base": {"railSlow": 0.6},
-     "perLevel": {"railSlow": 0.1},
      "at": {
-      "1": {
-       "special": {"reloadDrag": 0.4}
-      },
-      "3": {
-       "special": {"turretJam": 1.0}
-      },
-      "6": {"railSlow": 0.4},
-      "9": {
-       "special": {"trail": 26, "trailLife": 3, "trailDps": 20}
-      }
+      "1": {"railSlow": 0.6, "special": {"reloadDrag": 0.4}},
+      "2": {"railSlow": 0.2},
+      "3": {"special": {"turretJam": 1.0}},
+      "4": {"stun": 0.25},
+      "5": {"railSlow": 0.3},
+      "6": {"special": {"trail": 20, "trailLife": 2, "trailDps": 14}},
+      "7": {"stun": 0.15},
+      "8": {"special": {"trailLife": 3}},
+      "9": {"special": {"trail": 30, "trailDps": 24}}
      }
-    }
+    },
+    "lv": ["命中减速并拖慢对方换弹", "减速更强", "让炮台停火 1 秒", "命中眩晕 0.25 秒", "减速再强", "地面留下短电流带", "眩晕更久", "电流带更久", "电流带变宽、伤害更高"]
    }
   ],
   "laser": [
    {
     "key": "a",
     "name": "聚焦",
-    "perLevel": "照同一目标伤害递增（上限 +10%）",
-    "lv3": "递增更快",
-    "lv6": "上限再 +20%",
+    "perLevel": "照同一目标伤害递增，最多 +30%",
+    "lv3": "光束穿透 1 个敌人",
+    "lv6": "光束穿透 2 个",
     "lv9": "叠满时点燃并瞬间回能",
     "effects": {
-     "base": {"focusStep": 0.04},
-     "perLevel": {"focusCap": 0.1},
      "at": {
-      "3": {"focusStep": 0.04},
-      "6": {"focusCap": 0.2},
-      "9": {
-       "special": {"focusIgnite": 1.2, "focusRefill": 1}
-      }
+      "1": {"focusStep": 0.04, "focusCap": 0.3},
+      "2": {"focusStep": 0.04},
+      "3": {"special": {"beamPierce": 1, "beamPierceK": 0.7}},
+      "4": {"focusCap": 0.3},
+      "5": {"ign": 0.03},
+      "6": {"special": {"beamPierce": 2}},
+      "7": {"focusCap": 0.3},
+      "8": {"special": {"leech": 0.04}},
+      "9": {"special": {"focusIgnite": 1.2, "focusRefill": 1}}
      }
-    }
+    },
+    "lv": ["照同一目标伤害递增，最多 +30%", "递增更快", "光束穿透 1 个敌人", "递增上限 +30%", "照射有几率点燃", "光束穿透 2 个", "递增上限再 +30%", "照射吸血 4%", "叠满时点燃并瞬间回能"]
    },
    {
     "key": "b",
     "name": "棱镜",
-    "perLevel": "分出副光束（伤害 +3%）",
-    "lv3": "副光束更强",
-    "lv6": "再分出 1 道",
-    "lv9": "光束在敌人之间折射",
+    "perLevel": "分出 1 道副光束",
+    "lv3": "再分出 1 道",
+    "lv6": "光束在敌人之间折射",
+    "lv9": "折射连锁 3 个敌人",
     "effects": {
-     "base": {"sideK": 0.4},
-     "perLevel": {"dmg": 0.03},
      "at": {
-      "1": {
-       "special": {"sideBeams": 1, "sideAng": 0.22}
-      },
-      "3": {"sideK": 0.2},
-      "6": {
-       "special": {"sideBeams": 2}
-      },
-      "9": {
-       "special": {"refract": 200, "refractK": 0.5}
-      }
+      "1": {"sideK": 0.4, "special": {"sideBeams": 1, "sideAng": 0.22}},
+      "2": {"sideK": 0.2},
+      "3": {"special": {"sideBeams": 2}},
+      "4": {"sideK": 0.15},
+      "5": {"slow": 0.4},
+      "6": {"special": {"refract": 200, "refractK": 0.5}},
+      "7": {"special": {"refract": 280}},
+      "8": {"sideK": 0.15},
+      "9": {"special": {"refractN": 3, "refractK": 0.7}}
      }
-    }
+    },
+    "lv": ["分出 1 道副光束", "副光束更强", "再分出 1 道", "副光束更强", "照射让敌人减速", "光束在敌人之间折射", "折射更远", "副光束再强", "折射连锁 3 个敌人"]
    },
    {
     "key": "c",
     "name": "冷却",
-    "perLevel": "耗能 -6%、射程 +6%",
-    "lv3": "耗能再 -10%",
-    "lv6": "射程再 +10%",
-    "lv9": "每 15 秒有 3 秒零耗能且伤害 +30%",
+    "perLevel": "耗能 -20%",
+    "lv3": "换电池完成时向四周射出 8 发光弹",
+    "lv6": "每 15 秒有 3 秒超载：零耗能、伤害 +30%",
+    "lv9": "超载时光束分成 3 道并穿透",
     "effects": {
-     "perLevel": {"range": 0.06, "cost": -0.06},
      "at": {
-      "3": {"cost": -0.1},
-      "6": {"range": 0.1},
-      "9": {
-       "special": {"overdrive": 15, "odWindow": 3, "odDmg": 1.3}
-      }
+      "1": {"cost": -0.2},
+      "2": {"special": {"beamPad": 5}},
+      "3": {"special": {"reloadRing": 8, "ringDmg": 2.0}},
+      "4": {"cost": -0.25},
+      "5": {"range": 0.2},
+      "6": {"special": {"overdrive": 15, "odWindow": 3, "odDmg": 1.3}},
+      "7": {"special": {"killHeal": 0.1}},
+      "8": {"special": {"overdrive": 10}},
+      "9": {"special": {"odBeams": 2, "odPierce": 2}}
      }
-    }
+    },
+    "lv": [
+     "耗能 -20%",
+     "光束更粗，更容易照到",
+     "换电池完成时向四周射出 8 发光弹",
+     "耗能再 -25%",
+     "射程 +20%",
+     "每 15 秒有 3 秒超载：零耗能、伤害 +30%",
+     "击杀回复 10% 生命",
+     "超载改为每 10 秒",
+     "超载时光束分成 3 道并穿透"
+    ]
    }
   ]
  },
  "_effectsDoc": {
-  "summary": "进化效果：每条路线 effects = {base, perLevel, at, spreadFloor?, rlFloor?}。路线等级 L>=1 时：base 覆盖写入 P；perLevel 按 L 线性累加；at 里等级 <= L 的条目按等级从小到大依次生效。",
+  "summary": "进化效果（2026-10 导演反馈第二轮重做）：每条路线 9 级，每一级都在 at 里有一条具体效果，lv 是 9 级的卡面文字。路线等级 L>=1 时：base 覆盖写入 P；at 里等级 <= L 的条目按等级从小到大依次生效（perLevel 仍然支持但已不用）。",
   "perLevel": "spreadMul: P.spread *= max(spreadFloor, 1+v*L)；rlMul: P.rl *= max(rlFloor(默认0.2), 1+v*L)；其它键 P[k] += v*L",
   "at": "spdMul/rlMul/spreadMul/spinMul/dashCdMul/dmgMul/chargeMul 相乘；ignK/bounceK 覆盖；special 合并（后面的等级覆盖同名键）；其它键累加。'1' 表示从 1 级起生效",
   "keys": "P 默认：rate dmg spread spd kb range eff magMul rl ignK bounceK lightRange aoe aoeDmg spinMul dashCdMul execMul flipK arc charge cost = 1；其余 = 0",
-  "old": "effects：进化数值（批次 1 只填了手枪/AK-47/霰弹枪，其余武器在批次 2 补）。perLevel 每级累加：rate/dmg/kb/range/eff/magMul/aoe/aoeDmg/lightRange/ign 为加到倍率上的增量；spreadMul/rlMul 为乘法（1+v×级，spreadFloor 为下限）。at：达到该级时一次性生效；spdMul/rlMul 相乘，magAdd/n/pierce/crit/ign/stun/lightCos 相加，ignK 覆盖；special 为特殊行为参数。base：路线≥1级时的初始值。"
+  "old": "effects：进化数值（批次 1 只填了手枪/AK-47/霰弹枪，其余武器在批次 2 补）。perLevel 每级累加：rate/dmg/kb/range/eff/magMul/aoe/aoeDmg/lightRange/ign 为加到倍率上的增量；spreadMul/rlMul 为乘法（1+v×级，spreadFloor 为下限）。at：达到该级时一次性生效；spdMul/rlMul 相乘，magAdd/n/pierce/crit/ign/stun/lightCos 相加，ignK 覆盖；special 为特殊行为参数。base：路线≥1级时的初始值。",
+  "newSpecial": "通用新机制：twin/twinGap/twinDmg 并排多管；fanEvery/fanN/fanAng/fanDmg 每 N 发扇形弹；heavyEvery/heavyDmg/heavyPierce/heavyBoom 每 N 发重弹；rico/ricoR/ricoDmg 命中弹射；nadeEvery/nadeR/nadeDmg/nadeRange 枪挂榴弹；reloadRing/ringDmg/ringRange 换弹环形弹；lastN/lastDmg 弹匣最后几发加伤；leech 吸血；chainChance/chainK 闪电链；killHaste/killHeal/killBlast/killBlastDmg 击杀效果；execCrit 残血必暴击；spinEvery 旋风斩；flameN/flameAng/flameDmg 多喷嘴；glMulti/glAng/glDmg 多管榴弹；beamPierce/beamPierceK、refractN、odBeams/odPierce 激光"
  }
 }

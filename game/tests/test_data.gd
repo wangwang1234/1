@@ -3,7 +3,7 @@ extends "res://tests/test_case.gd"
 
 
 func test_all_json_load() -> void:
-	for n: String in ["weapons", "evolutions", "units", "progression", "abilities", "gadgets", "talents", "pets", "skins", "map_layout", "rules"]:
+	for n: String in ["weapons", "evolutions", "units", "progression", "abilities", "gadgets", "talents", "pets", "skins", "map_layout", "rules", "difficulty"]:
 		var d: Variant = Data.load_json(n)
 		check(d is Dictionary and not (d as Dictionary).is_empty(), "%s.json 读取失败或为空" % n)
 

@@ -145,16 +145,21 @@ static func lob_boom(w: SimWorld, b: SimLob) -> void:
 			add_smoke(w, b.x, b.y, float(S.r) * lvl_k(L, float(S.rPerLevel)), float(S.life) + float(S.lifePerLevel) * (L - 1))
 		"frz":
 			var Z: Dictionary = G.freeze
-			var R := float(Z.r) + float(Z.rPerLevel) * (L - 1)
-			w.emit({"t": "freeze", "x": b.x, "y": b.y, "r": R})
-			for e: SimEntity in w.hash_range(b.x, b.y, R + 40.0):
-				if not w.can_hit(b.team, e) or e.is_prop or e.kind in ["crate", "base", "turret"]:
-					continue
-				if Vector2(e.x - b.x, e.y - b.y).length() - e.r > R:
-					continue
-				w.stun_e(e, float(Z.stun))
-				e.frozen_until = w.t + (float(Z.frozenHam) if e is SimHamster else float(Z.frozen))
-				w.deal_dmg(e, float(Z.dmg), {"team": b.team, "owner": b.owner, "x": b.x, "y": b.y})
+			freeze_at(w, b.x, b.y, float(Z.r) + float(Z.rPerLevel) * (L - 1), b.team, b.owner)
+
+
+static func freeze_at(w: SimWorld, x: float, y: float, R: float, team: String, owner: SimHamster) -> void:
+	## 冰冻爆炸（冰冻手雷、榴弹发射器的冰冻弹共用）
+	var Z: Dictionary = w.R.gadgets.freeze
+	w.emit({"t": "freeze", "x": x, "y": y, "r": R})
+	for e: SimEntity in w.hash_range(x, y, R + 40.0):
+		if not w.can_hit(team, e) or e.is_prop or e.kind in ["crate", "base", "turret"]:
+			continue
+		if Vector2(e.x - x, e.y - y).length() - e.r > R:
+			continue
+		w.stun_e(e, float(Z.stun))
+		e.frozen_until = w.t + (float(Z.frozenHam) if e is SimHamster else float(Z.frozen))
+		w.deal_dmg(e, float(Z.dmg), {"team": team, "owner": owner, "x": x, "y": y})
 
 
 static func add_smoke(w: SimWorld, x: float, y: float, r: float, life: float) -> void:

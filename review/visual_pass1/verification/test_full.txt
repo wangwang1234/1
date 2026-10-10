@@ -1,0 +1,84 @@
+== sim 测试 ==
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ok   test_cards.test_roll_basic (38 ms)
+  ok   test_cards.test_no_maxed_path (29 ms)
+  ok   test_cards.test_weapon_swap_resets_evo (25 ms)
+  ok   test_cards.test_swap_probability (285 ms)
+  ok   test_cards.test_label_hides_level_numbers (25 ms)
+  ok   test_data.test_all_json_load (1 ms)
+  ok   test_data.test_weapons_have_fields (0 ms)
+  ok   test_data.test_evolutions_cover_all_weapons (0 ms)
+  ok   test_data.test_scope_abilities_exist (0 ms)
+  ok   test_data.test_xp_curve_matches_formula (0 ms)
+  ok   test_gadgets.test_frag (82 ms)
+  ok   test_gadgets.test_molotov_fire (68 ms)
+  ok   test_gadgets.test_flash_blinds_ai (80 ms)
+  ok   test_gadgets.test_mine_triggers (65 ms)
+  ok   test_gadgets.test_sentry_fires (454 ms)
+  ok   test_gadgets.test_eshield_absorbs (178 ms)
+  ok   test_gadgets.test_smoke_blocks_vision (81 ms)
+  ok   test_gadgets.test_flare_reveals (77 ms)
+  ok   test_gadgets.test_decoy (45 ms)
+  ok   test_gadgets.test_jetpack (49 ms)
+  ok   test_gadgets.test_medkit_heals (84 ms)
+  ok   test_gadgets.test_freeze (58 ms)
+  ok   test_gadgets.test_beacon_teleport (36 ms)
+  ok   test_gadgets.test_gadget_levels_cd (55 ms)
+  ok   test_map.test_full_map_builds (34 ms)
+  ok   test_map.test_slice_map_builds (21 ms)
+  ok   test_map.test_resolve_circle_pushes_out (34 ms)
+  ok   test_map.test_los_blocked_by_wall (33 ms)
+  ok   test_map.test_flow_field_reaches_goal (33 ms)
+  ok   test_match.test_ai_match_slice_2min (6092 ms)  slice 2 分钟：6065 ms，最高 Lv5，击杀 19，小兵 6，波次 4
+  ok   test_match.test_ai_match_full_2min (17765 ms)  full 2 分钟：17726 ms
+  ok   test_match.test_determinism (6020 ms)
+  ok   test_match.test_all_weapon_evo_levels (94883 ms)  504 种组合（18 把武器 × 3 路线 × 9 级 + 全满）
+  ok   test_match.test_match_can_end (25 ms)
+  ok   test_match.test_dispose_frees_world (1698 ms)
+  ok   test_match.test_slice_match_finishes (55997 ms)
+  ok   test_match.test_full_match_finishes (219454 ms)  full 5v5：1199 秒分出胜负，blue 胜
+  ok   test_mobs.test_camps_spawn_full_map (36 ms)
+  ok   test_mobs.test_mobs_aggro_and_attack (301 ms)
+  ok   test_mobs.test_camp_clear_and_respawn (9077 ms)
+  ok   test_mobs.test_boss_spawn_and_crown (1277 ms)
+  ok   test_mobs.test_pets (133 ms)
+  ok   test_mobs.test_talent_squad_and_detonate (61 ms)
+  ok   test_mobs.test_full_match_5min_everything (91689 ms)  full 5v5 5 分钟：91647 ms，最高 Lv8，宠物 1，道具种类 2，事件种类 38，结束=false
+  ok   test_visual_layout.test_layout_keeps_simulation_state_and_is_reproducible (419 ms)
+  ok   test_visual_layout.test_decorations_clear_solids_pads_and_objectives (591 ms)
+  ok   test_weapons.test_pistol_params (49 ms)
+  ok   test_weapons.test_ak_params (37 ms)
+  ok   test_weapons.test_shotgun_params (38 ms)
+  ok   test_weapons.test_fire_spawns_bullets_and_uses_ammo (38 ms)
+  ok   test_weapons.test_damage_falloff (43 ms)
+  ok   test_weapons.test_pvp_hit_cap (38 ms)
+  ok   test_weapons_b2.test_params_sample (0 ms)
+  ok   test_weapons_b2.test_every_path_has_effects (1 ms)
+  ok   test_weapons_b2.test_rocket_explodes (93 ms)
+  ok   test_weapons_b2.test_rocket_cluster_and_multi (213 ms)
+  ok   test_weapons_b2.test_katana_swing_and_deflect (62 ms)
+  ok   test_weapons_b2.test_katana_wave_and_iaido (94 ms)
+  ok   test_weapons_b2.test_flame (110 ms)
+  ok   test_weapons_b2.test_gl_lob_and_sticky (218 ms)
+  ok   test_weapons_b2.test_rail_charge_and_beam (72 ms)
+  ok   test_weapons_b2.test_laser_ticks (60 ms)
+  ok   test_weapons_b2.test_minigun_spin (80 ms)
+  ok   test_weapons_b2.test_revolver_deadeye (64 ms)
+  ok   test_weapons_b2.test_smg_split_and_bounce_home (57 ms)
+  ok   test_weapons_b2.test_dual_alternates (40 ms)
+  ok   test_weapons_b2.test_amr_wall_pierce (47 ms)
+  ok   test_weapons_b2.test_all_kinds_ai_full_match (14417 ms)
+测试：68 项，失败 0 项，用时 524.0 秒
+[audio] 载入 74 种音效
+WARNING: 23774 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 8 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+== 表现层冒烟：2 分钟 AI 对局 ==
+表现层冒烟：通过
+== 表现层冒烟：18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏 ==
+武器 / 道具 / 分屏冒烟：通过
+== 主菜单冒烟 ==
+主菜单冒烟：通过
+全部通过

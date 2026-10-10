@@ -1,7 +1,7 @@
 class_name PlayerInput
 extends RefCounted
 ## 玩家输入 → SimHamster.HamInput。三种方案：
-## - kbm：WASD 移动、鼠标瞄准、左键射击、空格翻滚、R 换弹、Q 道具、1/2/3 选卡（单人时也接手柄 0 号）
+## - kbm：WASD 移动、鼠标瞄准（开火时带轻微辅助瞄准，强度见设置）、左键射击、空格翻滚、R 换弹、Q 道具、1/2/3 选卡（单人时也接手柄 0 号）
 ## - pad：左摇杆移动、右摇杆瞄准（不推右摇杆时自动瞄准最近的敌人）、RT 射击、A 翻滚、X 换弹、LB 道具、X/Y/B 选卡
 ## - keys2（本地 2P 方向键）：方向键移动、回车射击（自动瞄准）、右 Shift 翻滚、/ 换弹、. 道具、8/9/0 选卡
 
@@ -19,8 +19,11 @@ var allow_pad := true    # kbm 方案是否同时接手柄（2P 用手柄时，�
 var arrows := true       # kbm 方案是否也认方向键（2P 用方向键时方向键归 2P）
 var _pad_aim := 0.0
 var _edge := {}
+var _press_on_card := false   # 这次左键是按在升级卡上按下去的（那就是选卡，按住期间不开火）
 ## 右 Shift 是否按着（Input 分不清左右 Shift，所以由 MatchView._input 按按键事件的 location 记下来；2P 方向键方案的翻滚只认右 Shift）
 static var right_shift_down := false
+## 手动瞄准辅助强度（Settings.apply 按设置写入；鼠标和推右摇杆时生效，自动瞄准时不叠加）
+static var assist_level := 1.0
 
 
 static func ensure_actions() -> void:
@@ -57,7 +60,8 @@ func _pressed_edge(name: String, down: bool) -> bool:
 	return down and not was
 
 
-func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: bool, w: SimWorld = null) -> void:
+func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool, w: SimWorld = null) -> void:
+	## over_card：鼠标正停在升级卡上（这时左键是选卡，不开火；其余时候选卡期间照样能射击）
 	if h == null:
 		return
 	var inp := h.inp
@@ -95,9 +99,12 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 		inp.aim_x = gx
 		inp.aim_y = gy
 		inp.has_aim_point = true
+		inp.assist = assist_level
 	else:
+		inp.assist = 0.0
 		if pad_aim.length() > 0.3:
 			_pad_aim = atan2(pad_aim.y, pad_aim.x)
+			inp.assist = assist_level
 		else:
 			# 没推右摇杆 / 方向键：自动瞄准射程内最近的敌人，没有就朝移动方向
 			var t: SimEntity = SimWeapons.auto_aim(w, h, maxf(300.0, minf(SimWeapons.range_of(h), 640.0))) if w != null else null
@@ -115,7 +122,13 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 			fire = Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4 or Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER)
 		_:
 			fire = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or (use_pad and Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4)
-	inp.fire = fire and not picking_cards
+	# 选卡期间照样能射击：只有在升级卡上按下的那一下算选卡；从卡外按住开火、准星扫过卡片时不会断火
+	var lmb := device == "kbm" and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+	if _pressed_edge("lmb", lmb):
+		_press_on_card = over_card
+	elif not lmb:
+		_press_on_card = false
+	inp.fire = fire and not _press_on_card
 	var K: Dictionary = KEYS_P2 if scheme == "keys2" else KEYS_P1
 	var kb := scheme != "pad"
 	var kb_dash := right_shift_down if scheme == "keys2" else _key(K.dash)
@@ -153,10 +166,10 @@ static func track_key(ev: InputEvent) -> void:
 func card_hint() -> String:
 	match device:
 		"pad":
-			return "按 X / Y / B 选升级"
+			return "按 X / Y / B 选升级，不耽误射击"
 		"keys2":
-			return "按 8 / 9 / 0 选升级"
-	return "按 1 / 2 / 3 选升级"
+			return "按 8 / 9 / 0 选升级，不耽误射击"
+	return "按 1 / 2 / 3 选升级，不耽误射击"
 
 
 func gadget_key() -> String:

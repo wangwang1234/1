@@ -12,9 +12,13 @@ extends Node
 ##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）；--tabs a,b 只拍部分分页
 ##   arsenal    批次 2：18 把武器在局里开火的样子（各带一条 9 级路线）；--weapons a,b 只拍部分
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
+##   visual     固定站位画面审阅（实际地图；HUD / 无 HUD / 角色近景）
+##   materials  实际引擎材质审阅：四种皮肤 × 两队、组合装备、家具分件
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
+##   fb1        导演反馈第一轮：三选一时照样开火、小怪掉瓜子和奶酪、鼠窝快速回血（再配合 ui2 看大厅难度和设置里的辅助瞄准）
+##   fb2        导演反馈第二轮：新进化效果实拍（冲锋枪四管 + 扇形弹、手枪扇射重弹、武士刀旋风斩、激光折射、榴弹三连发）+ 新升级卡
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
 ## 建议配合 --fixed-fps 60（截图确定性，每帧 = 一步逻辑）；perf 不要加 --fixed-fps。
 
@@ -27,6 +31,7 @@ func _ready() -> void:
 	args = _parse(OS.get_cmdline_user_args())
 	if not args.has("capture"):
 		return
+	ToonMaterials.review_neutral = args.has("neutral")
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	out_dir = String(args.get("out", "user://capture"))
 	if out_dir.is_relative_path() and not out_dir.begins_with("user://") and not out_dir.begins_with("res://"):
@@ -76,10 +81,20 @@ func _run() -> void:
 			await _b2world()
 		"b3map":
 			await _b3map()
+		"visual":
+			await _visual_review()
+		"lighting_walk":
+			await _lighting_walk()
+		"materials":
+			await _material_review()
 		"gameplay":
 			await _gameplay()
 		"cards":
 			await _cards()
+		"fb1":
+			await _fb1()
+		"fb2":
+			await _fb2()
 		"loadout":
 			await _loadout()
 		"lineup":
@@ -611,6 +626,105 @@ func _gameplay() -> void:
 	print("[capture] 对局时间 %.1f 秒，结束=%s 胜方=%s" % [mv.world.t, mv.world.over, mv.world.winner])
 
 
+func _fb2() -> void:
+	var mv := await _start(true, "smg")
+	var w := mv.world
+	var h := mv.local
+	h.ai.prof.cardDelay = 999.0
+	await _wait(1.0)
+	var foe := "red" if h.team == "blue" else "blue"
+	var fw := 1.0 if h.team == "blue" else -1.0
+	# 1) 升级卡：三条路线下一级各是什么
+	h.evo = {"a": 2, "b": 5, "c": 8}
+	h.evo_key = ""
+	h.choices = [{"t": "evo", "k": "a"}, {"t": "evo", "k": "b"}, {"t": "evo", "k": "c"}]
+	h.pending = 1
+	w.emit({"t": "choices", "id": h.id})
+	await _wait(0.8)
+	await shot("fb2_cards")
+	h.choices = []
+	h.pending = 0
+	var shots := [
+		["smg", {"a": 6, "b": 0, "c": 0}, "fb2_smg_four_barrels", 0.35],
+		["pistol", {"a": 9, "b": 0, "c": 0}, "fb2_pistol_fan", 0.9],
+		["katana", {"a": 7, "b": 3, "c": 0}, "fb2_katana_spin", 1.2],
+		["laser", {"a": 0, "b": 9, "c": 0}, "fb2_laser_refract", 0.7],
+		["gl", {"a": 7, "b": 0, "c": 0}, "fb2_gl_triple", 0.55],
+	]
+	for sc: Array in shots:
+		for m in w.minions:
+			m.dead = true
+		h.weapon_id = String(sc[0])
+		h.evo = sc[1]
+		h.evo_key = ""
+		h.ammo = SimWeapons.mag_size(h)
+		h.reload_t = 0.0
+		h.hp = h.max_hp
+		var near := String(sc[0]) == "katana"
+		for i in 4:
+			var m := w.spawn_minion(foe, "mid")
+			m.x = h.x + fw * ((70.0 if near else 210.0) + (i % 2) * 40.0) - (90.0 * fw if near and i == 3 else 0.0)
+			m.y = h.y + (i - 1.5) * (45.0 if near else 70.0)
+			m.px = m.x
+			m.py = m.y
+			m.hp = 400.0
+			m.max_hp = 400.0
+			m.stun = 99.0
+		if String(sc[0]) == "katana":
+			# 旋风斩每第 4 刀出一次：等到正在挥的是旋风斩那一刀再拍
+			h.swing_n = 2
+			var tw := 0.0
+			while tw < 4.0 and not (h.swing_t > 0.12 and h.swing_n % 4 == 0):
+				await get_tree().physics_frame
+				tw += 1.0 / 60.0
+		elif String(sc[0]) == "smg":
+			# 等四管 + 扇形弹真的打出去、在空中飞的时候再拍
+			var tw2 := 0.0
+			while tw2 < 4.0 and w.bullets.filter(func(b): return b.owner == h).size() < 8:
+				await get_tree().physics_frame
+				tw2 += 1.0 / 60.0
+		else:
+			await _wait(float(sc[3]))
+		await shot(String(sc[2]))
+
+
+func _fb1() -> void:
+	var mv := await _start(true, String(args.get("weapon", "ak47")))
+	var w := mv.world
+	var h := mv.local
+	h.ai.prof.cardDelay = 999.0     # 让卡一直挂着，看 AI 边选边打
+	await _wait(1.0)
+	# 1) 三选一挂着的时候照样开火：前方放几只敌方小兵
+	var fw := 1.0 if h.team == "blue" else -1.0
+	for i in 3:
+		var m := w.spawn_minion("red" if h.team == "blue" else "blue", "mid")
+		m.x = h.x + fw * (230.0 + i * 30.0)
+		m.y = h.y + (i - 1) * 40.0
+		m.px = m.x
+		m.py = m.y
+	SimHamsterLogic.give_xp(w, h, float(h.xp_next - h.xp) + 1.0)
+	await _wait(0.9)
+	await shot("fb1_cards_firing_a")
+	await _wait(0.25)
+	await shot("fb1_cards_firing_b")
+	# 2) 小怪掉瓜子和奶酪
+	var foe := "red" if h.team == "blue" else "blue"
+	for i in 6:
+		var m := w.spawn_minion(foe, "mid")
+		m.x = h.x + fw * (170.0 + (i % 3) * 45.0)
+		m.y = h.y - 90.0 + (i / 3) * 180.0
+		w.deal_dmg(m, 9999.0, {"team": h.team, "owner": h, "x": m.x, "y": m.y})
+	w._add_item("cheese", h.x + fw * 200.0, h.y, 0.0)
+	await _wait(0.7)
+	await shot("fb1_drops")
+	# 3) 鼠窝快速回血：残血站回自家鼠窝
+	h.hp = h.max_hp * 0.15
+	SimHamsterLogic.place_at_base(w, h)
+	h.ai.state = "retreat"
+	await _wait(0.65)
+	await shot("fb1_base_heal")
+
+
 func _cards() -> void:
 	var mv := await _start(false, String(args.get("weapon", "ak47")))
 	await _wait(2.0)
@@ -855,3 +969,176 @@ func _perf() -> void:
 	f2.store_string("\n".join(csv))
 	f2.close()
 	print("[capture] 帧率：平均 %.1f fps，1%% 低 %.1f fps，逻辑 %.3f ms/步（%s）" % [rep.avg_fps, rep.low1_fps, savg, rep.adapter])
+
+
+func _prepare_visual_review() -> MatchView:
+	args["mode"] = "full"
+	var mv := await _start(false, "ak47")
+	main._fade.visible = false
+	mv.paused = true
+	mv.set_process(false)
+	mv.set_physics_process(false)
+	var h := mv.local
+	h.iframes = 0.0
+	h.flash = 0.0
+	h.aim = PI * 0.5
+	for other in mv.world.hams:
+		if other != h:
+			other.alive = false
+			(mv.ham_views[other.id] as HamsterView).visible = false
+	return mv
+
+
+func _visual_review() -> void:
+	var mv := await _prepare_visual_review()
+	var h := mv.local
+	var spots: Array = [["study", 670.0, 540.0], ["kitchen", 4420.0, 620.0], ["living", 2120.0, 1610.0]]
+	if args.has("details"):
+		spots.append_array([["study_corner", 1000.0, 565.0], ["kitchen_corner", 4050.0, 565.0], ["living_corner", 2395.0, 1225.0]])
+		spots.append(["study_room", 450.0, 280.0])
+		spots.append(["study_window", 630.0, 130.0])
+		spots.append(["study_overview", 650.0, 320.0])
+	var only := String(args.get("zones", ""))
+	for sp: Array in spots:
+		if only != "" and not only.split(",").has(String(sp[0])):
+			continue
+		var desired := Vector2(float(sp[1]), float(sp[2]))
+		var placed := false
+		for ring in 12:
+			for side in 16:
+				var p := desired + Vector2.RIGHT.rotated(float(side) * TAU / 16.0) * float(ring) * 25.0
+				if mv.world.map.overlaps_solid(p.x, p.y, h.r + 8.0):
+					continue
+				h.x = p.x
+				h.y = p.y
+				placed = true
+				break
+			if placed:
+				break
+		if not placed:
+			push_error("画面审阅找不到空地：" + String(sp[0]))
+			continue
+		h.px = h.x
+		h.py = h.y
+		(mv.ham_views[h.id] as HamsterView).rotation.y = HamsterView.yaw_for(h.aim)
+		(mv.ham_views[h.id] as HamsterView).sync(h, 1.0, 1.0 / 60.0, true)
+		mv.cam.view_width = 5.2 if String(sp[0]).ends_with("_corner") else GameCamera.VIEW_WIDTH
+		if String(sp[0]) == "study_overview":
+			mv.cam.view_width = 12.0 # Room overview; never used in normal play.
+		mv.cam.snap(MapView.w(h.x, h.y))
+		if String(sp[0]) == "study_overview":
+			mv.cam.snap(MapView.w(h.x, h.y, 0.85))
+		mv.hud.visible = true
+		mv.hud.refresh(0.0)
+		await _frames(8)
+		await shot("visual_" + String(sp[0]) + "_hud")
+		mv.hud.visible = false
+		await _frames(4)
+		await shot("visual_" + String(sp[0]))
+		var metrics := {"renderer": ProjectSettings.get_setting("rendering/renderer/rendering_method"), "resolution": str(get_viewport().get_texture().get_image().get_size()),
+			"draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+			"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+			"note": "软件渲染仅供画面与绘制规模检查，不代表目标电脑帧率"}
+		var f := FileAccess.open(out_dir.path_join("visual_" + String(sp[0]) + "_metrics.json"), FileAccess.WRITE)
+		f.store_string(JSON.stringify(metrics, "\t"))
+		if String(sp[0]) == "study":
+			mv.cam.view_width = 2.8
+			mv.cam.snap(MapView.w(h.x, h.y))
+			await _frames(4)
+			await shot("visual_character")
+			mv.cam.view_width = GameCamera.VIEW_WIDTH
+
+
+func _lighting_walk() -> void:
+	# Controlled motion in the real map, with collision clearance checked before rendering.
+	var mv := await _prepare_visual_review()
+	var h := mv.local
+	var view := mv.ham_views[h.id] as HamsterView
+	var count := clampi(int(args.get("n", 40)), 2, 120)
+	var path: Array[Vector2] = []
+	# Select an unobstructed horizontal lane near the fixed review position.
+	for lane_y in [500.0, 480.0, 460.0, 440.0, 560.0, 580.0, 600.0, 620.0, 640.0]:
+		path.clear()
+		for i in count:
+			var progress := float(i) / float(count - 1)
+			var p := Vector2(670.0 + progress * 270.0, lane_y)
+			if mv.world.map.overlaps_solid(p.x, p.y, h.r + 4.0):
+				break
+			path.append(p)
+		if path.size() == count:
+			break
+	if path.size() != count:
+		push_error("受光移动审阅找不到完整净空路径")
+		return
+	mv.hud.visible = false
+	mv.cam.view_width = GameCamera.VIEW_WIDTH
+	mv.cam.snap(MapView.w(path[0].x, path[0].y))
+	await _frames(8)
+	var samples: Array = []
+	for i in count:
+		h.x = path[i].x
+		h.y = path[i].y
+		h.px = h.x
+		h.py = h.y
+		h.vx = 270.0 * 12.0 / float(count - 1)
+		h.vy = 0.0
+		h.aim = 0.0
+		h.moving = true
+		view.rotation.y = HamsterView.yaw_for(h.aim)
+		view.sync(h, 1.0, 1.0 / 12.0, true)
+		mv.cam.snap(MapView.w(h.x, h.y))
+		if mv.cam.motion_blur != null:
+			mv.cam.motion_blur.set_focus(Vector2(0.5, 0.5), 1.0 / 12.0)
+		await shot("walk_%03d" % i)
+		samples.append({"frame": i, "position_cm": [h.x, h.y]})
+	var file := FileAccess.open(out_dir.path_join("walk_samples.json"), FileAccess.WRITE)
+	file.store_string(JSON.stringify(samples, "\t"))
+
+
+func _review_camera(st: Node3D, eye: Vector3, target: Vector3) -> void:
+	var cam := Camera3D.new()
+	cam.fov = 30
+	st.add_child(cam)
+	cam.position = eye
+	cam.look_at(target)
+	cam.current = true
+	var environment := st.find_child("*", true, false) as WorldEnvironment
+	if environment != null:
+		environment.environment = VisualStyle.environment()
+
+
+func _material_review() -> void:
+	var st := _stage()
+	_review_camera(st, Vector3(0, 1.45, 3.3), Vector3(0, 0.22, 0))
+	var skins := Data.skin_ids()
+	for team: String in ["blue", "red"]:
+		for i in skins.size():
+			var x := -0.9 + float(i) * 0.6
+			var z := 0.38 if team == "blue" else -0.38
+			var view := _fake(st, team, x, z, "pistol", {"a": 0, "b": 0, "c": 0}, String(skins[i]))
+			view.get_meta("h").aim = PI * 0.5 + 0.35
+	await _sync_all(st, 0.12)
+	await shot("materials_skins")
+	st.free()
+	st = _stage()
+	_review_camera(st, Vector3(0, 0.95, 2.8), Vector3(0, 0.22, 0))
+	for i in range(3):
+		var view := _fake(st, "red" if i == 1 else "blue", (float(i)-1.0)*0.58, 0, "ak47", {"a": 0, "b": 0, "c": 0})
+		var h: SimHamster = view.get_meta("h")
+		h.aim = PI * 0.5 + float(i-1)*0.7
+		h.ab = {"armor": 1, "gcd": 1, "scav": 1} if i != 2 else {"armor": 1, "chain": 1, "banner": 1, "gcd": 1}
+	await _sync_all(st, 0.12)
+	await shot("materials_gear")
+	st.free()
+	st = _stage()
+	_review_camera(st, Vector3(0, 3.6, 3.1), Vector3(0, 0.42, 0))
+	var specs: Array = [["counter", Vector3(-1.2,0,0.4)], ["shelf", Vector3(0,0,-0.7)], ["cabinet", Vector3(1.3,0,-0.6)]]
+	for spec: Array in specs:
+		var furniture := ToonMaterials.instance("res://assets/models/env/env_%s.glb" % String(spec[0]))
+		st.add_child(furniture)
+		furniture.position = spec[1]
+	var mouse := _fake(st, "blue", 0, 0.4, "pistol", {"a": 0, "b": 0, "c": 0})
+	mouse.get_meta("h").aim = PI * 0.5
+	await _sync_all(st, 0.12)
+	await shot("materials_furniture")
+	st.free()
