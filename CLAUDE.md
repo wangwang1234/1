@@ -60,12 +60,14 @@
 - 帧率测试：`tools/capture.sh perf <目录> 1920x1080 --dur 60 --mode full` → `perf.json` / `perf.csv`；导出版里双击 `帧率测试.bat`
 - 逻辑耗时基准（只跑 sim）：`godot --headless --path game -s res://tests/bench_sim.gd -- --seconds 600`
 - 导出 Windows：`tools/export.sh windows`（= `godot --headless --path game --export-release "Windows Desktop" <绝对路径>/build/win/manzai.exe`）
+- 导出 macOS：`tools/export.sh mac` → `build/mac/manzai.zip`（内含通用版 .app，Intel + Apple 芯片，临时签名、未公证）；Mac 附带文件在 `tools/dist_mac/`
 
 ## 环境（2026-10 第一次会话填写；云端容器，无 GPU）
 - 操作系统：Ubuntu 24.04（Linux 容器，4 核，无显示器、无声卡、无 GPU）
 - Godot：4.7.2-stable，**从源码编译**（官方下载被网络策略挡住，git 克隆可用）
   - 编辑器：`/home/user/godotengine/godot/bin/godot.linuxbsd.editor.x86_64`，软链到 `/usr/local/bin/godot`
   - Windows 导出模板（同样从源码交叉编译，mingw）：`~/.local/share/godot/export_templates/4.7.2.stable/windows_release_x86_64.exe`
+  - macOS 导出模板：2026-10 起网络策略放行了 GitHub 下载，从官方 `Godot_v4.7.2-stable_export_templates.tpz` 里解出 `macos.zip` 放到同一目录（容器重建后要重新下载）
   - 窗口模式靠 `xvfb-run` + Mesa lavapipe（软件 Vulkan，Forward+ 能跑但 1080p 只有 1–3 帧/秒）：截图一律加 `--fixed-fps`，画面和机器快慢无关
 - Blender：4.0.2，`/usr/bin/blender`（apt 安装；内置 Python 3.12 + python3-numpy）
 - Python：3.11（`python3`；音频脚本用 numpy / scipy，审阅拼图用 Pillow）

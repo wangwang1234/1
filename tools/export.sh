@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
 # 导出可执行文件（需要对应平台的导出模板，见 CLAUDE.md“环境”）。
-#   tools/export.sh [windows|linux]   默认 windows → build/win/manzai.exe
+#   tools/export.sh [windows|linux|mac]   默认 windows → build/win/manzai.exe；mac → build/mac/manzai.zip（内含 .app，通用版、临时签名）
 set -e
 source "$(dirname "$0")/_env.sh"
 T="${1:-windows}"
 case "$T" in
 	windows) P="Windows Desktop"; OUT="$ROOT/build/win/manzai.exe" ;;
 	linux)   P="Linux"; OUT="$ROOT/build/linux/manzai.x86_64" ;;
+	mac)     P="macOS"; OUT="$ROOT/build/mac/manzai.zip" ;;
 	*) echo "未知平台 $T"; exit 1 ;;
 esac
 mkdir -p "$(dirname "$OUT")"
