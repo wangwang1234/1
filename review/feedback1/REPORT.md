@@ -62,7 +62,7 @@
 
 ## 和 ChatGPT（Codex）那边的分支
 
-Codex 的画面分支 `codex/visual-polish-pass1`（[wangwang1234/1#1](https://github.com/wangwang1234/1/pull/1)）还没合并。我这次没有动它改过的画面文件（着色器、模型、`visual_style.json`），两边都改过的只有 `CLAUDE.md`、`capture.gd`、`match_view.gd`，都是不同位置的小改动，合并时应该能自动合上；真有冲突我来处理。
+Codex 的画面分支 `codex/visual-polish-pass1`（[wangwang1234/1#1](https://github.com/wangwang1234/1/pull/1)）还没合并。我这次没有动它改过的画面文件（着色器、模型、`visual_style.json`），两边都改过的只有 `CLAUDE.md`、`capture.gd`、`match_view.gd`，我试合并过：`capture.gd`、`match_view.gd` 能自动合上，只有 `CLAUDE.md` 的“当前进度”和截图场景列表两边都加了内容，会有一处文字冲突，合并时把两边的内容都留下就行，我来处理。
 
 ## 下一步
 
