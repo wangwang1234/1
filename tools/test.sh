@@ -18,7 +18,7 @@ echo "== 表现层冒烟：2 分钟 AI 对局 =="
 if check_log "$LOG"; then echo "表现层冒烟：通过"; else echo "表现层冒烟：失败"; exit 1; fi
 echo "== 表现层冒烟：18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 res://tests/view_smoke.tscn >"$LOG" 2>&1 || true
-if check_log "$LOG" && grep -q "view_smoke\] 完成" "$LOG"; then echo "武器 / 道具 / 分屏冒烟：通过"; else echo "武器 / 道具 / 分屏冒烟：失败"; cat "$LOG" | grep -A3 "SCRIPT ERROR" | head -40; exit 1; fi
+if check_log "$LOG" && grep -q "view_smoke\] 完成 (done)" "$LOG"; then echo "武器 / 道具 / 分屏冒烟：通过"; else echo "武器 / 道具 / 分屏冒烟：失败"; cat "$LOG" | grep -A3 "SCRIPT ERROR" | head -40; exit 1; fi
 echo "== 主菜单冒烟 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 -- --quit-after 5 >"$LOG" 2>&1 || true
 if check_log "$LOG"; then echo "主菜单冒烟：通过"; else echo "主菜单冒烟：失败"; exit 1; fi

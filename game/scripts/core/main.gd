@@ -128,7 +128,7 @@ func make_cfg(o: Dictionary) -> Dictionary:
 		sd = int(Time.get_unix_time_from_system()) % 100000 + 1
 	var mode := String(o.get("mode", "full"))
 	var duo := bool(o.get("duo", false))
-	var ai := {"blue": 2, "red": 3} if mode == "slice" else {"blue": 4, "red": 5}
+	var ai := {}
 	if o.has("ai_blue"):
 		ai = {"blue": int(o.ai_blue), "red": int(o.ai_red)}
 	var w := String(o.get("weapon", "pistol"))
@@ -141,10 +141,13 @@ func make_cfg(o: Dictionary) -> Dictionary:
 			p2in = "keys2"     # 还没接手柄：先用方向键，接上后 MatchView 自动切换
 		players.append({"team": String(o.get("p2_team", "red")), "ctl": "player", "name": "玩家2", "skin": String(o.get("skin2", "pudding")), "weapon": w,
 			"input": p2in, "pad": int(pads[0]) if not pads.is_empty() else 0, "want_pad": want_pad})
-	elif not o.has("ai_blue"):
-		# 默认 5 对 5：玩家在哪队，哪队少补一个 AI
-		var pt := String(o.get("p1_team", "blue"))
-		ai = {"blue": ai.blue + (0 if pt == "blue" else 1), "red": ai.red - (1 if pt == "red" else 0)}
+	if not o.has("ai_blue"):
+		# 默认每队人数相同（完整地图 5 对 5、切片 3 对 3）：哪队有真人，哪队就少补 AI
+		var size := int(Lobby.TEAM_SIZE.get(mode, 5))
+		var hum := {"blue": 0, "red": 0}
+		for p in players:
+			hum[p.team] = int(hum.get(p.team, 0)) + 1
+		ai = {"blue": maxi(0, size - int(hum.get("blue", 0))), "red": maxi(0, size - int(hum.get("red", 0)))}
 	return {"mode": mode, "seed": sd, "autoplay": bool(o.get("autoplay", false)), "players": players, "ai": ai}
 
 

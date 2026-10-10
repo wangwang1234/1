@@ -58,6 +58,7 @@ var split_layer: CanvasLayer
 func start(cfg: Dictionary) -> void:
 	_cfg = cfg
 	PlayerInput.ensure_actions()
+	PlayerInput.right_shift_down = false
 	world = SimWorld.new()
 	world.setup(cfg)
 	autoplay = bool(cfg.get("autoplay", false))
@@ -321,8 +322,16 @@ func _on_joy_changed(device: int, connected: bool) -> void:
 		if p2.hud:
 			p2.hud.toast(p2.ham.id, "接上手柄了：玩家2 改用手柄", Color("#9fe8ff"), 2.4)
 	elif not connected and p2.input.scheme == "pad" and p2.input.pad_index == device:
+		var rest := Input.get_connected_joypads()
+		rest.erase(device)
+		if not rest.is_empty():
+			p2.input.pad_index = int(rest[0])     # 还有别的手柄：换到那一个
+			if p2.hud:
+				p2.hud.toast(p2.ham.id, "手柄断开了：玩家2 改用另一个手柄", Color("#ffd166"), 2.4)
+			return
 		p2.input.scheme = "keys2"
 		p1.input.arrows = false
+		p1.input.allow_pad = true     # 手柄不归 2P 了，1P 重新可以用手柄
 		if p2.hud:
 			p2.hud.toast(p2.ham.id, "手柄断开了：玩家2 改用方向键", Color("#ffd166"), 2.4)
 
@@ -330,6 +339,11 @@ func _on_joy_changed(device: int, connected: bool) -> void:
 func _input(ev: InputEvent) -> void:
 	if ev is InputEventKey:
 		PlayerInput.track_key(ev)
+
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		PlayerInput.right_shift_down = false     # 切出窗口时收不到松开事件，免得 2P 一直冲刺
 
 
 func _unhandled_input(ev: InputEvent) -> void:

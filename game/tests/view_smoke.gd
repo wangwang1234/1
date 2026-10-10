@@ -8,7 +8,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	await _solo()
 	await _duo()
-	print("[view_smoke] 完成")
+	print("[view_smoke] 完成 (done)")
 	get_tree().quit(0)
 
 
@@ -66,7 +66,7 @@ func _duo() -> void:
 	var switched: bool = mv.players[1].input.scheme == "pad" and not mv.players[0].input.allow_pad
 	await _drive(mv, 60)
 	mv._on_joy_changed(0, false)
-	var back: bool = mv.players[1].input.scheme == "keys2"
+	var back: bool = mv.players[1].input.scheme == "keys2" and mv.players[0].input.allow_pad
 	await _drive(mv, 30)
 	print("[view_smoke] 2P 手柄热插拔：切到手柄=%s，拔掉切回=%s" % [switched, back])
 	if not switched or not back:

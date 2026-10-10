@@ -14,4 +14,7 @@ echo 表现层冒烟：通过
 echo == 武器 / 道具 / 分屏冒烟 ==
 "%GODOT%" --headless --path "%~dp0..\game" --fixed-fps 60 res://tests/view_smoke.tscn > "%TEMP%\manzai_vsmoke.log" 2>&1
 findstr /C:"SCRIPT ERROR" "%TEMP%\manzai_vsmoke.log" >nul && (echo 武器 / 道具 / 分屏冒烟：失败，见 %TEMP%\manzai_vsmoke.log & exit /b 1)
+rem push_error 断言（比如 2P 手柄热插拔）以 ERROR: 开头；退出时的资源泄漏提示不算
+findstr /R /C:"^ERROR:" "%TEMP%\manzai_vsmoke.log" | findstr /V /C:"resources still in use" /C:"ObjectDB instances" >nul && (echo 武器 / 道具 / 分屏冒烟：断言失败，见 %TEMP%\manzai_vsmoke.log & exit /b 1)
+findstr /C:"(done)" "%TEMP%\manzai_vsmoke.log" >nul || (echo 武器 / 道具 / 分屏冒烟：没有跑完，见 %TEMP%\manzai_vsmoke.log & exit /b 1)
 echo 武器 / 道具 / 分屏冒烟：通过
