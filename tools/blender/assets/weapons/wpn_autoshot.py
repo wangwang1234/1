@@ -15,6 +15,18 @@ def build(ctx):
     P.append(g.grip(y=-0.008, z=-0.02, size=(0.026, 0.028, 0.05), angle=-16))
     P += g.guard(y=0.016, z=-0.004)
     P.append(g.box("pump", (0, 0.16, 0.008), (0.03, 0.05, 0.022), "shell_red", style.MAT_TOON, 0.006))
+    HW = 0.017
+    P.append(g.top_decal("orangestrip", 0.11, 0.045, 0.06, 0.012, "sticker_orange"))
+    P += g.eject_port("eject", 0.04, 0.03, HW, 0.03, 0.012)
+    P += g.screws("screw", -0.01, 0.012, HW)
+    P += g.screws("screw2", 0.11, 0.012, HW)
+    P.append(shapes.torus("drumring", (0.0132, 0.065, -0.03), 0.024, 0.002, "X", 20, 4, "sticker_yellow", style.MAT_TOON))
+    P.append(shapes.cylinder("drumface", (-0.0132, 0.065, -0.03), 0.022, None, 0.0014, "X", 18, 0, "sticker_yellow", style.MAT_FLAT))
+    P.append(g.box("drumwind", (0.017, 0.065, -0.03), (0.004, 0.022, 0.004), "gun_steel", bevel=0.001, seg=1))
+    P += g.holes("hshield", 0.14, 0, 4, 0.016, 0.003, "Z", surface=0.0415)
+    for k in range(3):
+        P.append(g.decal(f"pumpline{k}", (0.0152, 0.145 + k * 0.012, 0.008), (0.0012, 0.004, 0.018), "wood_red"))
+    P.append(g.sling_loop("sling", (0, -0.1, 0.0)))
     root = weapon_kit.finish("wpn_autoshot", P, "shotgun", {
         "muzzle": (0, 0.236, 0.03), "att_muzzle": (0, 0.232, 0.03), "att_scope": (0, 0.03, 0.054),
         "att_drum": (0, 0.065, -0.065), "att_tank": (-0.026, 0.06, 0.02), "att_coil": (0, 0.19, 0.03),

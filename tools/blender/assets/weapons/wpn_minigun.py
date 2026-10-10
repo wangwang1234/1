@@ -17,6 +17,19 @@ def build(ctx):
         P.append(g.box(f"hpost{s}", (0, 0.03 + s * 0.03, 0.057), (0.012, 0.008, 0.016), "gun_darker", bevel=0.002, seg=1))
     P.append(g.grip(y=-0.006, z=-0.018, size=(0.026, 0.028, 0.048), angle=-10))
     P += g.guard(y=0.016, z=-0.002)
+    HW = 0.022
+    P += g.stripes("haz", -0.01, 0.075, 0.051, 0.03, 7, "sticker_yellow", "rubber")
+    P += g.vents("vent", 0.084, 0.026, 4, 0.007, 0.017, h=0.024)
+    P.append(g.decal("boxstencil", (0.0402, 0.02, -0.03), (0.0012, 0.034, 0.02), "sticker_yellow"))
+    P.append(g.decal("boxstencil2", (0.0403, 0.02, -0.03), (0.0013, 0.026, 0.007), "polymer_olive"))
+    P.append(g.top_decal("boxtop", 0.02, -0.005, 0.05, 0.05, "sand_tan", x=0.012))
+    P.append(shapes.capsule("feedchute", (0.03, 0.045, -0.006), (0.02, 0.07, 0.012), 0.007, 8, 2, "hose_dark", style.MAT_TOON))
+    P.append(shapes.capsule("cable", (-0.022, 0.0, 0.01), (-0.018, 0.09, 0.012), 0.003, 8, 2, "hose_dark", style.MAT_TOON))
+    P.append(g.box("battery", (-0.026, 0.0, 0.02), (0.012, 0.04, 0.024), "gun_dark", bevel=0.003, seg=1))
+    P.append(g.decal("led", (-0.0322, 0.0, 0.026), (0.0012, 0.006, 0.006), "led_green"))
+    P += g.screws("screw", -0.012, 0.012, HW)
+    P += g.screws("screw2", 0.07, 0.012, HW)
+    P.append(g.box("spade", (0, -0.03, 0.04), (0.03, 0.01, 0.012), "gun_darker", bevel=0.003, seg=1))
     root = weapon_kit.finish("wpn_minigun", P, "heavy", {
         "muzzle": (0, 0.29, 0.026), "att_muzzle": (0, 0.275, 0.026), "att_scope": (0, 0.03, 0.08),
         "att_drum": (0.012, 0.02, -0.06), "att_tank": (-0.03, 0.03, 0.026), "att_coil": (0, 0.2, 0.026),

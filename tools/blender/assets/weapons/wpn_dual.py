@@ -13,6 +13,14 @@ def pistol(prefix, x):
     for s in (-1, 1):
         P.append(g.box(f"{prefix}panel{s}", (x + s * 0.0148, -0.01, -0.02), (0.002, 0.02, 0.038), "sticker_yellow", style.MAT_TOON, 0.0008, rot=(deg(-14), 0, 0), seg=1))
     P += g.guard(prefix + "guard", y=0.028, z=-0.006, r=0.013, x=x)
+    P.append(g.top_decal(prefix + "topstripe", 0.04, 0.049, 0.1, 0.008, "sticker_yellow", x=x))
+    for i in range(4):
+        P.append(g.box(f"{prefix}serr{i}", (x, -0.02 + i * 0.0065, 0.032), (0.0315, 0.0025, 0.028), "gun_darker", style.MAT_METAL, 0.0005, seg=1))
+    P.append(g.decal(prefix + "eject", (x + 0.0158, 0.05, 0.036), (0.0012, 0.022, 0.01), "rubber"))
+    P.append(g.box(prefix + "fs", (x, 0.09, 0.052), (0.005, 0.007, 0.007), "gun_darker", bevel=0.001, seg=1))
+    P.append(g.box(prefix + "rs", (x, -0.022, 0.052), (0.018, 0.005, 0.007), "gun_darker", bevel=0.001, seg=1))
+    P.append(g.box(prefix + "magbase", (x, -0.016, -0.05), (0.03, 0.032, 0.008), "gun_light", style.MAT_METAL, 0.002, rot=(deg(-14), 0, 0), seg=1))
+    P += g.paw(prefix + "paw", (x - 0.0152 - g.D, 0.05, 0.034), "X", 0.009, "sticker_yellow")
     return P
 
 

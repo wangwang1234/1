@@ -56,7 +56,7 @@ def _toon_tree(mat, kind):
     if kind == style.MAT_SKIN:
         du = PREVIEW["skin"] / style.CELLS
     if kind == style.MAT_TEAM and PREVIEW["team"] == "red":
-        dv = -1.0 / style.CELLS
+        dv = -1.0 / (2 * style.ROWS)
     if kind == "M_path":
         du = PREVIEW["path"] / style.CELLS
     mapping.inputs["Location"].default_value = (du, dv, 0)

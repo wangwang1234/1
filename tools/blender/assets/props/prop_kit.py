@@ -164,7 +164,17 @@ def frag():
         shapes.cylinder("top", (0, 0, 0.118), 0.016, None, 0.022, "Z", 12, 0.003, "gun_steel", style.MAT_METAL),
         shapes.rounded_box("lever", (0.012, 0, 0.1), (0.012, 0.018, 0.07), 0.003, 1, "gun_steel", style.MAT_METAL, rot=(0, deg(-18), 0)),
         shapes.torus("ring", (-0.016, 0, 0.13), 0.012, 0.0025, "Y", 14, 4, "gun_chrome", style.MAT_METAL),
+        shapes.cylinder("pin", (-0.008, 0, 0.126), 0.0025, None, 0.02, "X", 8, 0.0, "gun_chrome", style.MAT_METAL),
+        shapes.cylinder("fuze", (0, 0, 0.104), 0.02, None, 0.008, "Z", 14, 0.002, "gun_dark", style.MAT_METAL),
     ]
+    # 菠萝纹：横竖几道深色刻线
+    for k in range(3):
+        z = 0.03 + k * 0.025
+        rz = 0.046 * math.sqrt(max(0.0, 1.0 - ((z - 0.055) / 0.056) ** 2))
+        P.append(shapes.torus(f"groove{k}", (0, 0, z), rz + 0.0004, 0.0016, "Z", 20, 3, "vest_dark", style.MAT_FLAT))
+    for k in range(6):
+        a = k / 6 * math.tau
+        P.append(shapes.transform(shapes.torus(f"vgroove{k}", (0, 0, 0), 0.0462, 0.0016, "X", 20, 3, "vest_dark", style.MAT_FLAT, scale=(1.0, 1.0, 1.2)), loc=(0, 0, 0.055), rot=(0, 0, a)))
     return _root("prop_frag", [shapes.join(P, "frag_mesh")])
 
 

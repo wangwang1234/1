@@ -29,13 +29,14 @@ PALETTE = os.path.join(ROOT, "game", "assets", "textures", "palette.png")
 
 
 class Built:
-    def __init__(self, roots, animations=False, previews=None, outline=0.0035, extra_exports=None, after_export=None):
+    def __init__(self, roots, animations=False, previews=None, outline=0.0035, extra_exports=None, after_export=None, item_previews=None):
         self.roots = roots                  # 导出的根物体列表
         self.animations = animations
         self.previews = previews            # [(后缀, 视角, {参数})]；None = 默认一组
         self.outline = outline
         self.extra_exports = extra_exports or []   # [(文件名, [物体])] 同一脚本导出多个 glb
         self.after_export = after_export     # 预览前回调（例如摆姿势）
+        self.item_previews = item_previews   # [(视角, {参数})]：给 extra_exports 里每个物件单独渲染一张 <资产>_<物件>_<视角>.png
 
 
 class Ctx:
@@ -131,6 +132,19 @@ def build_one(name, cat, path, args):
                     o.hide_render = o not in vis
             out = kw.pop("out", None)
             preview.render(out or ctx.preview_path(suffix), [o for o in vis if o.type == "MESH" and not o.hide_render], view=view, **kw)
+            for o in objs:
+                o.hide_render = False
+        for (view, kw) in (res.item_previews or []):
+            preview.setup_lighting(dict(kw).get("light", "studio"))
+            for (fname, eo) in res.extra_exports:
+                keep = set()
+                for r in eo:
+                    keep.add(r)
+                    keep.update(r.children_recursive)
+                for o in objs:
+                    o.hide_render = o not in keep
+                kk = {k: v for k, v in kw.items() if k != "light"}
+                preview.render(ctx.preview_path(f"{fname}_{view}"), [o for o in keep if o.type == "MESH"], view=view, **kk)
             for o in objs:
                 o.hide_render = False
     print(f"[build] {cat}/{name} ok ({time.time() - t0:.1f}s)")

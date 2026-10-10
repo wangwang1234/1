@@ -1,7 +1,7 @@
 """霰弹枪（泵动）：粗枪管 + 下挂管状弹仓 + 红色泵把，侧面弹托插着红色霰弹，识别色 = 红。"""
 import math
 
-from lib import shapes, style, weapon_kit
+from lib import gun_parts as g, shapes, style, weapon_kit
 from lib.anim import deg
 
 
@@ -34,6 +34,11 @@ def build(ctx):
     for i in range(4):
         P.append(shapes.cylinder(f"shell{i}", (-0.025, -0.012 + i * 0.016, 0.02), 0.0058, None, 0.026, "Z", 10, 0.0008, "shell_red", style.MAT_TOON))
         P.append(shapes.cylinder(f"shellb{i}", (-0.025, -0.012 + i * 0.016, 0.0335), 0.0062, None, 0.006, "Z", 10, 0.0008, "brass", style.MAT_METAL))
+    P += g.screws("screw", -0.015, 0.01, 0.018)
+    P += g.screws("screw2", 0.04, 0.01, 0.018)
+    P.append(g.sling_loop("sling", (0, -0.14, -0.012)))
+    P += g.side_decal("stockline", -0.09, 0.02, 0.08, 0.003, "wood_dark", 0.015)
+    P += g.paw("paw", (0.015 + g.D, -0.11, 0.012), "X", 0.012, "sticker_white")
     root = weapon_kit.finish("wpn_shotgun", P, "shotgun", {
         "muzzle": (0, 0.252, 0.03),
         "att_muzzle": (0, 0.248, 0.03),

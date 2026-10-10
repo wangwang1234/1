@@ -131,7 +131,7 @@ static func palette_uv(color_name: String) -> Vector2:
 		if f:
 			_pal = JSON.parse_string(f.get_as_text())
 	var rc: Array = _pal.get(color_name, [0, 15])
-	return Vector2((float(rc[1]) + 0.5) / 16.0, (float(rc[0]) + 0.5) / 16.0)
+	return Vector2((float(rc[1]) + 0.5) / 16.0, (float(rc[0]) + 0.5) / 32.0)     # 调色板 16 列 × 32 行（下半张是自发光）
 
 
 static func _palette_box(color_name: String, size: Vector3) -> ArrayMesh:

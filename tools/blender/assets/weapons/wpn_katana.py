@@ -16,6 +16,14 @@ def build(ctx):
     P.append(blade)
     edge = shapes.extrude_profile("edge", [(0.055, 0.008), (0.31, 0.0105), (0.343, 0.0045), (0.338, 0.0015), (0.306, 0.0075), (0.055, 0.0055)], 0.0046, plane="YZ", bevel=0.0, color="blade_edge", mat=style.MAT_EMISSIVE)
     P.append(edge)
+    P.append(g.decal("bohi", (0.0021 + 0.0004, 0.18, z - 0.002), (0.0008, 0.2, 0.0025), "gun_steel"))
+    P.append(g.decal("bohiL", (-0.0021 - 0.0004, 0.18, z - 0.002), (0.0008, 0.2, 0.0025), "gun_steel"))
+    P.append(shapes.capsule("tassel", (0, -0.05, z), (0.004, -0.07, z - 0.022), 0.0026, 8, 2, "tassel_red", style.MAT_TOON))
+    P.append(shapes.uv_sphere("tasselknot", (0, -0.05, z), (0.0045, 0.0045, 0.0045), 8, 6, "tassel_red", style.MAT_TOON))
+    for k in range(3):
+        P.append(shapes.capsule(f"fringe{k}", (0.004, -0.07, z - 0.022), (0.004 + (k - 1) * 0.004, -0.074, z - 0.034), 0.0012, 6, 2, "tassel_red", style.MAT_TOON))
+    for k in range(4):
+        P.append(shapes.uv_sphere(f"menuki{k}", (0, -0.03 + k * 0.014, z + 0.0095), (0.002, 0.004, 0.0015), 6, 4, "gun_gold", style.MAT_METAL))
     root = weapon_kit.finish("wpn_katana", P, "melee", {
         "muzzle": (0, 0.34, z), "att_muzzle": (0, 0.2, z + 0.006), "att_scope": (0, 0.15, z + 0.012),
         "att_drum": (0, 0.0, z - 0.012), "att_tank": (-0.012, 0.0, z), "att_coil": (0, 0.1, z),

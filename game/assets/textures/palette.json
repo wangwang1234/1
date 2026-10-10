@@ -510,5 +510,69 @@
 "crown_gold": [
 7,
 15
+],
+"sticker_pink": [
+8,
+0
+],
+"sticker_orange": [
+8,
+1
+],
+"sticker_blue": [
+8,
+2
+],
+"sticker_white": [
+8,
+3
+],
+"sand_tan": [
+8,
+4
+],
+"sand_dark": [
+8,
+5
+],
+"gun_blue": [
+8,
+6
+],
+"gun_gold": [
+8,
+7
+],
+"gauge_red": [
+8,
+8
+],
+"led_green": [
+8,
+9
+],
+"led_red": [
+8,
+10
+],
+"led_amber": [
+8,
+11
+],
+"tassel_red": [
+8,
+12
+],
+"grenade_yellow": [
+8,
+13
+],
+"hose_dark": [
+8,
+14
+],
+"screen_dark": [
+8,
+15
 ]
 }

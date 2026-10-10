@@ -59,7 +59,25 @@ def build(ctx):
     # 小背包
     pack = shapes.rounded_box("m_pack", (0, -0.085 * S, 0.11 * S), (0.09 * S, 0.04 * S, 0.08 * S), 0.012, 2, "gear_navy", style.MAT_TOON)
     strap = shapes.rounded_box("m_strap", (0, -0.062 * S, 0.135 * S), (0.1 * S, 0.012 * S, 0.012 * S), 0.003, 1, "gear_navy_light", style.MAT_TOON)
-    body = shapes.join([blob, helm, rim, lamp, lampbase, nose, pack, strap] + eyes + ears, "body")
+    # 头盔顶：浅色十字条纹 + 中心铆钉（俯视角一眼看出是兵）+ 两侧小铆钉 + 下巴带
+    hdeco = []
+    prof = [(0.0, 0.311), (0.047, 0.306), (0.081, 0.29), (0.102, 0.264)]
+    for k in range(4):
+        a = k * math.pi / 2
+        for j in range(len(prof) - 1):
+            (r0, z0), (r1, z1) = prof[j], prof[j + 1]
+            hdeco.append(shapes.capsule(f"m_hs{k}{j}", (math.cos(a) * r0 * S, 0.004 * S + math.sin(a) * r0 * S, z0 * S), (math.cos(a) * r1 * S, 0.004 * S + math.sin(a) * r1 * S, z1 * S), 0.008 * S, 6, 2, "team_light", style.MAT_TEAM))
+    hdeco.append(shapes.uv_sphere("m_hbolt", (0, 0.004 * S, 0.312 * S), (0.016 * S, 0.016 * S, 0.008 * S), 10, 6, "gun_steel", style.MAT_METAL))
+    for sgn in (-1, 1):
+        hdeco.append(shapes.uv_sphere(f"m_hrivet{sgn}", (sgn * 0.104 * S, 0.004 * S, 0.232 * S), (0.008 * S, 0.008 * S, 0.008 * S), 8, 4, "gun_steel", style.MAT_METAL))
+        hdeco.append(shapes.capsule(f"m_chin{sgn}", (sgn * 0.1 * S, 0.01 * S, 0.22 * S), (sgn * 0.06 * S, 0.07 * S, 0.135 * S), 0.0045 * S, 6, 2, "gear_navy_light", style.MAT_TOON))
+    # 背包上的队伍色灯 + 天线、腰带
+    hdeco.append(shapes.rounded_box("m_packlight", (0, -0.106 * S, 0.12 * S), (0.03 * S, 0.004 * S, 0.012 * S), 0.0, 1, "team_glow", style.MAT_TEAM))
+    hdeco.append(shapes.cylinder("m_antenna", (0.03 * S, -0.09 * S, 0.19 * S), 0.0025 * S, None, 0.08 * S, "Z", 6, 0.0, "gun_steel", style.MAT_METAL))
+    hdeco.append(shapes.uv_sphere("m_anttip", (0.03 * S, -0.09 * S, 0.232 * S), (0.007 * S, 0.007 * S, 0.007 * S), 6, 4, "team_glow", style.MAT_TEAM))
+    hdeco.append(shapes.torus("m_belt", (0, -0.004 * S, 0.06 * S), 0.086 * S, 0.008 * S, "Z", 22, 4, "gear_navy", style.MAT_TOON, scale=(1, 0.98, 0.8)))
+    hdeco.append(shapes.rounded_box("m_buckle", (0, 0.083 * S, 0.06 * S), (0.022 * S, 0.006 * S, 0.016 * S), 0.002, 1, "brass", style.MAT_METAL))
+    body = shapes.join([blob, helm, rim, lamp, lampbase, nose, pack, strap] + eyes + ears + hdeco, "body")
     shapes.bake_outline_normals(body)
     # 腿（脚掌）
     legs = []

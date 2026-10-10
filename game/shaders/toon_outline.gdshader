@@ -37,7 +37,7 @@ void vertex() {
 void fragment() {
 	vec2 uv = v_uv;
 	if (kind == 1) { uv.x += float(skin_index) / 16.0; }
-	if (kind == 2) { uv.y += float(team_index) / 16.0; }
+	if (kind == 2) { uv.y += float(team_index) / 32.0; }
 	if (kind == 8) { uv.x += float(path_index) / 16.0; }
 	if (dissolve > 0.0) { discard; }
 	vec3 c = texture(palette, uv).rgb;

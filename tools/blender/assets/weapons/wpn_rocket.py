@@ -18,6 +18,15 @@ def build(ctx):
     P.append(g.box("sightpost", (0.022, 0.12, z + 0.02), (0.006, 0.01, 0.024), "gun_darker", bevel=0.002, seg=1))
     P.append(g.box("sightframe", (0.022, 0.12, z + 0.034), (0.012, 0.004, 0.012), "gun_darker", bevel=0.001, seg=1))
     P.append(g.box("stencil", (0, 0.13, z + 0.0222), (0.012, 0.04, 0.0015), "sticker_yellow", style.MAT_FLAT, 0.0, seg=1))
+    for k, y in enumerate((0.18, 0.195)):
+        P.append(shapes.torus(f"band{k}", (0, y, z), 0.0225, 0.0022, "Y", 18, 4, "sticker_yellow", style.MAT_TOON))
+    P.append(shapes.torus("bandrear", (0, -0.06, z), 0.0225, 0.0022, "Y", 18, 4, "sticker_yellow", style.MAT_TOON))
+    P += g.paw("paw", (0, 0.07, z + 0.022 + g.D), "Z", 0.014, "sticker_white")
+    P.append(g.box("shoulder", (0, -0.03, z - 0.02), (0.03, 0.05, 0.012), "rubber", style.MAT_TOON, 0.004, seg=1))
+    P.append(shapes.cylinder("venturi", (0, -0.121, z), 0.022, None, 0.002, "Y", 18, 0, "rubber", style.MAT_FLAT))
+    P.append(shapes.torus("venturiring", (0, -0.12, z), 0.014, 0.002, "Y", 14, 4, "gun_darker", style.MAT_METAL))
+    P.append(g.sling_loop("sling", (0, -0.08, z - 0.024)))
+    P.append(g.box("trigguard2", (0, 0.035, 0.016), (0.012, 0.02, 0.004), "gun_darker", bevel=0.001, seg=1))
     root = weapon_kit.finish("wpn_rocket", P, "launcher", {
         "muzzle": (0, 0.27, z), "att_muzzle": (0, 0.228, z), "att_scope": (0, 0.05, z + 0.03),
         "att_drum": (0, 0.06, z - 0.03), "att_tank": (-0.03, 0.03, z), "att_coil": (0, 0.16, z),

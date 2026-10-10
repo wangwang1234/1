@@ -2,15 +2,17 @@
 
 改这里一处，重新运行 build.py --all 就能整批更新所有资产。
 
-调色板贴图 palette.png：256×256，16×16 格，每格一个颜色。
-- 第 0～7 行：固有色（albedo）
-- 第 8～15 行：对应格子的自发光色（同一列、行号 +8）；不发光的格子是黑色
+调色板贴图 palette.png：256×512，16 列 × 32 行，每格 16 像素、一个颜色（批次 3 从 256×256 扩大一倍）。
+- 第 0～15 行：固有色（albedo）
+- 第 16～31 行：对应格子的自发光色（同一列、行号 +16，即贴图下半张）；不发光的格子是黑色
 - 皮肤色（第 0～2 行的第 0～3 列）：M_skin 材质在运行时按皮肤编号横向偏移 U
 - 队伍色（第 6 行=蓝队，第 7 行=红队）：M_team 材质在运行时按队伍纵向偏移 V
 """
 
-PALETTE_SIZE = 256
-CELLS = 16
+PALETTE_SIZE = 256          # 宽
+PALETTE_H = 512             # 高（上半固有色、下半自发光）
+CELLS = 16                  # 列数
+ROWS = 16                   # 固有色行数
 CELL_PX = PALETTE_SIZE // CELLS
 
 
@@ -26,7 +28,7 @@ _P = {}
 
 
 def _put(name, row, col, albedo, emissive=None):
-    assert 0 <= row < 8 and 0 <= col < CELLS, name
+    assert 0 <= row < ROWS and 0 <= col < CELLS, name
     for k, v in _P.items():
         assert (v[0], v[1]) != (row, col), f"palette cell clash {name} vs {k}"
     _P[name] = (row, col, albedo, emissive)
@@ -178,6 +180,27 @@ _put("poison_green", 7, 13, "#9be05a", "#6fbf3a")
 _put("katana_wrap", 7, 14, "#2a2030")
 _put("crown_gold", 7, 15, "#ffd166", "#7a5a10")
 
+# ---------------------------------------------------------------------------
+# 批次 3 新增（第 8～15 行）
+# ---------------------------------------------------------------------------
+# 第 8 行：武器贴纸、识别色
+_put("sticker_pink", 8, 0, "#ff7fb0")
+_put("sticker_orange", 8, 1, "#ff9a3c")
+_put("sticker_blue", 8, 2, "#4f8dff")
+_put("sticker_white", 8, 3, "#f4f1ea")
+_put("sand_tan", 8, 4, "#b89a6a")
+_put("sand_dark", 8, 5, "#8a7350")
+_put("gun_blue", 8, 6, "#3e5f9e")
+_put("gun_gold", 8, 7, "#d9a93a")
+_put("gauge_red", 8, 8, "#e0443f", "#802020")
+_put("led_green", 8, 9, "#7dff8a", "#7dff8a")
+_put("led_red", 8, 10, "#ff4a4a", "#ff4a4a")
+_put("led_amber", 8, 11, "#ffb02e", "#ffb02e")
+_put("tassel_red", 8, 12, "#d8323a")
+_put("grenade_yellow", 8, 13, "#e8c23a")
+_put("hose_dark", 8, 14, "#2a2f38")
+_put("screen_dark", 8, 15, "#15222a", "#0a2a30")
+
 
 def color(name):
     """名字 -> 固有色 RGB（0..1 sRGB）。"""
@@ -192,7 +215,7 @@ def cell(name):
 def uv(name):
     """名字 -> Blender UV（左下角原点）。glTF 导出时会翻转为左上角原点。"""
     r, c = cell(name)
-    return ((c + 0.5) / CELLS, 1.0 - (r + 0.5) / CELLS)
+    return ((c + 0.5) / CELLS, 1.0 - (r + 0.5) / (2 * ROWS))
 
 
 def palette_names():
@@ -200,10 +223,10 @@ def palette_names():
 
 
 def palette_pixels():
-    """返回 256×256 RGBA（sRGB，0..1）像素列表，行从上到下。"""
-    px = [[(0.0, 0.0, 0.0, 1.0)] * PALETTE_SIZE for _ in range(PALETTE_SIZE)]
+    """返回 256×512 RGBA（sRGB，0..1）像素列表，行从上到下。"""
+    px = [[(0.0, 0.0, 0.0, 1.0)] * PALETTE_SIZE for _ in range(PALETTE_H)]
     grey = (0.5, 0.5, 0.5, 1.0)
-    for row in range(8):
+    for row in range(ROWS):
         for col in range(CELLS):
             for y in range(CELL_PX):
                 for x in range(CELL_PX):
@@ -214,7 +237,7 @@ def palette_pixels():
         for y in range(CELL_PX):
             for x in range(CELL_PX):
                 px[r * CELL_PX + y][c * CELL_PX + x] = a
-                px[(r + 8) * CELL_PX + y][c * CELL_PX + x] = e
+                px[(r + ROWS) * CELL_PX + y][c * CELL_PX + x] = e
     return px
 
 
@@ -277,8 +300,7 @@ def write_palette_png(path):
         c = struct.pack(">I", len(data)) + tag + data
         return c + struct.pack(">I", zlib.crc32(tag + data) & 0xFFFFFFFF)
 
-    n = PALETTE_SIZE
-    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", n, n, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
+    png = b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", PALETTE_SIZE, PALETTE_H, 8, 6, 0, 0, 0)) + chunk(b"IDAT", zlib.compress(bytes(raw), 9)) + chunk(b"IEND", b"")
     os.makedirs(os.path.dirname(path), exist_ok=True)
     with open(path, "wb") as f:
         f.write(png)

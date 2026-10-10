@@ -29,10 +29,13 @@ class MobView:
 	var tail: Node3D
 	var gun: Node3D
 	var crown: Node3D
+	var cape: Node3D
 	var laser: MeshInstance3D
 	var _vis := 0.0
 	var _t := 0.0
 	var _pop := 0.0
+	var _intro := -1.0          # 鼠王出场演出计时（秒）；<0 = 没有演出
+	var _ring: MeshInstance3D   # 落地冲击环
 
 	func setup(e: SimMob) -> void:
 		sim_id = e.id
@@ -47,7 +50,25 @@ class MobView:
 		tail = model.find_child("tail", true, false)
 		gun = model.find_child("gun", true, false)
 		crown = model.find_child("crown", true, false)
+		cape = model.find_child("cape", true, false)
 		ToonMaterials.set_param(model, "glow", 0.12)
+		if e.kind == "boss":
+			_intro = 0.0
+			_ring = MeshInstance3D.new()
+			var tm := TorusMesh.new()
+			tm.inner_radius = 0.92
+			tm.outer_radius = 1.0
+			tm.rings = 48
+			tm.ring_segments = 4
+			_ring.mesh = tm
+			var rm := StandardMaterial3D.new()
+			rm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+			rm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			rm.albedo_color = Color(1.0, 0.85, 0.45, 0.0)
+			_ring.material_override = rm
+			_ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+			_ring.visible = false
+			add_child(_ring)
 		if e.kind == "rat" or e.kind == "boss":
 			# 蹲下瞄准时的红色激光（原型：rat 蓄力 0.45 秒）
 			laser = MeshInstance3D.new()
@@ -65,9 +86,16 @@ class MobView:
 		_vis = move_toward(_vis, 1.0 if seen else 0.0, delta * 8.0)
 		visible = _vis > 0.02
 		if not visible:
+			if _intro >= 0.0 and _vis <= 0.0:
+				_intro = -1.0     # 出场时没在视野里：不补放演出
+				if _ring:
+					_ring.visible = false
 			return
 		_pop = minf(1.0, _pop + delta * 4.0)
 		position = Vector3(lerpf(e.px, e.x, alpha) * 0.01, 0, lerpf(e.py, e.y, alpha) * 0.01)
+		if _intro >= 0.0:
+			_boss_intro(delta)
+			return
 		var face := e.heading if e.kind == "roach" else e.aim
 		rotation.y = lerp_angle(rotation.y, HamsterView.yaw_for(face), 1.0 - exp(-14.0 * delta))
 		var sp := Vector2(e.vx, e.vy).length() / maxf(1.0, e.spd)
@@ -98,6 +126,10 @@ class MobView:
 					head.rotation.x = -0.25 if e.tele > 0.0 else 0.0
 				if crown:
 					crown.position.y = sin(_t * 2.0) * 0.01
+				if cape:
+					# 披风：走动时往后飘，站着时随呼吸轻摆
+					cape.rotation.x = lerpf(cape.rotation.x, 0.28 * sp + sin(_t * 2.2 + e.ph) * 0.04, 1.0 - exp(-6.0 * delta))
+					cape.rotation.z = sin(_t * 1.7 + e.ph) * 0.03
 				# 蹲下瞄准
 				model.position.y = -0.03 * k if e.tele > 0.0 else 0.0
 				if laser:
@@ -110,6 +142,37 @@ class MobView:
 						(laser.material_override as StandardMaterial3D).albedo_color.a = 0.4 + 0.4 * sin(_t * 40.0)
 		ToonMaterials.set_param(model, "flash", clampf(e.flash / 0.09, 0.0, 1.0) * 0.85)
 		ToonMaterials.set_param(model, "tint", Color(0.7, 0.92, 1.35, 1) if e.frozen_until > 0.0 and e.stun > 0.0 else Color(1, 1, 1, 1))
+
+
+	func _boss_intro(delta: float) -> void:
+		## 鼠王出场：从天而降（0.5 秒）→ 落地压扁回弹 + 金色冲击环 → 王冠转一圈
+		_intro += delta
+		var t := _intro
+		var fall := 0.5
+		if t < fall:
+			var k := t / fall
+			model.position.y = (1.0 - k * k) * 4.0
+			model.scale = Vector3(0.85, 1.25, 0.85)
+		else:
+			var u := t - fall
+			model.position.y = 0.0
+			var sq := exp(-u * 7.0) * cos(u * 22.0) * 0.32
+			model.scale = Vector3(1.0 + sq, 1.0 - sq, 1.0 + sq)
+			if _ring:
+				_ring.visible = u < 0.7
+				var rr := 0.3 + u * 5.0
+				_ring.scale = Vector3(rr, 1.0, rr)
+				_ring.position.y = 0.03
+				(_ring.material_override as StandardMaterial3D).albedo_color.a = clampf(1.0 - u / 0.7, 0.0, 1.0) * 0.85
+			if crown:
+				crown.rotation.y = minf(u / 0.8, 1.0) * TAU
+		if t > fall + 1.0:
+			_intro = -1.0
+			model.scale = Vector3.ONE
+			if crown:
+				crown.rotation.y = 0.0
+			if _ring:
+				_ring.visible = false
 
 
 class PetView:
@@ -129,6 +192,8 @@ class PetView:
 		model = ToonMaterials.instance("res://assets/models/units/pet_%s.glb" % p.type, 1.6)
 		add_child(model)
 		wings = model.find_child("wings", true, false)
+		if p.owner != null:
+			ToonMaterials.set_param(model, "team_index", 0 if p.owner.team == "blue" else 1)
 		if p.type == "firefly":
 			light = OmniLight3D.new()
 			light.light_color = Color("#c8ff6a")

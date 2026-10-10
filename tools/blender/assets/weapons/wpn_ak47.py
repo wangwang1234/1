@@ -4,7 +4,7 @@ import math
 import bmesh
 from mathutils import Vector
 
-from lib import shapes, style, weapon_kit
+from lib import gun_parts as g, shapes, style, weapon_kit
 from lib.anim import deg
 
 
@@ -54,6 +54,13 @@ def build(ctx):
     P.append(shapes.cylinder("brake", (0, 0.262, 0.016), 0.011, None, 0.022, "Y", 14, 0.002, "gun_darker", style.MAT_METAL))
     P.append(shapes.cylinder("bore", (0, 0.2735, 0.016), 0.005, None, 0.002, "Y", 10, 0, "rubber", style.MAT_FLAT))
     P.append(banana_mag())
+    P += g.eject_port("eject", 0.02, 0.026, 0.017, 0.034, 0.012)
+    P += g.screws("screw", -0.02, 0.008, 0.017)
+    P += g.screws("screw2", 0.05, 0.008, 0.017)
+    P.append(g.sling_loop("sling", (0, -0.15, -0.012)))
+    P.append(g.sling_loop("sling2", (0, 0.23, 0.006)))
+    P += g.side_decal("stockline", -0.1, 0.015, 0.08, 0.003, "wood_dark", 0.014)
+    P += g.paw("paw", (0.014 + g.D, -0.12, 0.012), "X", 0.012, "sticker_white")
     root = weapon_kit.finish("wpn_ak47", P, "rifle", {
         "muzzle": (0, 0.276, 0.016),
         "att_muzzle": (0, 0.272, 0.016),

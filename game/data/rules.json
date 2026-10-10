@@ -449,5 +449,10 @@
   "squad": {"every": 20, "n": 3},
   "detonate": {"delay": 0.08, "r": 90, "dmg": 45, "kb": 220},
   "vampireHeal": 25
- }
+ },
+  "view": {
+    "_doc": "只影响表现层的参数（不影响逻辑）",
+    "structDamage": [0.66, 0.33],
+    "structSmokeEvery": 0.18
+  }
 }

@@ -74,3 +74,103 @@ def bipod(name, y, z, length=0.07, spread=0.012):
         out.append(shapes.capsule(f"{name}{s}", (s * 0.006, y, z), (s * (0.006 + spread), y - length, z - 0.012), 0.0035, 8, 2, "gun_darker", style.MAT_METAL))
     out.append(box(name + "_clamp", (0, y, z + 0.002), (0.02, 0.012, 0.01), "gun_dark", bevel=0.002, seg=1))
     return out
+
+
+# ---------------------------------------------------------------------------
+# 批次 3：细节零件（螺丝、抛壳窗、贴花、警示条纹、爪印贴纸、背带环、散热孔）
+# 贴花用 MAT_FLAT（不描边），离表面 0.0008 米避免闪烁。
+# ---------------------------------------------------------------------------
+D = 0.0008
+
+
+def screw(name, pos, axis="X", r=0.0024, color="gun_steel"):
+    return shapes.cylinder(name, pos, r, None, 0.0016, axis, 8, 0.0004, color, style.MAT_METAL)
+
+
+def screws(name, y, z, half_w, r=0.0024, color="gun_steel"):
+    """左右两侧对称各一颗螺丝（half_w = 表面到中心的距离）。"""
+    return [screw(f"{name}{s}", (s * (half_w + 0.0006), y, z), "X", r, color) for s in (-1, 1)]
+
+
+def decal(name, center, size, color="sticker_yellow", rot=(0, 0, 0)):
+    """平面贴花（薄片）：size 里最薄的那一维是厚度。"""
+    return shapes.rounded_box(name, center, size, 0.0, 1, color, style.MAT_FLAT, rot=rot)
+
+
+def top_decal(name, y, z_top, length, width, color, x=0.0):
+    """贴在顶面的识别色条（顶视角最先看到）。z_top = 表面高度。"""
+    return decal(name, (x, y, z_top + D), (width, length, 0.0012), color)
+
+
+def side_decal(name, y, z, length, height, color, half_w, both=True):
+    out = [decal(f"{name}R", (half_w + D, y, z), (0.0012, length, height), color)]
+    if both:
+        out.append(decal(f"{name}L", (-half_w - D, y, z), (0.0012, length, height), color))
+    return out
+
+
+def eject_port(name, y, z, half_w, length=0.028, height=0.012, shell=True):
+    """右侧抛壳窗：深色凹口 + 一截黄铜弹壳。"""
+    out = [decal(name, (half_w + D, y, z), (0.0014, length, height), "rubber")]
+    if shell:
+        out.append(shapes.cylinder(name + "_shell", (half_w - 0.001, y, z), height * 0.32, None, length * 0.55, "Y", 8, 0.0004, "brass", style.MAT_METAL))
+    return out
+
+
+def stripes(name, y0, y1, z, width, n=6, c1="sticker_yellow", c2="rubber", x=0.0, top=True, half_w=0.0):
+    """警示条纹：沿 Y 交替的两色斜条（顶面或两侧）。"""
+    out = []
+    step = (y1 - y0) / n
+    for k in range(n):
+        c = c1 if k % 2 == 0 else c2
+        yc = y0 + (k + 0.5) * step
+        if top:
+            out.append(decal(f"{name}{k}", (x, yc, z + D), (width, step * 0.98, 0.0012), c, rot=(0, 0, deg(0))))
+        else:
+            for s in (-1, 1):
+                out.append(decal(f"{name}{k}_{s}", (s * (half_w + D), yc, z), (0.0012, step * 0.98, width), c))
+    return out
+
+
+def paw(name, center, normal="X", size=0.012, color="sticker_white"):
+    """仓鼠爪印贴纸：一个大肉垫 + 四个小趾印。normal = 贴的面朝向（X 侧面 / Z 顶面）。"""
+    cx, cy, cz = center
+    out = []
+    pads = [((0.0, -0.1), 0.42), ((-0.36, 0.32), 0.17), ((-0.12, 0.48), 0.17), ((0.12, 0.48), 0.17), ((0.36, 0.32), 0.17)]
+    for i, ((u, v), r) in enumerate(pads):
+        rr = r * size
+        if normal == "X":
+            pos = (cx, cy + u * size, cz + v * size)
+        else:
+            pos = (cx + u * size, cy + v * size, cz)
+        out.append(shapes.cylinder(f"{name}{i}", pos, rr * (1.25 if i == 0 else 1.0), None, 0.0012, normal, 12, 0, color, style.MAT_FLAT))
+    return out
+
+
+def sling_loop(name, pos, axis="X", r=0.006):
+    return shapes.torus(name, pos, r, 0.0016, axis, 12, 4, "gun_darker", style.MAT_METAL)
+
+
+def vents(name, y0, z, n, pitch, half_w, w=0.003, h=0.01, both=True):
+    """侧面竖向散热槽。"""
+    out = []
+    for k in range(n):
+        y = y0 + k * pitch
+        out.append(decal(f"{name}{k}R", (half_w + D, y, z), (0.0012, w, h), "rubber"))
+        if both:
+            out.append(decal(f"{name}{k}L", (-half_w - D, y, z), (0.0012, w, h), "rubber"))
+    return out
+
+
+def holes(name, y0, x_or_z, n, pitch, r, axis="X", z=0.0, surface=0.0, color="rubber"):
+    """一排圆孔（散热护罩）：axis = 孔的朝向；X 时 surface 是 x 位置，Z 时 surface 是 z 位置。"""
+    out = []
+    for k in range(n):
+        y = y0 + k * pitch
+        pos = (surface, y, z) if axis == "X" else (x_or_z, y, surface)
+        out.append(shapes.cylinder(f"{name}{k}", pos, r, None, 0.0014, axis, 8, 0, color, style.MAT_FLAT))
+    return out
+
+
+def knob(name, pos, r=0.0045, color="gun_steel"):
+    return shapes.uv_sphere(name, pos, (r, r, r), 10, 6, color, style.MAT_METAL)

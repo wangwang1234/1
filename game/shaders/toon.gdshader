@@ -33,7 +33,7 @@ float hash(vec2 p) {
 void fragment() {
 	vec2 uv = UV;
 	if (kind == 1) { uv.x += float(skin_index) / 16.0; }
-	if (kind == 2) { uv.y += float(team_index) / 16.0; }
+	if (kind == 2) { uv.y += float(team_index) / 32.0; }
 	if (kind == 8) { uv.x += float(path_index) / 16.0; }
 	vec3 col = texture(palette, uv).rgb;
 	vec3 emi = texture(palette, uv + vec2(0.0, 0.5)).rgb;

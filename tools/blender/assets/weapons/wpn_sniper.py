@@ -17,6 +17,20 @@ def build(ctx):
     P += g.mag("mag", 0.045, -0.012, (0.02, 0.03, 0.03), 0, "gun_dark")
     P.append(g.grip(y=-0.008, z=-0.018, size=(0.024, 0.026, 0.044), angle=-22, color="wood_red"))
     P += g.guard(y=0.014, z=-0.004)
+    HW = 0.016
+    P += g.eject_port("eject", 0.035, 0.03, HW, 0.03, 0.01)
+    P += g.screws("screw", 0.0, 0.012, HW)
+    for s in (-1, 1):
+        P.append(g.box(f"cap{s}", (0, 0.045 + s * 0.072, 0.062), (0.03, 0.006, 0.03), "sticker_yellow", style.MAT_TOON, 0.003, seg=1))
+    P.append(g.top_decal("scopeband", 0.045, 0.076, 0.012, 0.012, "sticker_yellow"))
+    P.append(g.box("turret", (0, 0.045, 0.08), (0.012, 0.012, 0.008), "gun_dark", bevel=0.002, seg=1))
+    P.append(g.box("turret2", (0.017, 0.045, 0.062), (0.008, 0.012, 0.012), "gun_dark", bevel=0.002, seg=1))
+    for k in range(3):
+        P.append(g.decal(f"flute{k}", (0.0082, 0.18 + k * 0.03, 0.028), (0.0012, 0.022, 0.0025), "gun_darker"))
+    P.append(g.sling_loop("sling", (0, -0.1, -0.015)))
+    P.append(g.sling_loop("sling2", (0, 0.16, 0.0)))
+    P += g.side_decal("woodline", -0.06, 0.012, 0.07, 0.003, "wood_dark", 0.0152)
+    P += g.paw("paw", (0.0152 + g.D, -0.09, 0.02), "X", 0.011, "sticker_white")
     root = weapon_kit.finish("wpn_sniper", P, "rifle", {
         "muzzle": (0, 0.326, 0.028), "att_muzzle": (0, 0.322, 0.028), "att_scope": (0, 0.045, 0.08),
         "att_drum": (0, 0.045, -0.03), "att_tank": (-0.024, 0.06, 0.02), "att_coil": (0, 0.24, 0.028),

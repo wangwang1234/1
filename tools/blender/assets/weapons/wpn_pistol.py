@@ -1,7 +1,7 @@
 """手枪（初始武器）：玩具化粗短手枪，识别色 = 黄色握把贴片。"""
 import math
 
-from lib import shapes, style, weapon_kit
+from lib import gun_parts as g, shapes, style, weapon_kit
 from lib.anim import deg
 
 
@@ -29,6 +29,11 @@ def build(ctx):
     P.append(shapes.rounded_box("magbase", (0, -0.016, -0.054), (0.032, 0.033, 0.009), 0.003, 1, "gun_light", style.MAT_METAL, rot=(deg(-14), 0, 0)))
     # 侧面小贴纸
     P.append(shapes.rounded_box("sticker", (0.0165, 0.06, 0.034), (0.0015, 0.024, 0.014), 0.0, 1, "sticker_mint", style.MAT_FLAT))
+    P += g.eject_port("eject", 0.026, 0.036, 0.016, 0.024, 0.011)
+    P += g.screws("screw", 0.0, 0.01, 0.015)
+    P += g.screws("screw2", 0.075, 0.01, 0.015)
+    P.append(g.top_decal("topstripe", 0.045, 0.051, 0.07, 0.008, "sticker_yellow"))
+    P += g.paw("paw", (-0.0165 - g.D, 0.06, 0.034), "X", 0.01, "sticker_yellow")
     root = weapon_kit.finish("wpn_pistol", P, "pistol", {
         "muzzle": (0, 0.115, 0.031),
         "att_muzzle": (0, 0.112, 0.031),
