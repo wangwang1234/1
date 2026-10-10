@@ -67,6 +67,34 @@ def _toon_tree(mat, kind):
     tex.interpolation = "Closest"
     L.new(mapping.outputs["Vector"], tex.inputs["Vector"])
 
+    if mat.name.startswith("M_skin_blend"):
+        # 和 Godot 一样从第二套 UV 读取奶油色/背纹遮罩。
+        mask_uv = N.new("ShaderNodeUVMap")
+        mask_uv.uv_map = "fur_masks"
+        masks = N.new("ShaderNodeSeparateXYZ")
+        L.new(mask_uv.outputs["UV"], masks.inputs["Vector"])
+        stripe_mask = N.new("ShaderNodeMath")
+        stripe_mask.operation = "SUBTRACT"
+        stripe_mask.inputs[0].default_value = 1.0
+        L.new(masks.outputs["Y"], stripe_mask.inputs[1])
+        base = tex.outputs["Color"]
+        for offset, channel in ((-2.0/32.0, "Y"), (-1.0/32.0, "X")):
+            shift = N.new("ShaderNodeVectorMath")
+            shift.operation = "ADD"
+            shift.inputs[1].default_value = (0, offset, 0)
+            L.new(mapping.outputs["Vector"], shift.inputs[0])
+            sample = N.new("ShaderNodeTexImage")
+            sample.image = img
+            sample.interpolation = "Closest"
+            L.new(shift.outputs["Vector"], sample.inputs["Vector"])
+            blend = N.new("ShaderNodeMixRGB")
+            L.new(stripe_mask.outputs[0] if channel=="Y" else masks.outputs["X"], blend.inputs["Fac"])
+            L.new(base, blend.inputs["Color1"])
+            L.new(sample.outputs["Color"], blend.inputs["Color2"])
+            base = blend.outputs["Color"]
+    else:
+        base = tex.outputs["Color"]
+
     # 自发光：同列下半张
     m2 = N.new("ShaderNodeMapping")
     m2.inputs["Location"].default_value = (0, -0.5, 0)
@@ -95,11 +123,11 @@ def _toon_tree(mat, kind):
     shadow.blend_type = "MULTIPLY"
     shadow.inputs["Fac"].default_value = 1.0
     shadow.inputs["Color2"].default_value = (0.42, 0.36, 0.62, 1)
-    L.new(tex.outputs["Color"], shadow.inputs["Color1"])
+    L.new(base, shadow.inputs["Color1"])
     mix = N.new("ShaderNodeMixRGB")
     L.new(ramp.outputs["Color"], mix.inputs["Fac"])
     L.new(shadow.outputs["Color"], mix.inputs["Color1"])
-    L.new(tex.outputs["Color"], mix.inputs["Color2"])
+    L.new(base, mix.inputs["Color2"])
 
     # 边缘光
     lw = N.new("ShaderNodeLayerWeight")

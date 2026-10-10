@@ -1,10 +1,10 @@
 {
-  "_doc": "画面升级第一轮：保留夜晚人类房子与三渲二，参数仅用于表现，不修改 sim 或视野范围。",
+  "_doc": "书房渲染样板：连续环境材质、角色柔和阶调、窗光、空间补光与环境反射。仅用于表现。",
   "environment": {
-    "ambientColor": "#a7afc9",
-    "ambientEnergy": 0.3,
-    "moonColor": "#9db9e8",
-    "moonEnergy": 0.68,
+    "ambientColor": "#9daecc",
+    "ambientEnergy": 0.32,
+    "moonColor": "#a7bddf",
+    "moonEnergy": 0.18,
     "moonRotation": [
       -48,
       -32,
@@ -12,27 +12,48 @@
     ],
     "moonSpecular": 0.6,
     "shadowDistance": 24.0,
-    "shadowSoftness": 0.7,
-    "exposure": 1.0,
-    "saturation": 0.94,
-    "contrast": 1.03,
-    "glowIntensity": 0.22,
-    "glowThreshold": 1.6,
-    "aoRadius": 0.19,
-    "aoIntensity": 1.65,
-    "indirectIntensity": 0.35
+    "shadowSoftness": 1.5,
+    "exposure": 1.05,
+    "saturation": 0.92,
+    "contrast": 1.04,
+    "glowIntensity": 0.18,
+    "glowThreshold": 1.8,
+    "aoRadius": 0.2,
+    "aoIntensity": 1.2,
+    "indirectIntensity": 0.58,
+    "sky": {
+      "topColor": "#1b2d50",
+      "horizonColor": "#77849b",
+      "groundColor": "#151420",
+      "groundHorizonColor": "#6b5a48",
+      "energy": 0.52
+    },
+    "aoLightAffect": 0.12,
+    "indirectRadius": 1.15
   },
   "camera": {
-    "pitchDegrees": 52.0
+    "pitchDegrees": 52.0,
+    "depthOfField": {
+      "enabled": true,
+      "amount": 0.1,
+      "nearOffset": 1.7,
+      "farOffset": 1.6,
+      "transition": 2.2
+    },
+    "motionBlur": {
+      "enabled": true,
+      "maximumPixels720p": 1.8,
+      "amount": 0.42
+    }
   },
   "character": {
-    "selfGlow": 0.065,
-    "rimBoost": 0.085,
+    "selfGlow": 0.012,
+    "rimBoost": 0.018,
     "rimTeamMix": 0.25,
-    "flashlightEnergyLocal": 1.9,
-    "flashlightEnergyOther": 1.2,
+    "flashlightEnergyLocal": 1.0,
+    "flashlightEnergyOther": 0.75,
     "flashlightSpecular": 0.55,
-    "beamStrength": 0.018,
+    "beamStrength": 0.006,
     "portraitYawDegrees": 198.0,
     "portraitLightEnergy": 1.1,
     "portraitAmbientEnergy": 0.5,
@@ -42,52 +63,152 @@
   "materials": {
     "object": {
       "surfaceMode": 0,
-      "rim": 0.075,
-      "outlineScale": 0.8,
-      "roughness": 0.8
+      "rim": 0.0,
+      "outlineScale": 0.44000000000000006,
+      "roughness": 0.66,
+      "shading": "surface",
+      "specular": 0.4
     },
     "wood": {
       "surfaceMode": 1,
       "rim": 0.0,
       "outlineScale": 0.0,
-      "roughness": 0.74,
-      "color": "#76563d",
-      "colorBlend": 0.44
+      "roughness": 0.72,
+      "color": "#745b46",
+      "colorBlend": 0.16,
+      "shading": "surface",
+      "specular": 0.32,
+      "bumpStrength": 8e-05
     },
     "tile": {
       "surfaceMode": 2,
       "rim": 0.0,
       "outlineScale": 0.0,
-      "roughness": 0.42,
+      "roughness": 0.56,
       "color": "#bba78e",
-      "colorBlend": 0.28
+      "colorBlend": 0.28,
+      "shading": "surface",
+      "specular": 0.3
     },
     "fabric": {
-      "surfaceMode": 3,
+      "surfaceMode": 6,
       "rim": 0.0,
       "outlineScale": 0.0,
-      "roughness": 1.0,
-      "color": "#646371",
-      "colorBlend": 0.18
+      "roughness": 0.96,
+      "color": "#4b5360",
+      "colorBlend": 0.15,
+      "shading": "surface",
+      "specular": 0.18
     },
     "decor": {
       "surfaceMode": 0,
-      "rim": 0.025,
-      "outlineScale": 0.45,
-      "roughness": 0.72
+      "rim": 0.0,
+      "outlineScale": 0.165,
+      "roughness": 0.86,
+      "shading": "surface",
+      "specular": 0.22
     },
     "character": {
       "surfaceMode": 0,
-      "rim": 0.11,
-      "outlineScale": 0.85,
-      "roughness": 0.9
+      "rim": 0.028,
+      "outlineScale": 0.65,
+      "roughness": 0.9,
+      "shading": "toon",
+      "specular": 0.45,
+      "toonWeight": 0.32
+    },
+    "fur": {
+      "surfaceMode": 5,
+      "skinBlend": true,
+      "detailStrength": 0.035,
+      "rim": 0.028,
+      "outlineScale": 0.65,
+      "roughness": 0.92,
+      "shading": "toon",
+      "specular": 0.16,
+      "toonWeight": 0.32
+    },
+    "knit": {
+      "surfaceMode": 4,
+      "detailStrength": 0.13,
+      "rim": 0.028,
+      "outlineScale": 0.65,
+      "roughness": 0.97,
+      "shading": "toon",
+      "specular": 0.14,
+      "toonWeight": 0.32
+    },
+    "gear": {
+      "surfaceMode": 3,
+      "rim": 0.028,
+      "outlineScale": 0.65,
+      "roughness": 0.92,
+      "shading": "toon",
+      "specular": 0.2,
+      "toonWeight": 0.32
+    },
+    "furniture_wood": {
+      "surfaceMode": 1,
+      "rim": 0.0,
+      "outlineScale": 0.30250000000000005,
+      "roughness": 0.62,
+      "shading": "surface",
+      "specular": 0.45,
+      "bumpStrength": 8e-05
+    },
+    "ceramic": {
+      "surfaceMode": 2,
+      "rim": 0.0,
+      "outlineScale": 0.35750000000000004,
+      "roughness": 0.27,
+      "shading": "surface",
+      "specular": 0.5
+    },
+    "books": {
+      "surfaceMode": 0,
+      "rim": 0.0,
+      "outlineScale": 0.2,
+      "roughness": 0.84,
+      "shading": "surface",
+      "specular": 0.22,
+      "saturation": 0.58
+    },
+    "shelf": {
+      "surfaceMode": 0,
+      "rim": 0.0,
+      "outlineScale": 0.44000000000000006,
+      "roughness": 0.66,
+      "shading": "surface",
+      "specular": 0.4
+    },
+    "planks": {
+      "surfaceMode": 1,
+      "rim": 0.0,
+      "outlineScale": 0.0,
+      "roughness": 0.72,
+      "color": "#745b46",
+      "colorBlend": 0.16,
+      "shading": "surface",
+      "specular": 0.32,
+      "bumpStrength": 8e-05,
+      "vertexTint": 1.0
+    },
+    "lamp": {
+      "surfaceMode": 0,
+      "rim": 0.0,
+      "outlineScale": 0.3,
+      "roughness": 0.68,
+      "metalRoughness": 0.55,
+      "shading": "surface",
+      "specular": 0.25,
+      "emissionEnergy": 0.65
     }
   },
   "decor": {
-    "clusters": 28,
+    "clusters": 38,
     "members": 5,
-    "looseDensityScale": 0.65,
-    "clusterRadiusCm": 90,
+    "looseDensityScale": 0.23,
+    "clusterRadiusCm": 62,
     "recipes": {
       "study": [
         [
@@ -98,27 +219,27 @@
         ],
         [
           "pen",
-          0.9,
-          24,
-          20
+          0.75,
+          34,
+          26
         ],
         [
           "paper",
-          0.75,
-          -40,
-          22
+          0.7,
+          -44,
+          25
         ],
         [
           "clip",
-          0.5,
+          0.55,
           -20,
-          -24
+          -32
         ],
         [
           "eraser",
           0.5,
-          44,
-          -18
+          40,
+          -30
         ]
       ],
       "kitchen": [
@@ -130,27 +251,27 @@
         ],
         [
           "crumbs",
-          1.0,
-          25,
-          18
+          0.8,
+          28,
+          16
         ],
         [
           "fork",
-          0.8,
-          -42,
-          10
+          0.7,
+          -36,
+          12
         ],
         [
           "cereal",
-          0.9,
-          18,
-          -28
+          0.8,
+          10,
+          -29
         ],
         [
-          "peas",
-          0.9,
-          45,
-          38
+          "teabag",
+          0.75,
+          43,
+          26
         ]
       ],
       "living": [
@@ -330,6 +451,268 @@
       "chopstick": 60,
       "pencil": 62,
       "glue": 30
+    },
+    "shadowMinHeightMeters": 0.045
+  },
+  "practicalLight": {
+    "color": "#ffdfb0",
+    "energy": 0.57,
+    "range": 4.6,
+    "height": 0.505,
+    "attenuation": 1.35,
+    "specular": 0.1,
+    "size": 0.19,
+    "sourceOffset": 0.035
+  },
+  "composition": {
+    "surfaceSpacingCm": 160,
+    "surfaces": {
+      "study": [
+        "study",
+        "study_notes"
+      ],
+      "shelf": [
+        "study",
+        "study_notes"
+      ],
+      "kitchen": [
+        "kitchen",
+        "kitchen_prep"
+      ],
+      "fridge": [
+        "kitchen",
+        "kitchen_prep"
+      ],
+      "living": [
+        "living",
+        "living_games"
+      ],
+      "sofa": [
+        "living",
+        "living_games"
+      ],
+      "gift": [
+        "living",
+        "living_games"
+      ]
+    },
+    "rugs": [
+      [
+        485,
+        540,
+        1,
+        3
+      ],
+      [
+        4590,
+        550,
+        1,
+        -2,
+        "kitchen_rug"
+      ],
+      [
+        2130,
+        1548,
+        0.9,
+        4
+      ],
+      [
+        3040,
+        1630,
+        0.8,
+        -4
+      ],
+      [
+        1850,
+        1990,
+        1,
+        2
+      ],
+      [
+        3180,
+        450,
+        1,
+        -3
+      ]
+    ],
+    "batchSizeMeters": 6.0
+  },
+  "studyLighting": {
+    "enabled": true,
+    "lights": [
+      {
+        "name": "window_key",
+        "type": "spot",
+        "position": [
+          6.3,
+          2.9,
+          0.16
+        ],
+        "target": [
+          7.6,
+          0.0,
+          6.5
+        ],
+        "color": "#b6d3ff",
+        "energy": 3.5,
+        "range": 15.0,
+        "angle": 42.0,
+        "attenuation": 0.7,
+        "coneAttenuation": 0.65,
+        "specular": 0.75,
+        "size": 0.3,
+        "shadow": true,
+        "projector": "res://assets/textures/study_window.png"
+      },
+      {
+        "name": "wall_fill",
+        "type": "omni",
+        "position": [
+          5.6,
+          2.2,
+          2.2
+        ],
+        "color": "#98b4db",
+        "energy": 0.2,
+        "range": 11.0,
+        "attenuation": 1.2,
+        "specular": 0.1,
+        "shadow": false,
+        "size": 0.9
+      },
+      {
+        "name": "wood_bounce",
+        "type": "omni",
+        "position": [
+          9.5,
+          1.1,
+          5.4
+        ],
+        "color": "#e0b889",
+        "energy": 0.12,
+        "range": 6.4,
+        "attenuation": 1.4,
+        "specular": 0.1,
+        "shadow": false,
+        "size": 0.8
+      }
+    ],
+    "reflection": {
+      "enabled": true,
+      "position": [
+        6.5,
+        1.6,
+        6.8
+      ],
+      "size": [
+        16.0,
+        6.0,
+        19.0
+      ],
+      "intensity": 0.65
     }
+  },
+  "architecture": {
+    "plaster": {
+      "color": "#828a91",
+      "roughness": 0.93
+    },
+    "panel": {
+      "color": "#525b62",
+      "roughness": 0.78
+    },
+    "painted_wood": {
+      "color": "#bdc0b7",
+      "roughness": 0.55
+    },
+    "wood": {
+      "color": "#5d4939",
+      "roughness": 0.65,
+      "grain": 0.025
+    },
+    "cloth": {
+      "color": "#3c4e59",
+      "roughness": 0.96
+    },
+    "glass": {
+      "color": "#203f63",
+      "roughness": 0.28,
+      "emission": 0.5
+    }
+  },
+  "roomLighting": {
+    "lights": [
+      {
+        "name": "living_ceiling",
+        "type": "spot",
+        "position": [
+          20.0,
+          4.3,
+          14.2
+        ],
+        "target": [
+          22.3,
+          0.0,
+          16.5
+        ],
+        "color": "#c7cfdf",
+        "energy": 2.0,
+        "range": 13.0,
+        "angle": 57.0,
+        "attenuation": 0.8,
+        "coneAttenuation": 0.6,
+        "specular": 0.35,
+        "size": 0.85,
+        "shadow": true
+      },
+      {
+        "name": "kitchen_counter_bounce",
+        "type": "omni",
+        "position": [
+          43.5,
+          1.4,
+          6.4
+        ],
+        "color": "#dcc9aa",
+        "energy": 0.24,
+        "range": 8.0,
+        "attenuation": 1.4,
+        "specular": 0.1,
+        "size": 0.6,
+        "shadow": false
+      }
+    ],
+    "reflections": [
+      {
+        "name": "LivingStaticReflection",
+        "enabled": true,
+        "position": [
+          25,
+          1.6,
+          17
+        ],
+        "size": [
+          25,
+          6,
+          26
+        ],
+        "intensity": 0.45
+      },
+      {
+        "name": "KitchenStaticReflection",
+        "enabled": true,
+        "position": [
+          44,
+          1.6,
+          15
+        ],
+        "size": [
+          15,
+          6,
+          30
+        ],
+        "intensity": 0.5
+      }
+    ]
   }
 }

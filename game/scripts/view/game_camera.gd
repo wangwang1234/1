@@ -18,6 +18,8 @@ var view_width := VIEW_WIDTH
 var _pos := Vector3.ZERO
 var _t := 0.0
 var _noise := FastNoiseLite.new()
+var _camera_attributes: CameraAttributesPractical
+var motion_blur: SubtleMotionBlur
 
 
 func _ready() -> void:
@@ -26,6 +28,20 @@ func _ready() -> void:
 	far = 120.0
 	_noise.seed = 7
 	_noise.frequency = 1.0
+	var dof: Dictionary = VisualStyle.section("camera").get("depthOfField", {})
+	if bool(dof.get("enabled", false)):
+		_camera_attributes = CameraAttributesPractical.new()
+		_camera_attributes.dof_blur_near_enabled = true
+		_camera_attributes.dof_blur_far_enabled = true
+		_camera_attributes.dof_blur_amount = float(dof.amount)
+		_camera_attributes.dof_blur_near_transition = float(dof.transition)
+		_camera_attributes.dof_blur_far_transition = float(dof.transition)
+		attributes = _camera_attributes
+	if not Capture.args.has("no-motion") and RenderingServer.get_current_rendering_method() == "forward_plus":
+		motion_blur = SubtleMotionBlur.new()
+		var effects := Compositor.new()
+		effects.compositor_effects = [motion_blur]
+		compositor = effects
 
 
 func distance() -> float:
@@ -60,10 +76,17 @@ func update(delta: float, follow: Vector3, aim_point: Vector3, alive: bool) -> v
 	trauma = maxf(0.0, trauma - delta * 1.7)
 	kick = kick.lerp(Vector3.ZERO, 1.0 - exp(-14.0 * delta))
 	_apply(delta)
+	if motion_blur != null:
+		var size := get_viewport().get_visible_rect().size
+		motion_blur.set_focus(unproject_position(follow + Vector3.UP * 0.25) / size, delta)
 
 
 func _apply(_delta: float) -> void:
 	var dist := distance()
+	if _camera_attributes != null:
+		var dof: Dictionary = VisualStyle.section("camera").depthOfField
+		_camera_attributes.dof_blur_near_distance = maxf(0.2, dist - float(dof.nearOffset))
+		_camera_attributes.dof_blur_far_distance = dist + float(dof.farOffset)
 	var pitch := deg_to_rad(pitch_deg)
 	var p := _pos + kick
 	# 地图边缘夹紧（让画面不出界太多）

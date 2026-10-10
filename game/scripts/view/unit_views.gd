@@ -234,16 +234,18 @@ class PropView:
 		position = Vector3(p.x * 0.01, 0, p.y * 0.01)
 		model.rotation.y = p.rot
 		if p.kind == "lamp":
+			var style := VisualStyle.section("practicalLight")
 			light = OmniLight3D.new()
-			light.light_color = Color(1.0, 0.82, 0.55)
-			light.light_energy = 1.5
-			light.omni_range = 3.6
-			light.omni_attenuation = 1.0
-			light.position = Vector3(0, 0.46, 0)
+			light.light_color = Color(String(style.color))
+			light.light_energy = float(style.energy)
+			light.omni_range = float(style.range)
+			light.omni_attenuation = float(style.attenuation)
+			# Keep the emitter below the shade and outside the narrow metal stem.
+			light.position = Vector3(float(style.get("sourceOffset", 0.0)), float(style.height), 0)
 			light.shadow_enabled = true
 			light.omni_shadow_mode = OmniLight3D.SHADOW_DUAL_PARABOLOID   # 2 次阴影渲染（立方体是 6 次）
-			light.light_specular = 0.55
-			light.light_size = 0.14
+			light.light_specular = float(style.specular)
+			light.light_size = float(style.size)
 			add_child(light)
 
 	func sync(p: SimProp, delta: float) -> void:
@@ -262,7 +264,7 @@ class PropView:
 			model.scale = Vector3.ONE * (0.2 + 0.8 * k) * sc
 			ToonMaterials.set_param(model, "flash", clampf(p.flash / 0.1, 0.0, 1.0) * 0.7)
 			if light:
-				light.light_energy = 1.5 + sin(_t * 23.0) * 0.03 + sin(_t * 7.0) * 0.04
+				light.light_energy = float(VisualStyle.section("practicalLight").energy) * (1.0 + sin(_t * 7.0) * 0.012)
 
 
 class CrateView:

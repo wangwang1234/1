@@ -43,7 +43,7 @@ def _body_r(z, pad):
 
 def vest():
     prof = [(_body_r(z, 0.008), z) for z in (0.034, 0.05, 0.07, 0.09, 0.11, 0.128, 0.14)]
-    band = shapes.lathe("vest_band", prof, 28, color="vest_olive", mat=style.MAT_TOON, cap_top=False, cap_bottom=False)
+    band = shapes.lathe("vest_band", prof, 28, color="vest_olive", mat="M_toon_cloth", cap_top=False, cap_bottom=False)
     _xf(band, Matrix.Translation((0, BODY_C.y, 0)))
     P = [band]
     for s in (-1, 1):
@@ -51,6 +51,15 @@ def vest():
         P.append(shapes.rounded_box(f"flap{s}", (s * 0.042, BODY_C.y + 0.108, 0.1), (0.036, 0.012, 0.008), 0.002, 1, "vest_dark", style.MAT_TOON))
     P.append(shapes.torus("vest_trim", (0, BODY_C.y, 0.136), _body_r(0.136, 0.009), 0.005, "Z", 28, 6, "vest_dark", style.MAT_TOON))
     P.append(shapes.torus("vest_hem", (0, BODY_C.y, 0.036), _body_r(0.036, 0.009), 0.005, "Z", 28, 6, "vest_dark", style.MAT_TOON))
+    P.append(shapes.rounded_box("zipper", (0, BODY_C.y+0.115, 0.091), (0.003,0.003,0.057), 0.0008,1,"gun_steel",style.MAT_METAL))
+    P.append(shapes.rounded_box("zip_pull", (0, BODY_C.y+0.118, 0.113), (0.006,0.004,0.009),0.001,1,"gun_steel",style.MAT_METAL))
+    # 宽织带、胸章和口袋按扣，避免靠密集噪声表达“精细”。
+    for s in (-1,1):
+        P.append(shapes.rounded_box(f"shoulder{s}",(s*0.057,0.065,0.136),(0.02,0.061,0.008),0.002,2,"vest_dark","M_toon_cloth",rot=(deg(12),deg(-s*18),0)))
+        P.append(shapes.cylinder(f"snap{s}",(s*0.042,BODY_C.y+0.116,0.1),0.003,None,0.002,"Y",8,0,"gun_steel",style.MAT_METAL))
+        for k in range(3):
+            P.append(shapes.rounded_box(f"webbing{s}{k}",(s*0.077,0.076,0.065+k*0.014),(0.022,0.004,0.004),0.001,1,"vest_olive","M_toon_cloth"))
+    P.append(shapes.rounded_box("patch",(-0.038,0.098,0.125),(0.022,0.004,0.009),0.001,1,"cardboard_light","M_toon_cloth"))
     return _root("acc_vest", [shapes.join(P, "vest")])
 
 
@@ -147,7 +156,9 @@ def belt():
     for s in (-1, 1):
         a = math.radians(90 + s * 55)
         r = _body_r(z, 0.014)
-        P.append(shapes.rounded_box(f"pouch{s}", (math.cos(a) * r, BODY_C.y + math.sin(a) * r, z - 0.006), (0.026, 0.02, 0.028), 0.005, 2, "vest_olive", style.MAT_TOON, rot=(0, 0, a - math.pi / 2)))
+        c = Vector((math.cos(a)*r, BODY_C.y+math.sin(a)*r, z-0.006))
+        P.append(shapes.rounded_box(f"pouch{s}", c, (0.026,0.02,0.028),0.005,2,"vest_olive","M_toon_cloth",rot=(0,0,a-math.pi/2)))
+        P.append(shapes.rounded_box(f"pouch_flap{s}",c+Vector((0,0.003,0.013)),(0.027,0.022,0.005),0.002,1,"vest_dark","M_toon_cloth",rot=(0,0,a-math.pi/2)))
     return _root("acc_belt", [shapes.join(P, "belt")])
 
 

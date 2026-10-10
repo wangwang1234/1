@@ -11,6 +11,8 @@ static func section(key: String) -> Dictionary:
 
 
 static func surface_for(path: String) -> String:
+	if path.contains("prop_lamp"):
+		return "lamp"
 	if path.contains("floor_wood"):
 		return "wood"
 	if path.contains("floor_tile"):
@@ -19,6 +21,10 @@ static func surface_for(path: String) -> String:
 		return "fabric"
 	if path.contains("deco_"):
 		return "decor"
+	if path.contains("env_book_"):
+		return "books"
+	if path.contains("env_shelf"):
+		return "shelf"
 	if path.contains("chr_hamster"):
 		return "character"
 	return "object"
@@ -29,7 +35,20 @@ static func environment() -> Environment:
 	var e := Environment.new()
 	e.background_mode = Environment.BG_COLOR
 	e.background_color = Color("#121928")
-	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
+	var sky_cfg: Dictionary = v.sky
+	var sky_material := ProceduralSkyMaterial.new()
+	sky_material.sky_top_color = Color(String(sky_cfg.topColor))
+	sky_material.sky_horizon_color = Color(String(sky_cfg.horizonColor))
+	sky_material.ground_bottom_color = Color(String(sky_cfg.groundColor))
+	sky_material.ground_horizon_color = Color(String(sky_cfg.groundHorizonColor))
+	sky_material.sky_energy_multiplier = float(sky_cfg.energy)
+	sky_material.ground_energy_multiplier = float(sky_cfg.energy)
+	sky_material.sun_angle_max = 0.0
+	var sky := Sky.new()
+	sky.sky_material = sky_material
+	e.sky = sky
+	e.ambient_light_source = Environment.AMBIENT_SOURCE_SKY
+	e.reflected_light_source = Environment.REFLECTION_SOURCE_SKY
 	e.ambient_light_color = Color(String(v.ambientColor))
 	e.ambient_light_energy = float(v.ambientEnergy)
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
@@ -44,9 +63,9 @@ static func environment() -> Environment:
 	e.ssao_intensity = float(v.aoIntensity)
 	e.ssao_power = 1.35
 	e.ssao_detail = 0.5
-	e.ssao_light_affect = 0.2
+	e.ssao_light_affect = float(v.get("aoLightAffect", 0.2))
 	e.ssil_enabled = true
-	e.ssil_radius = 0.6
+	e.ssil_radius = float(v.get("indirectRadius", 0.6))
 	e.ssil_intensity = float(v.indirectIntensity)
 	e.adjustment_enabled = true
 	e.adjustment_saturation = float(v.saturation)

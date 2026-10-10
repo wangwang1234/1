@@ -56,17 +56,28 @@ def build_body():
     bpy.context.scene.collection.objects.link(hi)
     shapes.smooth(hi, 180)
     m = body.modifiers.new("dec", "DECIMATE")
-    m.ratio = 0.05
+    m.ratio = 0.065
     shapes.apply_modifiers(body)
     shapes.transfer_normals(body, hi)
     bpy.data.objects.remove(hi, do_unlink=True)
-    shapes.set_material(body, style.MAT_SKIN)
+    shapes.set_material(body, "M_skin_blend")
     shapes.paint(body, style.SKIN_FUR)
-    face = _inside((0, 0.112, 0.176), (0.09, 0.075, 0.06))
-    belly = _inside((0, 0.07, 0.082), (0.078, 0.07, 0.078))
-    stripe = _inside((0, -0.07, 0.17), (0.026, 0.13, 0.135))
-    shapes.paint_where(body, style.SKIN_STRIPE, lambda c, n: stripe(c) and n.y < 0.35)
-    shapes.paint_where(body, style.SKIN_CREAM, lambda c, n: (face(c) and n.y > -0.1) or (belly(c) and n.y > -0.3))
+    # 第二套 UV 只存毛色遮罩；第一套保持调色板地址。按顶点插值，
+    # 消除旧版逐三角面涂色造成的锯齿，四套皮肤仍使用同一网格。
+    masks = body.data.uv_layers.new(name="fur_masks")
+    def patch(co, center, radii, feather):
+        d = Vector(((co.x-center[0])/radii[0], (co.y-center[1])/radii[1], (co.z-center[2])/radii[2])).length
+        t = max(0.0, min(1.0, (1.0 + feather - d) / (2.0 * feather)))
+        return t*t*(3.0-2.0*t)
+    for poly in body.data.polygons:
+        for li in poly.loop_indices:
+            co = body.data.vertices[body.data.loops[li].vertex_index].co
+            face = patch(co, (0, 0.112, 0.176), (0.09, 0.075, 0.06), 0.12)
+            belly = patch(co, (0, 0.07, 0.082), (0.078, 0.07, 0.078), 0.13)
+            stripe = patch(co, (0, -0.07, 0.17), (0.026, 0.13, 0.135), 0.12)
+            # glTF 导出会翻转 UV 的 V 分量，故此处编码 1-stripe。
+            masks.data[li].uv = (max(face, belly), 1.0-stripe)
+    body.data.uv_layers.active_index = 0
     return body
 
 
@@ -278,15 +289,15 @@ def build_cap():
     dome = _ribbed_lathe(
         "cap_dome",
         [(0.096, z0), (0.097, z0 + 0.012), (0.094, z0 + 0.03), (0.084, z0 + 0.05), (0.066, z0 + 0.066), (0.042, z0 + 0.077), (0.018, z0 + 0.082), (0.0, z0 + 0.083)],
-        ribs=12, amp=0.035, color="team_knit", mat=style.MAT_TEAM)
-    brim = shapes.torus("cap_brim", (0, 0, z0 + 0.004), 0.097, 0.0165, "Z", 36, 6, "team_dark", style.MAT_TEAM, scale=(1, 1, 1.25))
+        ribs=12, amp=0.02, color="team_knit", mat="M_team_knit")
+    brim = shapes.torus("cap_brim", (0, 0, z0 + 0.004), 0.097, 0.0165, "Z", 48, 8, "team_dark", style.MAT_TEAM, scale=(1, 1, 1.25))
     # 罗纹折边：沿圆周起伏
     for v in brim.data.vertices:
         a = math.atan2(v.co.y, v.co.x)
-        k = 1 + 0.05 * math.cos(a * 18)
+        k = 1 + 0.02 * math.cos(a * 18)
         v.co.x *= k
         v.co.y *= k
-    pom = shapes.quad_sphere("cap_pom", (0, -0.004, z0 + 0.104), (0.033, 0.033, 0.03), subdiv=2, color="white", mat=style.MAT_TOON)
+    pom = shapes.uv_sphere("cap_pom", (0, -0.004, z0 + 0.104), (0.033, 0.033, 0.03), 16, 10, color="white", mat=style.MAT_TOON)
     # 绒球：用确定性的起伏做毛绒感
     for v in pom.data.vertices:
         d = v.co - Vector((0, -0.004, z0 + 0.104))
@@ -295,7 +306,17 @@ def build_cap():
         v.co = v.co + n * bump
     # 帽子上的小布标（队伍浅色）
     tag = shapes.rounded_box("cap_tag", (0.0, 0.094, z0 + 0.018), (0.03, 0.006, 0.016), 0.002, 1, "team_light", style.MAT_TEAM, rot=(deg(-8), 0, 0))
-    cap = shapes.join([dome, brim, pom, tag], "cap")
+    # 在折边上加入归纳的 V 形针脚；真实几何在顶视角保留少量体积。
+    stitches = []
+    for k in range(12):
+        a = k / 12 * math.tau
+        center = Vector((math.cos(a)*0.111, math.sin(a)*0.111, z0+0.005))
+        tangent = Vector((-math.sin(a), math.cos(a), 0))
+        for side in (-1, 1):
+            start = center + tangent*(side*0.004) + Vector((0,0,0.006))
+            end = center + Vector((0,0,-0.003))
+            stitches.append(shapes.capsule(f"knit{k}_{side}", start, end, 0.0016, 4, 1, "team_knit", style.MAT_TEAM))
+    cap = shapes.join([dome, brim, pom, tag]+stitches, "cap")
     return cap
 
 

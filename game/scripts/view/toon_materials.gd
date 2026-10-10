@@ -1,10 +1,11 @@
 class_name ToonMaterials
 extends RefCounted
-## 把 Blender 导出的材质（只有名字）换成三渲二着色器材质。按名字前缀决定着色方式（见 tools/blender/lib/style.py）。
+## 按 Blender 材质名和配置选择连续环境 / 柔化阶调角色材质（见 tools/blender/lib/style.py）。
 ## 材质按（种类, 描边宽度）缓存共享；皮肤 / 队伍 / 进化路线 / 受击闪白等差异全部走 instance uniform。
 
 const PALETTE := preload("res://assets/textures/palette.png")
 const TOON := preload("res://shaders/toon.gdshader")
+const SURFACE := preload("res://shaders/surface.gdshader")
 const OUTLINE := preload("res://shaders/toon_outline.gdshader")
 
 const KINDS := {
@@ -14,6 +15,7 @@ const KINDS := {
 const NO_OUTLINE := [6, 7]
 
 static var _cache: Dictionary = {}
+static var review_neutral := false
 
 
 static func kind_of(mat_name: String) -> int:
@@ -28,14 +30,25 @@ static func material(kind: int, outline_px: float = 1.5, surface: String = "obje
 	if _cache.has(key):
 		return _cache[key]
 	var m := ShaderMaterial.new()
-	m.shader = TOON
-	m.set_shader_parameter("palette", PALETTE)
-	m.set_shader_parameter("kind", kind)
 	var profiles := VisualStyle.section("materials")
 	var p: Dictionary = profiles.get(surface, profiles["object"])
+	m.shader = TOON if String(p.get("shading", "surface")) == "toon" else SURFACE
+	m.set_shader_parameter("palette", PALETTE)
+	m.set_shader_parameter("kind", kind)
+	m.set_shader_parameter("neutral_amount", 1.0 if review_neutral else 0.0)
 	m.set_shader_parameter("surface_mode", int(p.surfaceMode))
+	m.set_shader_parameter("skin_blend", bool(p.get("skinBlend", false)))
+	m.set_shader_parameter("detail_strength", float(p.get("detailStrength", 0.0)))
 	m.set_shader_parameter("rim_strength", float(p.rim))
 	m.set_shader_parameter("material_roughness", float(p.roughness))
+	m.set_shader_parameter("material_specular", float(p.get("specular", 0.5)))
+	m.set_shader_parameter("metal_roughness", float(p.get("metalRoughness", 0.32)))
+	m.set_shader_parameter("emission_energy", float(p.get("emissionEnergy", 1.0)))
+	m.set_shader_parameter("bump_strength", float(p.get("bumpStrength", 0.0)))
+	m.set_shader_parameter("surface_saturation", float(p.get("saturation", 1.0)))
+	m.set_shader_parameter("vertex_tint_strength", float(p.get("vertexTint", 0.0)))
+	if m.shader == TOON:
+		m.set_shader_parameter("toon_weight", float(p.get("toonWeight", 0.38)))
 	m.set_shader_parameter("surface_color", Color(String(p.get("color", "#ffffff"))))
 	m.set_shader_parameter("surface_color_blend", float(p.get("colorBlend", 0.0)))
 	outline_px *= float(p.outlineScale)
@@ -66,7 +79,23 @@ static func apply(root: Node, outline_px: float = 1.5, surface: String = "object
 		for s in m.mesh.get_surface_count():
 			var src := m.mesh.surface_get_material(s)
 			var nm := src.resource_name if src != null else "M_toon_base"
-			m.set_surface_override_material(s, material(kind_of(nm), outline_px, surface))
+			m.set_surface_override_material(s, material(kind_of(nm), outline_px, surface_for_material(nm, surface)))
+
+
+static func surface_for_material(mat_name: String, fallback: String) -> String:
+	if fallback == "shelf" and mat_name.begins_with("M_toon_base"):
+		return "books"
+	if mat_name.begins_with("M_skin_blend"):
+		return "fur"
+	if mat_name.begins_with("M_team_knit"):
+		return "knit"
+	if mat_name.begins_with("M_toon_wood"):
+		return "furniture_wood"
+	if mat_name.begins_with("M_toon_cloth"):
+		return "gear"
+	if mat_name.begins_with("M_toon_ceramic"):
+		return "ceramic"
+	return fallback
 
 
 static func set_param(root: Node, param: StringName, value: Variant) -> void:
@@ -110,16 +139,18 @@ static func merged_mesh(path: String, outline_px: float = 1.5) -> ArrayMesh:
 		for s in m.mesh.get_surface_count():
 			var src := m.mesh.surface_get_material(s)
 			var k := kind_of(src.resource_name if src != null else "M_toon")
-			if not tools.has(k):
+			var surface := surface_for_material(src.resource_name if src != null else "M_toon", VisualStyle.surface_for(path))
+			var group := "%d_%s" % [k, surface]
+			if not tools.has(group):
 				var st := SurfaceTool.new()
 				st.begin(Mesh.PRIMITIVE_TRIANGLES)
-				tools[k] = st
-			(tools[k] as SurfaceTool).append_from(m.mesh, s, xf)
+				tools[group] = {"tool": st, "kind": k, "surface": surface}
+			(tools[group].tool as SurfaceTool).append_from(m.mesh, s, xf)
 	var out := ArrayMesh.new()
 	for k in tools:
-		var st: SurfaceTool = tools[k]
+		var st: SurfaceTool = tools[k].tool
 		st.commit(out)
-		out.surface_set_material(out.get_surface_count() - 1, material(k, outline_px, VisualStyle.surface_for(path)))
+		out.surface_set_material(out.get_surface_count() - 1, material(int(tools[k].kind), outline_px, String(tools[k].surface)))
 	root.free()
 	_mesh_cache[key] = out
 	return out

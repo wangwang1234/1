@@ -205,6 +205,14 @@ _put("tile_cream", 9, 0, "#b9a07a")
 _put("tile_terracotta", 9, 1, "#94523c")
 _put("dust_grey", 9, 2, "#5e544e")
 _put("tile_white_dim", 9, 3, "#a9a398")
+_put("dress_sage", 9, 4, "#697e73")
+_put("dress_clay", 9, 5, "#a87158")
+_put("dress_ink", 9, 6, "#344354")
+_put("dress_paper", 9, 7, "#d6cbb1")
+_put("dress_felt", 9, 8, "#424955")
+_put("dress_ochre", 9, 9, "#b29358")
+_put("dress_coffee", 9, 10, "#473226")
+_put("dress_biscuit", 9, 11, "#c6a477")
 
 
 def color(name):
