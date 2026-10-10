@@ -41,6 +41,7 @@ var minion_views := {}
 var struct_views := {}
 var prop_views := {}
 var crate_views := {}
+var _quiet_acc := {}           # 本地玩家的持续伤害（激光）按目标攒起来定时冒数字
 var autoplay := false          # 截图/录屏时让本地玩家也由 AI 控制
 var hitstop := 0.0
 var cam_focus_offset := Vector3.ZERO    # 镜头焦点额外偏移（米）；只给截图取景用，游戏里恒为 0
@@ -407,6 +408,7 @@ func _physics_process(dt: float) -> void:
 
 
 func _process(delta: float) -> void:
+	_flush_quiet(delta)
 	if world == null:
 		return
 	var alpha := Engine.get_physics_interpolation_fraction()
@@ -721,6 +723,19 @@ func _dispatch(events: Array) -> void:
 				_dispatch_b2(t, ev)
 
 
+func _flush_quiet(delta: float) -> void:
+	for id in _quiet_acc.keys():
+		var acc: Dictionary = _quiet_acc[id]
+		acc.t = float(acc.t) + delta
+		if float(acc.t) < 0.35:
+			continue
+		_quiet_acc.erase(id)
+		var amt := int(round(float(acc.amt)))
+		if amt > 0:
+			var p := _wpos(float(acc.x), float(acc.y), float(acc.r) * 2.4 + 12.0)
+			fx.number(p, str(amt), Color("#ff8a8a") if String(acc.kind) == "ham" else Color("#ffffff"), 0.8)
+
+
 func _on_damage(ev: Dictionary) -> void:
 	var id := int(ev.id)
 	var e: SimEntity = world.entities.get(id)
@@ -737,6 +752,15 @@ func _on_damage(ev: Dictionary) -> void:
 			Audio.play2d("hurt", -6.0, 0.08, 0.08)
 		elif seen and not bool(ev.quiet):
 			Audio.play3d("hurt", p, -10.0, 0.1, 0.1)
+	if seen and Settings.show_damage_numbers and bool(ev.quiet) and not bool(ev.crit) and is_local_id(int(ev.get("by", -1))):
+		# 持续伤害（激光每秒 10 跳）：攒起来每 0.35 秒冒一个合计数字，不然本地玩家打中了也看不到反馈
+		var acc: Dictionary = _quiet_acc.get(id, {"amt": 0.0, "t": 0.0})
+		acc.amt = float(acc.amt) + float(ev.amount)
+		acc.x = float(ev.x)
+		acc.y = float(ev.y)
+		acc.r = float(ev.r)
+		acc.kind = String(ev.kind)
+		_quiet_acc[id] = acc
 	if seen and Settings.show_damage_numbers and (not bool(ev.quiet) or bool(ev.crit)):
 		var amt := int(round(float(ev.amount)))
 		if amt <= 0:

@@ -16,6 +16,7 @@ extends Node
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
 ##   fb1        导演反馈第一轮：三选一时照样开火、小怪掉瓜子和奶酪、鼠窝快速回血（再配合 ui2 看大厅难度和设置里的辅助瞄准）
+##   fb2        导演反馈第二轮：新进化效果实拍（冲锋枪四管 + 扇形弹、手枪扇射重弹、武士刀旋风斩、激光折射、榴弹三连发）+ 新升级卡
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
 ## 建议配合 --fixed-fps 60（截图确定性，每帧 = 一步逻辑）；perf 不要加 --fixed-fps。
 
@@ -83,6 +84,8 @@ func _run() -> void:
 			await _cards()
 		"fb1":
 			await _fb1()
+		"fb2":
+			await _fb2()
 		"loadout":
 			await _loadout()
 		"lineup":
@@ -612,6 +615,68 @@ func _gameplay() -> void:
 		await _wait(every, true)
 		t += every
 	print("[capture] 对局时间 %.1f 秒，结束=%s 胜方=%s" % [mv.world.t, mv.world.over, mv.world.winner])
+
+
+func _fb2() -> void:
+	var mv := await _start(true, "smg")
+	var w := mv.world
+	var h := mv.local
+	h.ai.prof.cardDelay = 999.0
+	await _wait(1.0)
+	var foe := "red" if h.team == "blue" else "blue"
+	var fw := 1.0 if h.team == "blue" else -1.0
+	# 1) 升级卡：三条路线下一级各是什么
+	h.evo = {"a": 2, "b": 5, "c": 8}
+	h.evo_key = ""
+	h.choices = [{"t": "evo", "k": "a"}, {"t": "evo", "k": "b"}, {"t": "evo", "k": "c"}]
+	h.pending = 1
+	w.emit({"t": "choices", "id": h.id})
+	await _wait(0.8)
+	await shot("fb2_cards")
+	h.choices = []
+	h.pending = 0
+	var shots := [
+		["smg", {"a": 6, "b": 0, "c": 0}, "fb2_smg_four_barrels", 0.35],
+		["pistol", {"a": 9, "b": 0, "c": 0}, "fb2_pistol_fan", 0.9],
+		["katana", {"a": 7, "b": 3, "c": 0}, "fb2_katana_spin", 1.2],
+		["laser", {"a": 0, "b": 9, "c": 0}, "fb2_laser_refract", 0.7],
+		["gl", {"a": 7, "b": 0, "c": 0}, "fb2_gl_triple", 0.55],
+	]
+	for sc: Array in shots:
+		for m in w.minions:
+			m.dead = true
+		h.weapon_id = String(sc[0])
+		h.evo = sc[1]
+		h.evo_key = ""
+		h.ammo = SimWeapons.mag_size(h)
+		h.reload_t = 0.0
+		h.hp = h.max_hp
+		var near := String(sc[0]) == "katana"
+		for i in 4:
+			var m := w.spawn_minion(foe, "mid")
+			m.x = h.x + fw * ((70.0 if near else 210.0) + (i % 2) * 40.0) - (90.0 * fw if near and i == 3 else 0.0)
+			m.y = h.y + (i - 1.5) * (45.0 if near else 70.0)
+			m.px = m.x
+			m.py = m.y
+			m.hp = 400.0
+			m.max_hp = 400.0
+			m.stun = 99.0
+		if String(sc[0]) == "katana":
+			# 旋风斩每第 4 刀出一次：等到正在挥的是旋风斩那一刀再拍
+			h.swing_n = 2
+			var tw := 0.0
+			while tw < 4.0 and not (h.swing_t > 0.12 and h.swing_n % 4 == 0):
+				await get_tree().physics_frame
+				tw += 1.0 / 60.0
+		elif String(sc[0]) == "smg":
+			# 等四管 + 扇形弹真的打出去、在空中飞的时候再拍
+			var tw2 := 0.0
+			while tw2 < 4.0 and w.bullets.filter(func(b): return b.owner == h).size() < 8:
+				await get_tree().physics_frame
+				tw2 += 1.0 / 60.0
+		else:
+			await _wait(float(sc[3]))
+		await shot(String(sc[2]))
 
 
 func _fb1() -> void:

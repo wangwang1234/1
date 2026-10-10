@@ -736,7 +736,7 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 	var crit := false
 	if o != null:
 		var cc := float(o.st.get("crit", 0.0)) + float(src.get("critAdd", 0.0))
-		if not quiet and (bool(src.get("forceCrit", false)) or (cc > 0.0 and rnd() < cc)):
+		if (not quiet or bool(src.get("canCrit", false))) and (bool(src.get("forceCrit", false)) or (cc > 0.0 and rnd() < cc)):
 			dmg *= float(o.st.get("critDmg", 2.0))
 			crit = true
 		if quiet and o.tal.has("berserk") and o.hp < o.max_hp * 0.4:
@@ -749,7 +749,9 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 		if fa != null and t - th.last_shot_t < float(SimWeapons.special(th, "firingWindow")):
 			dmg *= 1.0 - float(fa)
 		if o != null:
-			dmg = minf(dmg, th.max_hp * float(Data.progression().get("pvpHitCap", 0.55)))
+			# 单发对玩家的伤害上限（狙击类武器更低：满血要 3 枪）
+			var cap := float(src.get("pvpCap", 0.0))
+			dmg = minf(dmg, th.max_hp * (cap if cap > 0.0 else float(Data.progression().get("pvpHitCap", 0.55))))
 		dmg *= 1.0 - float(th.st.get("armor", 0.0))
 		if th.hp - dmg <= 0.0 and th.tal.has("undying") and not th.undy_used:
 			th.undy_used = true
@@ -1334,6 +1336,8 @@ func lob_boom(b: SimLob) -> void:
 				SimGadgets.flash_bang(self, b.x, b.y, b.team)
 			"fire":
 				add_fire(b.x, b.y, float(GR.get("fire", {}).get("r", 80)), float(GR.get("fire", {}).get("life", 3)), b.team, b.owner, float(GR.get("fire", {}).get("dps", 14)), "gl")
+			"ice":
+				SimGadgets.freeze_at(self, b.x, b.y, float(GR.get("ice", {}).get("r", 100)), b.team, b.owner)
 		if b.gas_r > 0.0:
 			add_zone({"x": b.x, "y": b.y, "r": b.gas_r, "until": t + b.gas_life, "team": b.team, "owner": b.owner, "dps": b.gas_dps, "gas": true, "slow": b.gas_slow, "kind": "gas"})
 	else:

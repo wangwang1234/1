@@ -53,11 +53,12 @@
 - 生成图标：`tools/assets.sh icon_kit`（道具 / 宠物 / 强化 / 天赋 / 进化配件，出 PNG 到 `game/assets/icons/`）
 - 改了调色板 / 模型 / 音效后让 Godot 重新导入：`godot --headless --path game --import`
 - 截图（窗口模式；无显示器时自动套 xvfb-run）：`tools/capture.sh <场景> <输出目录> [分辨率] [参数]`
-  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `fb1` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
+  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `fb1` `fb2` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
   - `b3map`：七个美术区域、建筑破损阶段、新特效、整张地图俯瞰（`--parts zones,structs,fx,overview`，`--zones kitchen,fridge` 只拍部分区域）
   - 例：`tools/capture.sh style review/x 1920x1080 --n 6 --from 30 --every 5`
 - 录屏：`tools/record.sh out.mp4 [秒数] [分辨率] [种子]`（Godot Movie Maker 固定 30 帧 + ffmpeg 转码）
 - 帧率测试：`tools/capture.sh perf <目录> 1920x1080 --dur 60 --mode full` → `perf.json` / `perf.csv`；导出版里双击 `帧率测试.bat`
+- 武器平衡测量（只跑 sim）：`godot --headless --path game -s res://tests/bench_weapons.gd -- --trials 4`（木桩每秒伤害 + 18 把枪 AI 1 对 1 循环赛，`--duel base,mid,late` 选进化档，`--weapons a,b --vs pistol` 看单局细节；全量约 20 分钟）
 - 逻辑耗时基准（只跑 sim）：`godot --headless --path game -s res://tests/bench_sim.gd -- --seconds 600`
 - 导出 Windows：`tools/export.sh windows`（= `godot --headless --path game --export-release "Windows Desktop" <绝对路径>/build/win/manzai.exe`）
 - 导出 macOS：`tools/export.sh mac` → `build/mac/manzai.zip`（内含通用版 .app，Intel + Apple 芯片，临时签名、未公证）；Mac 附带文件在 `tools/dist_mac/`
@@ -81,6 +82,8 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-10 导演反馈第二轮（审阅包 `review/feedback2/`，汇报 `review/feedback2/REPORT.md`）：武器平衡（狙击 / 武士刀 / 火箭削弱，激光 / 冲锋枪加强，狙击类单发对玩家伤害上限 `pvpCap`）；**进化重做：54 条路线 × 9 级每一级都是新效果**（`evolutions.json` 的 `lv` 是卡面文字，新机制键见 `_effectsDoc.newSpecial`）；修了多弹道正中间打不中、激光命中判定、AI 对瞬发武器乱加提前量等 bug。
+  - 进化设计改数据后跑 `test_evolution.gd`（检查每一级都真的改变了参数）；调平衡用 `tests/bench_weapons.gd`。
 - 2026-10-10 导演反馈第一轮（玩法，审阅包 `review/feedback1/`，汇报 `review/feedback1/REPORT.md`）：三选一时照样能开火；小兵 / 野怪多掉瓜子和加血奶酪；手动瞄准开火时轻微辅助瞄准（设置 → 操作，四档）；AI 难度四档（`game/data/difficulty.json`，开局大厅选，队友用较稳的一档）+ AI 新战术（躲子弹、集火残血、不越塔、回家补血、捡瓜子奶酪、换弹后撤、记忆目标、被围撤退、支援队友）；鼠窝回血每 0.3 秒一跳、每秒 25%；武器射程整体收短约 35%（普通枪 ≤ 620，狙击类 ≤ 900），建筑射程跟着收短；加速决战时 AI 拼命推。
   - 分工：ChatGPT / Codex 负责画面（分支 `codex/visual-polish-pass1`），我负责玩法和内容；尽量不动对方改的文件。
 - 已完成：批次 0（交接包）；批次 1 垂直切片（审阅包 `review/batch1/`）；**批次 2 全部系统**（2026-10，审阅包 `review/batch2/`，汇报 `review/batch2/REPORT.md`，Windows 包 `release/manzai_batch2_win64.zip`）。

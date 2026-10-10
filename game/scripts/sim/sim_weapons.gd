@@ -16,6 +16,7 @@ const AT_SET := ["ignK", "bounceK"]
 const INT_KEYS := ["n", "pierce", "magAdd", "bounce", "wp"]
 
 static var _cache := {}
+static var _in_kill_blast := false
 
 
 static func clear_cache() -> void:
@@ -310,11 +311,15 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 		pierce += int(S.get("dePierce", 0))
 		if S.has("deForce"):
 			force = true
+	if S.has("lastN") and int(W.get("mag", 0)) > 0 and h.ammo <= int(S.lastN):
+		dmg *= float(S.get("lastDmg", 1.5))     # 弹匣最后几发加伤
 	if S.has("firstShot") and pause > float(S.firstShot):
 		dmg *= float(S.firstDmg)
 		pierce += int(S.firstPierce)
 	h.last_shot_t = w.t
 	h.shot_n += 1
+	if not extra:
+		h.trig_n += 1
 	if id == "ak47" or id == "autoshot":
 		h.ramp = minf(h.ramp + 1.0, 40.0)
 	var use := int(W.get("mag", 0)) > 0
@@ -350,6 +355,9 @@ static func epilogue(w: SimWorld, h: SimHamster, ctx: Dictionary, kind: String, 
 		h.vx -= float(ctx.co) * skb
 		h.vy -= float(ctx.si) * skb
 	h.heat = minf(1.0, h.heat + float(Data.rule("hamster.heatPerShot", 0.08)))
+	var S: Dictionary = ctx.S
+	if S.has("nadeEvery") and not bool(ctx.extra) and h.trig_n % int(S.nadeEvery) == 0:
+		under_nade(w, h, S)
 	var e := {"t": "fire", "id": h.id, "weapon": h.weapon_id, "kind": kind, "x": h.x, "y": h.y, "gx": ctx.gx, "gy": ctx.gy, "gh": ctx.gh,
 		"aim": ctx.a0, "n": 1, "team": h.team, "extra": ctx.extra, "mode": -1, "side": h.dual_side if W.has("dual") else 0}
 	e.merge(ev, true)
@@ -398,7 +406,8 @@ static func _fire_bullets(w: SimWorld, h: SimHamster, extra: bool) -> void:
 		base_sp = float(W.spread) * float(P.spread)
 	else:
 		base_sp = (float(W.spread) + h.bloom) * float(P.spread) * (float(W.get("deploySpread", 1.0)) if bool(ctx.deployed) else 1.0)
-	var sp := base_sp + 0.06 * (n - 1) if (n > 1 and not shotty) else base_sp
+	var sp := base_sp
+	var fan_gap := float(W.get("fanGap", 0.07))
 	var kind := "pel" if shotty else ("snipe" if id == "sniper" or id == "amr" else "trc")
 	var mode := -1
 	if S.has("ammoCycle"):
@@ -417,14 +426,42 @@ static func _fire_bullets(w: SimWorld, h: SimHamster, extra: bool) -> void:
 	var wp := maxi(int(W.get("wallPierce", 0)), maxi(int(P.wp), int(S.get("wallPierce", 0))))
 	var off_mul := float(S.get("offDmg", 1.0)) if (W.has("dual") and h.dual_side < 0) else 1.0
 	var dmg: float = ctx.dmg
+	# 弹道清单：[角度偏移, 横向偏移, 伤害倍率, 重弹]
+	var shots: Array = []
 	for i in n:
 		var off: float
-		if n == 1:
-			off = w.rand(-sp, sp)
+		if n == 1 or shotty:
+			off = w.rand(-sp, sp) if n == 1 else (float(i) / float(n - 1) - 0.5) * 2.0 * sp + w.rand(-0.03, 0.03)
 		else:
-			off = (float(i) / float(n - 1) - 0.5) * 2.0 * sp + w.rand(-0.03, 0.03)
-		var bdmg := dmg * (float(W.extraDmg) if (i > 0 and W.has("extraDmg")) else 1.0) * off_mul
-		var bl := w.new_bullet(kind, h, ctx.bx, ctx.by, ctx.gh, aim + off, float(W.spd) * float(P.spd) * w.rand(0.95, 1.05), bdmg, rng_)
+			# 多弹道围着准星等距摆开（原来按散布两端摆，偶数发时正中间是空的，正对面的敌人反而打不中）
+			off = (float(i) - (n - 1) * 0.5) * fan_gap + w.rand(-sp, sp)
+		shots.append([off, 0.0, float(W.extraDmg) if (i > 0 and W.has("extraDmg")) else 1.0, false])
+	var tw := int(S.get("twin", 0))
+	if tw > 0:
+		# 多管：每条弹道旁边再并排几条平行弹道（第一条满伤，其余 twinDmg）
+		var gap := float(S.get("twinGap", 10.0))
+		var lines := tw + 1
+		var base_shots := shots.duplicate()
+		shots.clear()
+		for s0: Array in base_shots:
+			for j in lines:
+				shots.append([float(s0[0]) + (w.rand(-0.015, 0.015) if j > 0 else 0.0), (float(j) - (lines - 1) * 0.5) * gap,
+					float(s0[2]) * (1.0 if j == 0 else float(S.get("twinDmg", 0.65))), false])
+	if S.has("fanEvery") and h.trig_n % int(S.fanEvery) == 0 and not extra:
+		# 每第 N 发额外喷出一把扇形弹
+		var fn := int(S.get("fanN", 3))
+		var fa := float(S.get("fanAng", 0.35))
+		for j in fn:
+			shots.append([(float(j) / maxf(1.0, fn - 1.0) - 0.5) * 2.0 * fa, 0.0, float(S.get("fanDmg", 0.6)), false])
+	if S.has("heavyEvery") and h.shot_n % int(S.heavyEvery) == 0:
+		shots[0][3] = true
+	for sh: Array in shots:
+		var off := float(sh[0])
+		var heavy: bool = sh[3]
+		var bdmg := dmg * float(sh[2]) * off_mul * (float(S.get("heavyDmg", 2.5)) if heavy else 1.0)
+		var lat := float(sh[1])
+		var bl := w.new_bullet(kind, h, float(ctx.bx) + float(ctx.rx) * lat, float(ctx.by) + float(ctx.ry) * lat, ctx.gh, aim + off,
+			float(W.spd) * float(P.spd) * w.rand(0.95, 1.05) * (0.85 if heavy else 1.0), bdmg, rng_)
 		bl.eff = eff
 		bl.min_f = float(W.get("minF", 1.0))
 		bl.pierce = int(ctx.pierce) + (int(S.get("cyclePierce", 0)) if mode == 1 else 0)
@@ -444,6 +481,12 @@ static func _fire_bullets(w: SimWorld, h: SimHamster, extra: bool) -> void:
 		}
 		if S.has("explEvery") and h.shot_n % int(S.explEvery) == 0:
 			bl.fx.expl = true
+		if heavy:
+			bl.r *= 2.0
+			bl.pierce += int(S.get("heavyPierce", 2))
+			bl.kb *= 2.0
+			bl.big = true
+			bl.fx.expl = bl.fx.expl or S.has("heavyBoom")
 		w.bullets.append(bl)
 	if W.has("bloom"):
 		h.bloom = minf(float(W.bmax), h.bloom + float(W.bloom))
@@ -461,7 +504,7 @@ static func _fire_bullets(w: SimWorld, h: SimHamster, extra: bool) -> void:
 	if S.has("burst") and not extra:
 		h.burst_n = int(S.burst)
 		h.burst_t = float(S.get("burstGap", 0.07))
-	epilogue(w, h, ctx, "bullet", {"n": n, "mode": mode, "trail": trail, "deadeye": h.deadeye_shot, "dragon": dragon, "spin": h.spin,
+	epilogue(w, h, ctx, "bullet", {"n": shots.size(), "mode": mode, "trail": trail, "deadeye": h.deadeye_shot, "dragon": dragon, "spin": h.spin,
 		"flip_k": maxf(float(W.get("flipKMin", 0.3)), float(P.flipK))})
 
 
@@ -530,6 +573,8 @@ static func release_deadeye(w: SimWorld, h: SimHamster) -> void:
 		n += 1
 	h.deadeye_shot = false
 	h.aim = a0
+	if S.has("deRefill") and n > 0:
+		h.ammo = mini(mag_size(h), h.ammo + int(S.deRefill))     # 连射完立刻装回几发
 	h.marks.clear()
 	h.fire_cd = float(S.get("releaseCd", 0.45))
 	h.mark_hold = 0.0
@@ -561,7 +606,7 @@ static func evo_tick(w: SimWorld, h: SimHamster, dt: float) -> void:
 	var S: Dictionary = params(h).special
 	if h.weapon_id == "katana":
 		SimWeaponModes.katana_tick(w, h, dt)
-	if S.has("frontShield") and is_deployed(h):
+	if S.has("frontShield") and (is_deployed(h) or (not h.weapon().has("deploy") and h.inp.fire and firing_recently(w, h, 0.25))):
 		front_shield(w, h, S)
 	if S.has("dazzle"):
 		h.dazzle_t -= dt
@@ -643,14 +688,18 @@ static func on_bullet_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 	var src := String(f.get("src", ""))
 	var FP: Dictionary = f.get("P", {})
 	var FS: Dictionary = f.get("S", {})
+	var force := bool(f.get("force", false))
 	if o != null:
 		if float(FP.get("execDmg", 0.0)) > 0.0 and e.hp < e.max_hp * float(FP.execHp):
 			dm *= (1.0 + float(FP.execDmg)) * float(FP.execMul)
+			if FS.has("execCrit"):
+				force = true
 		if FS.has("litDmg") and w.is_visible_to(o.team, e):
 			dm *= 1.0 + float(FS.litDmg)
 		if FS.has("structDmg") and (e.kind == "turret" or e.kind == "base"):
 			dm *= 1.0 + float(FS.structDmg)
-	var dealt := w.deal_dmg(e, dm, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y, "critAdd": float(f.get("crit", 0.0)), "forceCrit": bool(f.get("force", false))})
+	var dealt := w.deal_dmg(e, dm, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y, "critAdd": float(f.get("crit", 0.0)), "forceCrit": force,
+		"pvpCap": float(Data.weapon(b.weapon).get("pvpCap", 0.0)) if b.weapon != "" else 0.0})
 	if dealt > 0.0 and o != null:
 		w.emit({"t": "hitmark", "id": o.id, "target": e.id, "kill": e.dead or (e is SimHamster and not (e as SimHamster).alive)})
 	var l := maxf(0.001, Vector2(b.vx, b.vy).length())
@@ -665,8 +714,10 @@ static func on_bullet_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 		e.burn_t = maxf(e.burn_t, float(Data.rule("combat.burnTime", 2.2)))
 		e.burn_by = o
 		e.burn_k = float(f.get("ignK", 1.0))
-		if src == "shotgun" and int(lv[1]) >= 6:
+		if FS.has("burnSlow"):
 			w.slow_e(e, 1.0)
+		if FS.has("burnSpread"):
+			e.burn_spread_until = w.t + float(FS.burnSpread)
 	if float(f.get("slow", 0.0)) > 0.0:
 		w.slow_e(e, float(f.slow))
 		if FS.has("supp"):
@@ -712,6 +763,99 @@ static func on_bullet_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 		w.slow_e(e, fr)
 	if float(o.st.get("chain", 0.0)) > 0.0 and w.rnd() < float(o.st.chain):
 		w.chain_lightning(e, b.dmg * float(Data.rule("abilities.chain.chainDmg", 0.45)), o)
+	hit_extras(w, o, e, FS, dealt, dm)
+	if FS.has("rico") and int(f.get("rico", 0)) < int(FS.rico):
+		ricochet(w, b, e, dm)
+
+
+static func hit_extras(w: SimWorld, o: SimHamster, e: SimEntity, S: Dictionary, dealt: float, dm: float) -> void:
+	## 通用进化命中效果（子弹 / 刀 / 激光共用）：吸血、闪电链
+	if dealt <= 0.0 or o == null or not o.alive:
+		return
+	if S.has("leech"):
+		o.hp = minf(o.max_hp, o.hp + dealt * float(S.leech))
+	if S.has("chainChance") and w.rnd() < float(S.chainChance):
+		w.chain_lightning(e, dm * float(S.get("chainK", 0.5)), o)
+
+
+static func hit_status(w: SimWorld, o: SimHamster, e: SimEntity, P: Dictionary) -> void:
+	## 刀 / 激光命中时套用进化里的点燃、减速、眩晕、标记（子弹类在子弹 fx 里处理）
+	if e.is_prop or e.kind in ["crate", "base", "turret"]:
+		return
+	if float(P.ign) > 0.0 and w.rnd() < float(P.ign):
+		e.burn_t = maxf(e.burn_t, float(Data.rule("combat.burnTime", 2.2)))
+		e.burn_by = o
+		e.burn_k = float(P.ignK)
+	if float(P.slow) > 0.0:
+		w.slow_e(e, float(P.slow))
+	if float(P.stun) > 0.0:
+		w.stun_e(e, float(P.stun))
+	if float(P.mark) > 0.0:
+		w.mark_e(e, o.team, float(P.mark))
+
+
+static func ricochet(w: SimWorld, b: SimBullet, e: SimEntity, dm: float) -> void:
+	## 弹射：命中后从被打的敌人身上弹向附近另一个（没打过的）敌人
+	var FS: Dictionary = b.fx.get("S", {})
+	var rr := float(FS.get("ricoR", 220))
+	var best: SimEntity = null
+	var bd := rr * rr
+	for q: SimEntity in w.hash_range(e.x, e.y, rr):
+		if q == e or b.hit.has(q.id) or q.is_prop or q.kind == "crate" or not w.can_hit(b.team, q) or (q.kind == "base" and q.shielded):
+			continue
+		var d := SimUtil.d2(q.x, q.y, e.x, e.y)
+		if d < bd and w.map.has_los(e.x, e.y, q.x, q.y):
+			bd = d
+			best = q
+	if best == null:
+		return
+	var a := atan2(best.y - e.y, best.x - e.x)
+	var sp := maxf(700.0, Vector2(b.vx, b.vy).length())
+	var nb := w.new_bullet(b.kind if b.kind != "snipe" else "trc", b.owner, e.x + cos(a) * (e.r + 4.0), e.y + sin(a) * (e.r + 4.0), b.h, a, sp,
+		dm * float(FS.get("ricoDmg", 0.7)), rr + 60.0)
+	nb.r = b.r
+	nb.kb = b.kb * 0.5
+	nb.hit = b.hit.duplicate()
+	nb.hit[e.id] = true
+	nb.fx = b.fx.duplicate()
+	nb.fx.rico = int(b.fx.get("rico", 0)) + 1
+	nb.fx.expl = false
+	nb.weapon = b.weapon
+	w.bullets.append(nb)
+	w.emit({"t": "ricochet", "x": e.x, "y": e.y, "h": b.h, "tx": best.x, "ty": best.y})
+
+
+static func under_nade(w: SimWorld, h: SimHamster, S: Dictionary) -> void:
+	## 枪挂榴弹：每第 N 发顺手打出一颗小榴弹，落在准星处（最远 nadeRange）
+	var d := float(S.get("nadeRange", 360))
+	var tx := h.x + cos(h.aim) * d
+	var ty := h.y + sin(h.aim) * d
+	if h.inp.has_aim_point:
+		var dd := Vector2(h.inp.aim_x - h.x, h.inp.aim_y - h.y).length()
+		if dd < d:
+			tx = h.inp.aim_x
+			ty = h.inp.aim_y
+	w.throw_lob_from(h.x, h.y, h.r, h.team, h, "bomb", tx, ty, {"sp": float(S.get("nadeSpd", 480)), "fuse": float(S.get("nadeFuse", 0.5)),
+		"aoe": float(S.get("nadeR", 70)), "dmg": float(S.get("nadeDmg", 30)) * float(h.st.dmg), "kb": 160.0, "silent": true})
+
+
+static func on_reload(w: SimWorld, h: SimHamster) -> void:
+	## 换弹完成时的进化效果：震开身边的敌人、环形弹幕
+	var S: Dictionary = params(h).special
+	if S.has("reloadShock"):
+		shockwave(w, h.x, h.y, float(S.reloadShock), {"shockKb": 260}, h)
+	if not S.has("reloadRing"):
+		return
+	var W := h.weapon()
+	var n := int(S.reloadRing)
+	var lv := [h.evo_lv("a"), h.evo_lv("b"), h.evo_lv("c")]
+	for k in n:
+		var bl := w.new_bullet("trc", h, h.x, h.y, h.r, float(k) / n * TAU + h.aim, 900.0, float(W.get("dmg", 10)) * float(h.st.dmg) * float(S.get("ringDmg", 1.0)), float(S.get("ringRange", 320)))
+		bl.kb = 60.0
+		bl.fx = {"src": h.weapon_id, "lv": lv}
+		bl.weapon = h.weapon_id
+		w.bullets.append(bl)
+	w.emit({"t": "gun_kata", "id": h.id, "x": h.x, "y": h.y})
 
 
 static func wall_slam(w: SimWorld, e: SimEntity, dx: float, dy: float, o: SimHamster, S: Dictionary) -> void:
@@ -764,10 +908,24 @@ static func on_kill(w: SimWorld, tg: SimEntity, src: Dictionary) -> void:
 		K.ammo = mini(m, K.ammo + ceili(m * float(S.killAmmo)))
 	if S.has("killResetDash"):
 		K.dash_cd = 0.0
+	if S.has("killHaste"):
+		K.haste_t = maxf(K.haste_t, float(S.killHaste))
+	if S.has("killChain"):
+		w.chain_lightning(tg, float(S.killChain) * float(K.st.dmg), K)
+	if S.has("killHeal"):
+		K.hp = minf(K.max_hp, K.hp + K.max_hp * float(S.killHeal))
+	if S.has("killBlast") and not _in_kill_blast and not (tg.kind in ["base", "turret"]):
+		_in_kill_blast = true     # 炸死的不再连锁炸（否则一窝小兵会无限连爆）
+		w.blast(tg.x, tg.y, float(S.killBlast), float(S.get("killBlastDmg", 30)) * float(K.st.dmg), K.team, K, 160.0, {"src": "kill_blast"})
+		_in_kill_blast = false
 
 
 static func on_dash(w: SimWorld, h: SimHamster) -> void:
 	var S: Dictionary = params(h).special
+	if S.has("dashMine"):
+		# 翻滚时在起点留下一颗小炸弹
+		w.throw_lob_from(h.x, h.y, h.r * 0.5, h.team, h, "bomb", h.x - h.rdx * 10.0, h.y - h.rdy * 10.0, {"sp": 120.0, "fuse": float(S.get("dashMineFuse", 0.6)),
+			"aoe": float(S.get("dashMineR", 70)), "dmg": float(S.get("dashMineDmg", 30)) * float(h.st.dmg), "kb": 180.0, "silent": true})
 	if S.has("rollReload"):
 		h.ammo = mag_size(h)
 		h.reload_t = 0.0

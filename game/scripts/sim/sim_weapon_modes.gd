@@ -113,20 +113,30 @@ static func fire_gl(w: SimWorld, h: SimHamster, extra: bool) -> void:
 		if every <= 1 or h.gl_n % every == 0:
 			round_ = String(rounds[h.gl_n % rounds.size()])
 	var fuse := float(S.stickyFuse) if S.has("detonate") else float(W.fuse) + float(P.fuse)
-	var L := w.throw_lob_from(h.x, h.y, h.r, h.team, h, "gnade", p.x, p.y, {"sp": float(W.get("lobSpeed", 560)) * float(P.spd), "fuse": fuse,
-		"aoe": float(W.aoe) * float(P.aoe), "dmg": float(W.aoeDmg) * float(P.dmg) * float(h.st.dmg), "kb": float(W.kb), "impact": not S.has("sticky"), "silent": true})
-	L.bounce_n = int(S.get("bounces", 0))
-	L.split_on_bounce = S.has("splitOnBounce")
-	L.split_ang = float(S.get("splitAng", 0.7))
-	L.split_vz = float(S.get("splitVz", 0.4))
-	L.sticky = S.has("sticky")
-	L.slow_stick = float(S.get("stickSlow", 0.0))
-	L.special = round_
-	if S.has("gas"):
-		L.gas_r = float(S.gas)
-		L.gas_life = float(S.get("gasLife", 3))
-		L.gas_dps = float(S.get("gasDps", 6))
-		L.gas_slow = float(S.get("gasSlow", 0.5))
+	# 多管：一次打出几颗，往准星两侧散开（副弹伤害 glDmg）
+	var extra_n := int(S.get("glMulti", 0))
+	var dist := Vector2(p.x - h.x, p.y - h.y).length()
+	var base_a := atan2(p.y - h.y, p.x - h.x)
+	for gi in 1 + extra_n:
+		var side := 0.0 if gi == 0 else float((gi + 1) / 2) * float(S.get("glAng", 0.25)) * (1.0 if gi % 2 == 1 else -1.0)
+		var tp := Vector2(h.x + cos(base_a + side) * dist, h.y + sin(base_a + side) * dist)
+		var gk := 1.0 if gi == 0 else float(S.get("glDmg", 0.6))
+		var L := w.throw_lob_from(h.x, h.y, h.r, h.team, h, "gnade", tp.x, tp.y, {"sp": float(W.get("lobSpeed", 560)) * float(P.spd), "fuse": fuse,
+			"aoe": float(W.aoe) * float(P.aoe), "dmg": float(W.aoeDmg) * float(P.dmg) * float(h.st.dmg) * gk, "kb": float(W.kb), "impact": not S.has("sticky"), "silent": true})
+		L.bounce_n = int(S.get("bounces", 0))
+		L.split_on_bounce = S.has("splitOnBounce")
+		L.split_ang = float(S.get("splitAng", 0.7))
+		L.split_vz = float(S.get("splitVz", 0.4))
+		L.sticky = S.has("sticky")
+		L.slow_stick = float(S.get("stickSlow", 0.0))
+		L.special = round_ if gi == 0 else ""
+		if L.special == "" and S.has("glFire"):
+			L.special = "fire"     # 黏弹 B6：爆炸后留下一片火
+		if S.has("gas"):
+			L.gas_r = float(S.gas)
+			L.gas_life = float(S.get("gasLife", 3))
+			L.gas_dps = float(S.get("gasDps", 6))
+			L.gas_slow = float(S.get("gasSlow", 0.5))
 	SimWeapons.epilogue(w, h, ctx, "lob", {"special": round_, "tx": p.x, "ty": p.y})
 
 
@@ -146,15 +156,22 @@ static func swing(w: SimWorld, h: SimHamster, extra: bool) -> void:
 	h.swing_n += 1
 	var reach := float(W.reach)
 	var arc := float(W.arc) * float(P.arc)
+	var spin := S.has("spinEvery") and h.swing_n % int(S.spinEvery) == 0
+	if spin:
+		arc = TAU     # 旋风斩：这一刀砍一整圈
+		reach *= float(S.get("spinReach", 1.15))
 	for e: SimEntity in w.hash_range(h.x, h.y, reach + 60.0):
 		if not w.can_hit(h.team, e):
 			continue
 		var dd := Vector2(e.x - h.x, e.y - h.y).length() - e.r
 		if dd > reach:
 			continue
-		if absf(SimUtil.ang_diff(a0, atan2(e.y - h.y, e.x - h.x))) > arc * 0.5 and dd > e.r * 0.5:
+		if not spin and absf(SimUtil.ang_diff(a0, atan2(e.y - h.y, e.x - h.x))) > arc * 0.5 and dd > e.r * 0.5:
 			continue
-		if w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": h.x, "y": h.y, "critAdd": float(ctx.crit)}) > 0.0:
+		var dealt := w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": h.x, "y": h.y, "critAdd": float(ctx.crit)})
+		if dealt > 0.0:
+			SimWeapons.hit_status(w, h, e, P)
+			SimWeapons.hit_extras(w, h, e, S, dealt, dmg)
 			w.knock(e, e.x - h.x, e.y - h.y, float(W.kb))
 			w.emit({"t": "melee_hit", "id": h.id, "target": e.id, "x": e.x, "y": e.y, "h": e.r})
 			w.emit({"t": "hitmark", "id": h.id, "target": e.id, "kill": e.dead or (e is SimHamster and not (e as SimHamster).alive)})
@@ -173,11 +190,11 @@ static func swing(w: SimWorld, h: SimHamster, extra: bool) -> void:
 			bl.pierce = 99 if (S.has("wavePierce") or big) else 0
 			bl.wr = wr
 			bl.big = big
-			bl.fx = {"src": "katana", "lv": ctx.lv}
+			bl.fx = {"src": "katana", "lv": ctx.lv, "P": P, "S": S}
 			bl.weapon = "katana"
 			w.bullets.append(bl)
 			waves += 1
-	w.emit({"t": "swing", "id": h.id, "x": h.x, "y": h.y, "h": h.r * 1.1, "a": a0, "reach": reach, "arc": arc, "dir": h.swing_dir, "big": big, "waves": waves})
+	w.emit({"t": "swing", "id": h.id, "x": h.x, "y": h.y, "h": h.r * 1.1, "a": a0, "reach": reach, "arc": arc, "dir": h.swing_dir, "big": big or spin, "waves": waves, "spin": spin})
 	SimWeapons.epilogue(w, h, ctx, "melee", {"n": waves})
 
 
@@ -249,7 +266,11 @@ static func iaido(w: SimWorld, h: SimHamster, P: Dictionary) -> void:
 
 static func wave_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 	var o := b.owner
-	if w.deal_dmg(e, b.dmg, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y}) > 0.0 and o != null:
+	var dealt := w.deal_dmg(e, b.dmg, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y})
+	if dealt > 0.0 and o != null and b.fx.has("P"):
+		SimWeapons.hit_status(w, o, e, b.fx.P)
+		SimWeapons.hit_extras(w, o, e, b.fx.S, dealt, b.dmg)
+	if dealt > 0.0 and o != null:
 		w.emit({"t": "hitmark", "id": o.id, "target": e.id, "kill": e.dead or (e is SimHamster and not (e as SimHamster).alive)})
 	var l := maxf(0.001, Vector2(b.vx, b.vy).length())
 	w.knock(e, b.vx / l, b.vy / l, b.kb)
@@ -269,12 +290,16 @@ static func fire_flame(w: SimWorld, h: SimHamster, extra: bool) -> void:
 	var fr := float(W.range) * float(P.range)
 	var spr := float(W.spread) * float(P.spread)
 	var jit: Array = W.get("spdJitter", [0.85, 1.1])
-	var n := 1 + int(float(h.st.get("multi", 0)) / 2.0)
+	var n := 1 + int(float(h.st.get("multi", 0)) / 2.0) + int(S.get("flameN", 0))
+	var fa := float(S.get("flameAng", 0.2))
 	for i in n:
-		var b := w.new_bullet("flame", h, ctx.gx, ctx.gy, ctx.gh, a0 + w.rand(-spr, spr), float(W.spd) * float(P.spd) * w.rand(float(jit[0]), float(jit[1])), float(ctx.dmg), fr)
+		# 多喷嘴：第 2、3 道火焰往两侧偏开
+		var side := 0.0 if i == 0 else (float((i + 1) / 2) * fa * (1.0 if i % 2 == 1 else -1.0))
+		var b := w.new_bullet("flame", h, ctx.gx, ctx.gy, ctx.gh, a0 + side + w.rand(-spr, spr), float(W.spd) * float(P.spd) * w.rand(float(jit[0]), float(jit[1])),
+			float(ctx.dmg) * (1.0 if i == 0 else float(S.get("flameDmg", 0.6))), fr)
 		b.r = float(W.get("bulletR", 11))
 		b.kb = float(W.kb) * float(P.kb)
-		b.fx = {"src": "flame", "lv": ctx.lv, "burn": float(W.get("burnBase", 2.5)) + float(P.burn), "spread": float(S.get("burnSpread", 0.0)), "blue": S.has("blue")}
+		b.fx = {"src": "flame", "lv": ctx.lv, "burn": float(W.get("burnBase", 2.5)) + float(P.burn), "spread": float(S.get("burnSpread", 0.0)), "blue": S.has("blue"), "slow": float(P.slow)}
 		b.weapon = "flame"
 		w.bullets.append(b)
 	if S.has("puddle") and w.t - h.puddle_t > float(S.get("puddleCd", 0.8)):
@@ -314,6 +339,8 @@ static func flame_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 		return
 	e.burn_t = maxf(e.burn_t, float(b.fx.get("burn", 2.5)))
 	e.burn_by = o
+	if float(b.fx.get("slow", 0.0)) > 0.0:
+		w.slow_e(e, float(b.fx.slow))
 	if float(b.fx.get("spread", 0.0)) > 0.0:
 		e.burn_spread_until = w.t + float(b.fx.spread)
 
@@ -417,7 +444,7 @@ static func fire_rail(w: SimWorld, h: SimHamster) -> void:
 		break
 	var hit_set := {}
 	var last: SimEntity = null
-	var pad := float(W.get("hitPad", 10)) * (0.5 + ch)
+	var pad := float(W.get("hitPad", 10)) * (0.5 + ch) + float(S.get("railPad", 0.0))
 	for sg: Array in segs:
 		var sx := float(sg[2]) - float(sg[0])
 		var sy := float(sg[3]) - float(sg[1])
@@ -433,8 +460,11 @@ static func fire_rail(w: SimWorld, h: SimHamster) -> void:
 			if Vector2(e.x - px, e.y - py).length() >= e.r + pad:
 				continue
 			hit_set[e.id] = true
-			if w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": px, "y": py}) > 0.0:
+			var dealt := w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": px, "y": py, "pvpCap": float(W.get("pvpCap", 0.0))})
+			if dealt > 0.0:
 				last = e
+				SimWeapons.hit_status(w, h, e, P)
+				SimWeapons.hit_extras(w, h, e, S, dealt, dmg)
 			w.knock(e, ux, uy, float(W.kb) * ch)
 			w.emit({"t": "bullet_hit", "x": e.x, "y": e.y, "h": e.r, "team": h.team, "kind": "rail", "big": true, "target": e.id})
 			if float(P.railSlow) > 0.0:
@@ -508,16 +538,23 @@ static func laser_tick(w: SimWorld, h: SimHamster) -> void:
 	var base := float(W.dmg) * float(P.dmg) * float(h.st.dmg) * (float(S.get("odDmg", 1.3)) if od else 1.0)
 	var angs: Array = [[0.0, 1.0]]
 	var sa := float(S.get("sideAng", 0.22))
-	if int(S.get("sideBeams", 0)) >= 1:
-		angs.append([sa, float(P.sideK)])
-	if int(S.get("sideBeams", 0)) >= 2:
-		angs.append([-sa, float(P.sideK)])
+	var side_n := int(S.get("sideBeams", 0))
+	if od and S.has("odBeams"):
+		side_n = maxi(side_n, int(S.odBeams))     # 超载时额外分出光束
+	if side_n >= 1:
+		angs.append([sa, float(P.sideK) if int(S.get("sideBeams", 0)) >= 1 else 0.5])
+	if side_n >= 2:
+		angs.append([-sa, float(P.sideK) if int(S.get("sideBeams", 0)) >= 2 else 0.5])
+	# 穿透：光束打中后继续往前照，后面的敌人吃 beamPierceK 倍伤害
+	var pierce := int(S.get("beamPierce", 0)) + (int(S.get("odPierce", 0)) if od else 0)
 	var R := h.r
 	var gh := R + h.z
 	var step := float(W.get("step", 8))
+	var hit_pad := float(W.get("hitPad", 0.0)) + float(S.get("beamPad", 0.0))     # 光束有一定粗细：擦到边也算照到
 	var mr := float(W.get("muzzleR", 2.3))
 	h.beams = []
 	var main_hit: SimEntity = null
+	var cands_all := w.rail_candidates()
 	for pair in angs:
 		var off := float(pair[0])
 		var k := float(pair[1])
@@ -526,52 +563,85 @@ static func laser_tick(w: SimWorld, h: SimHamster) -> void:
 		var si := sin(an)
 		var gx := h.x + co * R * mr
 		var gy := h.y + si * R * mr
+		# 先沿光束找到第一堵墙（或物件），再按“敌人到光束线段的距离”挑出被照到的敌人
+		# （原来只查光束点所在的空间网格格子，敌人中心在隔壁格子里时擦身而过也算没照到）
+		var wall_d := rng_
 		var d := 0.0
-		var hit: SimEntity = null
 		while d < rng_:
-			var x := gx + co * d
-			var y := gy + si * d
-			var sd := w.map.point_solid(x, y, 1.0)
+			var sd := w.map.point_solid(gx + co * d, gy + si * d, 1.0)
 			if sd != null:
 				if sd.prop != null:
 					w.prop_hit(sd.prop as SimProp, base * k, h)
-				break
-			for e: SimEntity in w.hash_at(x, y):
-				if not w.can_hit(h.team, e) or e.is_prop:
-					continue
-				if SimUtil.d2(x, y, e.x, e.y) < e.r * e.r:
-					hit = e
-					break
-			if hit != null:
+				wall_d = d
 				break
 			d += step
-		h.beams.append({"x0": gx, "y0": gy, "x1": gx + co * d, "y1": gy + si * d, "h": gh, "hit": hit != null, "side": off != 0.0})
-		if hit == null:
-			continue
-		var dm := base * k
-		if off == 0.0:
-			main_hit = hit
-			if float(P.focusCap) > 0.0:
-				if h.focus_id == hit.id:
-					h.focus_n += 1
-				else:
-					h.focus_id = hit.id
-					h.focus_n = 0
-				var cap := float(P.focusCap)
-				var ramp := minf(cap, h.focus_n * float(P.focusStep))
-				dm *= 1.0 + ramp
-				if S.has("focusIgnite") and ramp >= cap - 1e-6:
-					hit.burn_t = maxf(hit.burn_t, float(S.focusIgnite))
-					hit.burn_by = h
-					h.ammo = mini(SimWeapons.mag_size(h), h.ammo + int(S.get("focusRefill", 1)))
-					w.emit({"t": "focus_max", "id": h.id, "target": hit.id})
-		if w.deal_dmg(hit, dm, {"team": h.team, "owner": h, "x": hit.x, "y": hit.y}, true) > 0.0:
-			w.emit({"t": "hitmark", "id": h.id, "target": hit.id, "kill": hit.dead or (hit is SimHamster and not (hit as SimHamster).alive)})
+		var cands: Array = []
+		for e: SimEntity in cands_all:
+			if not w.can_hit(h.team, e) or e.is_prop:
+				continue
+			var ex := e.x - gx
+			var ey := e.y - gy
+			var along := ex * co + ey * si
+			if along < -e.r or along > wall_d + e.r:
+				continue
+			if absf(ex * si - ey * co) < e.r + hit_pad:
+				cands.append([along, e])
+		cands.sort_custom(func(p1, p2): return float(p1[0]) < float(p2[0]))
+		var hits: Array = []
+		for c in cands:
+			if hits.size() > pierce:
+				break
+			hits.append(c[1])
+		d = wall_d
+		if hits.size() > pierce:
+			d = clampf(float(cands[pierce][0]), 0.0, wall_d)
+		h.beams.append({"x0": gx, "y0": gy, "x1": gx + co * d, "y1": gy + si * d, "h": gh, "hit": not hits.is_empty(), "side": off != 0.0})
+		for hi in hits.size():
+			var hit: SimEntity = hits[hi]
+			var dm := base * k * (1.0 if hi == 0 else float(S.get("beamPierceK", 0.7)))
+			if off == 0.0 and hi == 0:
+				main_hit = hit
+				if float(P.focusCap) > 0.0:
+					if h.focus_id == hit.id:
+						h.focus_n += 1
+					else:
+						h.focus_id = hit.id
+						h.focus_n = 0
+					var cap := float(P.focusCap)
+					var ramp := minf(cap, h.focus_n * float(P.focusStep))
+					dm *= 1.0 + ramp
+					if S.has("focusIgnite") and ramp >= cap - 1e-6:
+						hit.burn_t = maxf(hit.burn_t, float(S.focusIgnite))
+						hit.burn_by = h
+						h.ammo = mini(SimWeapons.mag_size(h), h.ammo + int(S.get("focusRefill", 1)))
+						w.emit({"t": "focus_max", "id": h.id, "target": hit.id})
+			var dealt := w.deal_dmg(hit, dm, {"team": h.team, "owner": h, "x": hit.x, "y": hit.y, "canCrit": true}, true)
+			if dealt > 0.0:
+				if off == 0.0:
+					SimWeapons.hit_status(w, h, hit, P)
+					SimWeapons.hit_extras(w, h, hit, S, dealt, dm)
+				w.emit({"t": "hitmark", "id": h.id, "target": hit.id, "kill": hit.dead or (hit is SimHamster and not (hit as SimHamster).alive)})
 	if S.has("refract") and main_hit != null:
-		var o2 := w.nearest_foe(h.team, main_hit.x, main_hit.y, float(S.refract))
-		if o2 != null and o2 != main_hit:
-			w.deal_dmg(o2, base * float(S.get("refractK", 0.5)), {"team": h.team, "owner": h, "x": o2.x, "y": o2.y}, true)
-			h.beams.append({"x0": main_hit.x, "y0": main_hit.y, "x1": o2.x, "y1": o2.y, "h": gh, "hit": true, "side": true})
+		# 折射：从被照的敌人跳到附近的下一个，refractN 次
+		var cur := main_hit
+		var done := {main_hit.id: true}
+		var dm2 := base * float(S.get("refractK", 0.5))
+		for j in int(S.get("refractN", 1)):
+			var o2: SimEntity = null
+			var bd := float(S.refract) * float(S.refract)
+			for q: SimEntity in w.hash_range(cur.x, cur.y, float(S.refract)):
+				if done.has(q.id) or q.is_prop or q.kind == "crate" or not w.can_hit(h.team, q) or (q.kind == "base" and q.shielded):
+					continue
+				var dq := SimUtil.d2(q.x, q.y, cur.x, cur.y)
+				if dq < bd:
+					bd = dq
+					o2 = q
+			if o2 == null:
+				break
+			done[o2.id] = true
+			w.deal_dmg(o2, dm2, {"team": h.team, "owner": h, "x": o2.x, "y": o2.y, "canCrit": true}, true)
+			h.beams.append({"x0": cur.x, "y0": cur.y, "x1": o2.x, "y1": o2.y, "h": gh, "hit": true, "side": true})
+			cur = o2
 	w.emit({"t": "laser_tick", "id": h.id, "od": od, "hit": main_hit != null})
 
 

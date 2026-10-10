@@ -360,6 +360,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 			h.reload_t = 0.0
 			h.ammo = SimWeapons.mag_size(h)
 			w.emit({"t": "reload_done", "id": h.id})
+			SimWeapons.on_reload(w, h)
 	if inp.reload:
 		inp.reload = false
 		if mag > 0 and h.ammo < SimWeapons.mag_size(h):

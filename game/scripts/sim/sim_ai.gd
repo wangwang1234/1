@@ -77,7 +77,9 @@ static func _aim_at(w: SimWorld, h: SimHamster, tg: SimEntity) -> void:
 	var P := prof(w, h)
 	var tx := tg.x
 	var ty := tg.y
-	if tg.vx != 0.0 or tg.vy != 0.0:
+	var kind := String(h.weapon().get("kind", "bullet"))
+	if (tg.vx != 0.0 or tg.vy != 0.0) and kind != "laser" and kind != "rail" and kind != "melee":
+		# 预判提前量按弹速算；激光 / 电磁炮是瞬间命中，不需要提前量（以前按默认弹速 900 算，总瞄在敌人前面）
 		var d := Vector2(tx - h.x, ty - h.y).length()
 		var sp := float(h.weapon().get("spd", 900))
 		var tt := d / sp
@@ -281,6 +283,13 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 	# 左轮神枪手：对建筑 / 箱子这类不能标记的目标改成点射（按住不放永远不会开火）
 	if inp.fire and tg != null and SimWeapons.special(h, "deadeye") != null and not (tg is SimHamster or tg is SimMinion or tg is SimMob or tg is SimDecoy):
 		inp.fire = h.mark_hold <= 0.0
+	elif inp.fire and SimWeapons.special(h, "deadeye") != null:
+		# 神枪手：身前只有一个敌人时直接点射；两个以上才按住标记，标到 2 个就松手连射（一直按着要 1.6 秒才自动放）
+		var DS: Dictionary = SimWeapons.params(h).special
+		if SimWeapons.foes_sorted(w, h, float(DS.get("markR", 700)), float(DS.get("markCone", 0.62))).size() < 2:
+			inp.fire = h.mark_hold <= 0.0
+		elif h.marks.size() >= mini(2, h.ammo) or (not h.marks.is_empty() and h.mark_hold > 0.6):
+			inp.fire = false
 	if tg == null and int(W.get("mag", 0)) > 0 and h.reload_t <= 0.0 and h.ammo < SimWeapons.mag_size(h) * 0.5:
 		inp.reload = true
 	inp.ml = Vector2(inp.mx, inp.my).length()

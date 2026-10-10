@@ -89,6 +89,7 @@ var z := 0.0
 var pad_cd := 0.0
 var base_heal_t := 0.0         # 鼠窝回血的下一跳倒计时
 var last_shot_t := -9.0
+var trig_n := 0               # 扣扳机次数（连发的追加弹不算）：“每第 N 次”类进化按它计数
 var shot_n := 0
 var ramp := 0.0
 var burst_n := 0

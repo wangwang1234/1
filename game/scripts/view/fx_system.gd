@@ -255,7 +255,17 @@ func number(pos: Vector3, text: String, color: Color, size: float = 1.0) -> void
 	var lb: Label3D = best.label
 	lb.text = text
 	lb.modulate = color
-	lb.position = pos + Vector3(_rng.randf_range(-0.08, 0.08), 0, _rng.randf_range(-0.05, 0.05))
+	# 同一处刚冒过数字（一次打中一排、多管齐射）：往上错开一层，不叠成一团
+	var p := pos + Vector3(_rng.randf_range(-0.08, 0.08), 0, _rng.randf_range(-0.05, 0.05))
+	var stack := 0
+	for L in _labels:
+		if L == best or float(L.t) < float(L.max) - 0.25:
+			continue
+		var q: Vector3 = (L.label as Label3D).position
+		if absf(q.x - p.x) < 0.3 and absf(q.z - p.z) < 0.3 and absf(q.y - p.y - stack * 0.16) < 0.14:
+			stack += 1
+	p += Vector3(0, stack * 0.16, -stack * 0.04)
+	lb.position = p
 	lb.font_size = int(40 * size)
 	lb.visible = true
 	best.t = 0.7
@@ -601,6 +611,11 @@ func sync_tracers(bullets: Array, alpha: float, cam: Basis, team_vis: Callable) 
 				len = 0.1
 				wdt = 0.04
 				col = Color("#d9b48a")
+		if b.big and b.kind != "swave":
+			# 重弹（进化“每第 N 发是重弹”）：又粗又亮的金色弹头
+			wdt *= 2.6
+			len *= 1.3
+			col = Color("#ffd166")
 		var up := cam.z.cross(dir).normalized()
 		var basis := Basis(dir * len, up * wdt, cam.z)
 		_mm_tracer.set_instance_transform(n, Transform3D(basis, pos - dir * len * 0.4))
