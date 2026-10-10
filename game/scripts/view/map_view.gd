@@ -1,30 +1,86 @@
 class_name MapView
 extends Node3D
-## 按 SimMap（来自 map_layout.json）把场景模块拼成地图：地面分区、边界墙和书架、障碍物（按碰撞尺寸拉伸/平铺）、
-## 弹射装置、装饰散布（带种子，避开障碍）。大量重复物体用 MultiMesh。
+## 按 SimMap（来自 map_layout.json）把场景模块拼成地图：分区地面（书房 / 厨房 / 客厅 / 书架 / 沙发底 / 冰箱 / 礼物区，见 map_layout.json 的 art）、
+## 边界（墙、书架、冰箱、橱柜、沙发裙边）、障碍物（按碰撞尺寸拉伸/平铺）、弹射装置、按区域散布装饰（带种子，避开障碍）、区域灯光。
+## 大量重复物体用 MultiMesh。
 
 const M := "res://assets/models/"
 const BOOKS := ["book_blue", "book_red", "book_green", "book_yellow", "book_purple", "book_orange"]
-# 装饰：[模块, 缩放, 权重]。模型按“仓鼠眼里的大小”做得偏大，散布时再缩到不抢戏的尺寸；数线类长物件少放。
-const DECOS := [["pencil", 0.55, 2], ["eraser", 0.6, 2], ["paperball", 0.6, 2], ["sticky", 0.6, 2], ["coin", 0.5, 2], ["button", 0.6, 3],
-	["block", 0.5, 1], ["marble", 0.7, 2], ["dice", 0.5, 1], ["clip", 0.7, 3], ["cap", 0.6, 2], ["crayon", 0.55, 2], ["ruler", 0.42, 1], ["shells", 0.9, 5]]
+# 各区域的装饰：[模块, 缩放, 权重]。批次 1 的老装饰模型偏大，散布时缩小；批次 3 的分区装饰按 1 倍做好。
+const DECOS := {
+	"study": [["pencil", 0.55, 2], ["eraser", 0.6, 2], ["paperball", 0.6, 2], ["sticky", 0.6, 2], ["clip", 0.7, 2], ["ruler", 0.42, 1], ["crayon", 0.55, 1],
+		["pen", 1.0, 2], ["tape", 1.0, 1], ["sharpener", 1.0, 1], ["tack", 1.0, 2], ["band", 1.0, 2], ["notebook", 0.9, 1], ["glue", 1.0, 1],
+		["staples", 1.0, 1], ["highlighter", 1.0, 1], ["paper", 0.9, 1], ["shells", 0.9, 2]],
+	"kitchen": [["spoon", 1.0, 2], ["fork", 1.0, 2], ["sugar", 1.0, 2], ["cookie", 1.0, 2], ["cereal", 1.0, 3], ["pasta", 1.0, 2], ["peas", 1.0, 2],
+		["teabag", 1.0, 1], ["match", 1.0, 2], ["chopstick", 0.9, 1], ["cap", 0.6, 2], ["crumbs", 1.0, 3], ["shells", 0.9, 2], ["puddle", 0.7, 1]],
+	"living": [["block", 0.5, 2], ["marble", 0.7, 2], ["dice", 0.5, 1], ["coin", 0.5, 2], ["button", 0.6, 2], ["car", 1.0, 1], ["puzzle", 1.0, 2],
+		["card", 1.0, 2], ["popcorn", 1.0, 3], ["chip", 1.0, 2], ["wrapper", 1.0, 2], ["crayon", 0.55, 1], ["shells", 0.9, 3]],
+	"shelf": [["paperball", 0.6, 2], ["pencil", 0.55, 2], ["crayon", 0.55, 1], ["block", 0.5, 1], ["marble", 0.7, 1], ["card", 1.0, 1],
+		["notebook", 0.9, 1], ["paper", 0.9, 1], ["pen", 1.0, 1], ["dust", 0.8, 2], ["coin", 0.5, 1], ["shells", 0.9, 2]],
+	"sofa": [["dust", 1.0, 4], ["sock", 1.0, 1], ["hairtie", 1.0, 2], ["remote", 0.8, 1], ["crumbs", 1.0, 3], ["coin", 0.5, 2], ["popcorn", 1.0, 2],
+		["chip", 1.0, 1], ["button", 0.6, 2], ["wrapper", 1.0, 1], ["shells", 0.9, 2]],
+	"fridge": [["magnet", 1.0, 3], ["ice", 1.0, 2], ["grape", 1.0, 2], ["puddle", 1.0, 2], ["cap", 0.6, 1], ["peas", 1.0, 1], ["crumbs", 1.0, 1]],
+	"gift": [["ribbon", 1.0, 3], ["bow", 1.0, 2], ["confetti", 1.0, 5], ["tag", 1.0, 1], ["balloon", 1.0, 1], ["wrapper", 1.0, 1]],
+}
+# 区域装饰密度倍数（沙发底更乱、礼物区满地彩纸）
+const DENSITY := {"study": 1.0, "kitchen": 1.0, "living": 0.8, "shelf": 1.1, "sofa": 1.5, "fridge": 1.2, "gift": 2.2}
+const FLOORS := {"study": "env/env_floor_wood", "shelf": "env/env_floor_wood", "kitchen": "env/env_floor_tile", "fridge": "env/env_floor_tile_white",
+	"sofa": "env/env_floor_wood_dusty", "living": "env/env_floor_carpet", "gift": "env/env_floor_carpet"}
 
 var map: SimMap
 var _batches := {}          # 模块路径 -> Array[Transform3D]
 var pad_tops: Array = []    # [{node, base_y}]
 var rng := RandomNumberGenerator.new()
+var art: Dictionary = {}
+var _big := Vector2(-1e9, -1e9)    # 大礼箱位置（礼物区中心）
+var _flicker: Array = []           # [{light, base}]
+var _t := 0.0
 
 
 func build(m: SimMap, seed_: int = 1234) -> void:
 	map = m
 	rng.seed = seed_
+	art = Data.map_layout().get("art", {})
+	for c in map.crate_spots:
+		if bool(c.big):
+			_big = Vector2(float(c.x), float(c.y))
 	_build_floor()
 	_build_bounds()
 	_build_obstacles()
 	_build_pads()
 	_build_base_rugs()
+	_build_zone_props()
 	_scatter_decor()
 	_flush()
+	_build_lights()
+
+
+func zone(x: float, y: float) -> String:
+	## 地图坐标 → 美术区域名
+	if x < float(art.get("studyMaxX", 1300)):
+		return "study"
+	if x > float(art.get("kitchenMinX", 3740)):
+		return "kitchen"
+	var fr: Dictionary = art.get("fridge", {})
+	if not fr.is_empty() and absf(x - float(fr.x)) < float(fr.halfW) and y < float(fr.maxY):
+		return "fridge"
+	if Vector2(x, y).distance_to(_big) < float(art.get("giftR", 300)):
+		return "gift"
+	if y < float(art.get("shelfMaxY", 680)):
+		return "shelf"
+	if y > float(art.get("sofaMinY", 2420)):
+		return "sofa"
+	return "living"
+
+
+func _process(delta: float) -> void:
+	if _flicker.is_empty():
+		return
+	_t += delta
+	for f: Dictionary in _flicker:
+		# 电视光：缓慢起伏 + 偶尔跳一下（换镜头）
+		var l: OmniLight3D = f.light
+		l.light_energy = float(f.base) * (0.8 + 0.15 * sin(_t * 1.3) + 0.1 * sin(_t * 7.7) * sin(_t * 0.37))
 
 
 func _add(module: String, xf: Transform3D) -> void:
@@ -39,7 +95,7 @@ func _flush() -> void:
 		var xfs: Array = _batches[p]
 		var mm := MultiMesh.new()
 		mm.transform_format = MultiMesh.TRANSFORM_3D
-		var outline := 0.0 if String(p).contains("floor") or String(p).contains("rug_edge") else (1.3 if String(p).contains("deco") else 1.6)
+		var outline := 0.0 if String(p).contains("floor") or String(p).contains("rug_") else (1.3 if String(p).contains("deco") else 1.6)
 		mm.mesh = ToonMaterials.merged_mesh(p, outline)
 		mm.instance_count = xfs.size()
 		for i in xfs.size():
@@ -59,52 +115,89 @@ static func w(x: float, y: float, h: float = 0.0) -> Vector3:
 
 # ---------------------------------------------------------------------------
 
-func _floor_kind(x: float, y: float) -> String:
-	var mid := map.width * 0.5
-	if absf(x - mid) < 1000.0 and absf(y - map.height * 0.5) < 900.0:
-		return "env/env_floor_carpet"
-	if x < mid:
-		return "env/env_floor_wood"
-	return "env/env_floor_tile"
-
-
 func _build_floor() -> void:
 	var tile := 200.0
+	var kinds := {}
 	var x := floorf(map.min_x / tile) * tile
 	while x < map.max_x:
 		var y := floorf(map.min_y / tile) * tile
 		while y < map.max_y:
-			var k := _floor_kind(x + tile * 0.5, y + tile * 0.5)
-			var rot := Basis(Vector3.UP, PI * 0.5 * (rng.randi() % 4)) if k != "env/env_floor_wood" else Basis(Vector3.UP, PI * 0.5 * (rng.randi() % 2) * 2.0)
+			var z := zone(x + tile * 0.5, y + tile * 0.5)
+			var k: String = FLOORS.get(z, "env/env_floor_carpet")
+			kinds[Vector2i(int(x / tile), int(y / tile))] = k
+			var rot := Basis(Vector3.UP, PI * 0.5 * (rng.randi() % 4)) if not k.contains("wood") else Basis(Vector3.UP, PI * (rng.randi() % 2))
 			_add(k, Transform3D(rot, w(x + tile * 0.5, y + tile * 0.5)))
 			y += tile
 		x += tile
-	# 地毯流苏边
-	var cx := map.width * 0.5
-	var cy := map.height * 0.5
-	for side: float in [-1.0, 1.0]:
-		var ex := cx + side * 1000.0
-		var yy := cy - 900.0
-		while yy < cy + 900.0:
-			if yy > map.min_y and yy < map.max_y:
-				_add("env/env_rug_edge", Transform3D(Basis(Vector3.UP, -side * PI * 0.5), w(ex, yy + 50.0, 0.012)))
-			yy += 100.0
+	# 地毯流苏边：地毯格旁边不是地毯的那几条边
+	var carpet := "env/env_floor_carpet"
+	for key: Vector2i in kinds:
+		if kinds[key] != carpet:
+			continue
+		var cx := (key.x + 0.5) * tile
+		var cy := (key.y + 0.5) * tile
+		for d: Array in [[Vector2i(0, -1), 0.0], [Vector2i(0, 1), PI], [Vector2i(1, 0), -PI * 0.5], [Vector2i(-1, 0), PI * 0.5]]:
+			var nb: Vector2i = key + (d[0] as Vector2i)
+			if not kinds.has(nb) or kinds[nb] == carpet:
+				continue
+			for half: float in [-0.5, 0.5]:
+				var off := Vector2(d[0].x, d[0].y) * tile * 0.5 + Vector2(-d[0].y, d[0].x) * tile * 0.5 * half
+				_add("env/env_rug_edge", Transform3D(Basis(Vector3.UP, float(d[1])), w(cx + off.x, cy + off.y, 0.012)))
 
 
 func _build_bounds() -> void:
-	# 上边界：墙 + 靠墙书架；左右：墙；下边界（靠镜头一侧）保持很低，只放踢脚线色的地板边
+	# 上边界：墙 + 靠墙书架（冰箱那一段换成冰箱）；左边书房墙；右边厨房橱柜；下边界（靠镜头一侧）沙发底那段挂沙发裙边，其余保持很低
 	var seg := 200.0
+	var fr: Dictionary = art.get("fridge", {})
 	var x := map.min_x
 	while x < map.max_x - 1.0:
-		_add("env/env_wall", Transform3D(Basis.IDENTITY, w(x + seg * 0.5, map.min_y + 40.0)))
-		_add("env/env_shelf", Transform3D(Basis.IDENTITY, w(x + seg * 0.5, map.min_y + 82.0)))
+		var cx := x + seg * 0.5
+		if not fr.is_empty() and cx > float(fr.wallFrom) and cx < float(fr.wallTo):
+			_add("env/env_fridge", Transform3D(Basis.IDENTITY, w(cx, map.min_y + 40.0)))
+		else:
+			_add("env/env_wall", Transform3D(Basis.IDENTITY, w(cx, map.min_y + 40.0)))
+			_add("env/env_shelf", Transform3D(Basis.IDENTITY, w(cx, map.min_y + 82.0)))
+		if zone(cx, map.max_y - 80.0) == "sofa":
+			_add("env/env_sofa_skirt", Transform3D(Basis(Vector3.UP, PI), w(cx, map.max_y - 22.0)))
+			if int(cx / seg) % 3 == 1:
+				_add("env/env_sofa_leg", Transform3D(Basis.IDENTITY, w(cx, map.max_y - 40.0)))
 		x += seg
 	for side: int in [0, 1]:
 		var xx := map.min_x + 20.0 if side == 0 else map.max_x - 20.0
+		# 模块正面是 +Z（地图南边）；左墙朝东、右墙朝西
+		var b := Basis(Vector3.UP, PI * 0.5 if side == 0 else -PI * 0.5)
 		var y := map.min_y
 		while y < map.max_y - 1.0:
-			_add("env/env_wall", Transform3D(Basis(Vector3.UP, -PI * 0.5 if side == 0 else PI * 0.5), w(xx, y + seg * 0.5)))
+			var mod := "env/env_cabinet" if zone(xx, y + seg * 0.5) == "kitchen" else "env/env_wall"
+			_add(mod, Transform3D(b, w(xx, y + seg * 0.5)))
 			y += seg
+
+
+func _build_zone_props() -> void:
+	## 礼物区圆地毯（压在地毯上，不挡路）
+	if _big.x > map.min_x and _big.x < map.max_x and _big.y > map.min_y and _big.y < map.max_y:
+		var r := float(art.get("giftR", 300)) / 250.0
+		_add("env/env_rug_party", Transform3D(Basis.IDENTITY.scaled(Vector3(r, 1.0, r)), w(_big.x, _big.y, 0.006)))
+
+
+func _build_lights() -> void:
+	## 区域光：冰箱冷光、电视蓝光（闪烁）、厨房橱柜暖光。不投影，便宜
+	for L: Dictionary in art.get("lights", []):
+		var x := float(L.x)
+		var y := float(L.y)
+		if x < map.min_x - 200.0 or x > map.max_x + 200.0 or y < map.min_y - 200.0 or y > map.max_y + 200.0:
+			continue
+		var l := OmniLight3D.new()
+		l.light_color = Color(String(L.color))
+		l.light_energy = float(L.energy)
+		l.omni_range = float(L.range)
+		l.omni_attenuation = 1.2
+		l.light_specular = 0.0
+		l.shadow_enabled = false
+		l.position = w(x, y, float(L.get("h", 1.0)))
+		add_child(l)
+		if bool(L.get("flicker", false)):
+			_flicker.append({"light": l, "base": float(L.energy)})
 
 
 func _build_obstacles() -> void:
@@ -198,7 +291,7 @@ func _build_base_rugs() -> void:
 func _scatter_decor() -> void:
 	## 装饰：靠边、靠障碍物更密，路中间稀疏。不参与碰撞。
 	var area := (map.max_x - map.min_x) * (map.max_y - map.min_y)
-	var n := int(area / 30000.0)
+	var n := int(area * 0.0001 * float(art.get("decoPerM2", 0.34)) * 1.2)
 	var placed := 0
 	var tries := 0
 	while placed < n and tries < n * 8:
@@ -207,9 +300,12 @@ func _scatter_decor() -> void:
 		var y := rng.randf_range(map.min_y + 140.0, map.max_y - 40.0)
 		if map.overlaps_solid(x, y, 30.0):
 			continue
-		# 离障碍物/边界越近越容易放
+		var z := zone(x, y)
+		# 离障碍物/边界越近越容易放；各区域密度不同
 		var near := map.overlaps_solid(x, y, 110.0) or y < map.min_y + 260.0 or y > map.max_y - 140.0
 		if not near and rng.randf() > 0.35:
+			continue
+		if rng.randf() > float(DENSITY.get(z, 1.0)) / 2.2:
 			continue
 		# 不压在鼠窝和炮台上
 		var bad := false
@@ -224,19 +320,20 @@ func _scatter_decor() -> void:
 				bad = true
 		if bad:
 			continue
-		var d: Array = _pick_deco()
+		var d: Array = _pick_deco(z)
 		var s := float(d[1]) * rng.randf_range(0.85, 1.1)
 		_add("env/env_deco_" + String(d[0]), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * s), w(x, y, 0.004)))
 		placed += 1
 
 
-func _pick_deco() -> Array:
+func _pick_deco(z: String) -> Array:
+	var list: Array = DECOS.get(z, DECOS["living"])
 	var total := 0
-	for d: Array in DECOS:
+	for d: Array in list:
 		total += int(d[2])
 	var r := rng.randi() % total
-	for d: Array in DECOS:
+	for d: Array in list:
 		r -= int(d[2])
 		if r < 0:
 			return d
-	return DECOS[0]
+	return list[0]

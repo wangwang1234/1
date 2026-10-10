@@ -574,5 +574,21 @@
 "screen_dark": [
 8,
 15
+],
+"tile_cream": [
+9,
+0
+],
+"tile_terracotta": [
+9,
+1
+],
+"dust_grey": [
+9,
+2
+],
+"tile_white_dim": [
+9,
+3
 ]
 }

@@ -67,12 +67,12 @@ def floor_carpet():
 
 
 def floor_tile():
-    P = [shapes.rounded_box("grout", (0, 0, -0.02), (2.0, 2.0, 0.03), 0.0, 1, "gun_darker", style.MAT_TOON)]
+    P = [shapes.rounded_box("grout", (0, 0, -0.02), (2.0, 2.0, 0.03), 0.0, 1, "wood_dark", style.MAT_TOON)]
     n = 4
     s = 2.0 / n
     for i in range(n):
         for j in range(n):
-            c = "can_grey" if (i + j) % 2 == 0 else "can_grey_dark"   # 压低亮度：奶油白瓷砖在灯下太抢眼
+            c = "tile_cream" if (i + j) % 2 == 0 else "tile_terracotta"   # 暖色：冷灰瓷砖在夜光下发蓝，会和蓝队色混
             P.append(shapes.rounded_box(f"t{i}{j}", (-1 + s * (i + 0.5), -1 + s * (j + 0.5), -0.004), (s - 0.02, s - 0.02, 0.012), 0.004, 1, c, style.MAT_TOON))
     return _one("env_floor_tile", P)
 

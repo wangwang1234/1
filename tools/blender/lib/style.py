@@ -200,6 +200,11 @@ _put("tassel_red", 8, 12, "#d8323a")
 _put("grenade_yellow", 8, 13, "#e8c23a")
 _put("hose_dark", 8, 14, "#2a2f38")
 _put("screen_dark", 8, 15, "#15222a", "#0a2a30")
+# 第 9 行：场景分区
+_put("tile_cream", 9, 0, "#b9a07a")
+_put("tile_terracotta", 9, 1, "#94523c")
+_put("dust_grey", 9, 2, "#5e544e")
+_put("tile_white_dim", 9, 3, "#a9a398")
 
 
 def color(name):

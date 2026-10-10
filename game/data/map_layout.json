@@ -1353,5 +1353,21 @@
   "OW": 7200,
   "OH": 3600,
   "_doc": "crates / camps / lamps / obstacles / circles 是原型单象限原始坐标：先按 OW/OH 四象限镜像，再乘 SX/SY；solids / props / lanes / turrets 等已是最终坐标。"
- }
+ },
+  "art": {
+    "_doc": "分区美术（只影响表现）：x / y 为地图坐标（厘米）。study 蓝方书房、kitchen 红方厨房、shelf 上路书架、sofa 下路沙发底、fridge 鼠王冰箱区、gift 大礼箱派对区，其余为客厅地毯",
+    "studyMaxX": 1300,
+    "kitchenMinX": 3740,
+    "shelfMaxY": 680,
+    "sofaMinY": 2420,
+    "fridge": {"x": 2520, "halfW": 560, "maxY": 1260, "wallFrom": 2000, "wallTo": 3040},
+    "giftR": 240,
+    "decoPerM2": 0.34,
+    "lights": [
+      {"x": 2520, "y": 180, "h": 1.4, "color": "#bfe6ff", "energy": 0.75, "range": 6.0},
+      {"x": 2520, "y": 3000, "h": 0.6, "color": "#7fa8ff", "energy": 0.9, "range": 6.0, "flicker": true},
+      {"x": 4900, "y": 900, "h": 1.5, "color": "#ffd9a0", "energy": 0.9, "range": 5.0},
+      {"x": 4900, "y": 2200, "h": 1.5, "color": "#ffd9a0", "energy": 0.9, "range": 5.0}
+    ]
+  }
 }

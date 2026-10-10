@@ -34,6 +34,7 @@ func _ready() -> void:
 	_build_ui()
 	_refresh_hero()
 	Audio.play_ambience(true)
+	Audio.play_music("menu", 1.0)
 	Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 
 

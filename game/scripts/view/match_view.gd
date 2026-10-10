@@ -46,6 +46,7 @@ var hitstop := 0.0
 var cam_focus_offset := Vector3.ZERO    # 镜头焦点额外偏移（米）；只给截图取景用，游戏里恒为 0
 var time_scale := 1.0
 var _over_handled := false
+var _boss_hot := -100.0          # 背景音乐：鼠王最近一次出现 / 交战的时刻（之后 8 秒内放鼠王曲）
 var _t := 0.0
 var _mouse := Vector2.ZERO
 var _cfg := {}
@@ -125,6 +126,7 @@ func start(cfg: Dictionary) -> void:
 	fx.camera = cam
 	for s in world.structs:
 		var v := UnitViews.StructureView.new()
+		v.fx = fx
 		add_child(v)
 		v.setup(s)
 		struct_views[s.id] = v
@@ -156,6 +158,7 @@ func start(cfg: Dictionary) -> void:
 	else:
 		hud = players[0].hud
 	Audio.play_ambience(true)
+	Audio.play_music("match", 1.5)
 
 
 func _setup_split() -> void:
@@ -386,6 +389,7 @@ func _physics_process(dt: float) -> void:
 	for i in steps:
 		world.step(dt)
 	_dispatch(world.drain_events())
+	_music_tick()
 	if world.over and not _over_handled:
 		_over_handled = true
 		time_scale = 0.35
@@ -396,7 +400,7 @@ func _physics_process(dt: float) -> void:
 		var any_win := false
 		for pl in players:
 			any_win = any_win or pl.team == world.winner
-		Audio.play2d("win" if any_win or players.is_empty() else "lose", -4.0, 0.0, 1.0)
+		Audio.play_music("victory" if any_win or players.is_empty() else "defeat", 0.4)
 	if world.over and world.end_t <= 0.0 and time_scale < 1.0:
 		time_scale = 1.0
 		finished.emit(world.winner, _stats())
@@ -1023,6 +1027,7 @@ func _dispatch_b2(t: String, ev: Dictionary) -> void:
 			cam.add_trauma(0.2 * _near_local(p11, 10.0))
 		"boss_spawn":
 			Audio.play2d("boss_roar", -2.0, 0.0)
+			_boss_hot = world.t + 12.0
 			var p12 := _wpos(float(ev.x), float(ev.y), 4)
 			fx.ring(p12, 0.2, 4.0, 0.6, Color("#ffd166"), 0.3)
 		"summon":
@@ -1050,6 +1055,17 @@ func _dispatch_b2(t: String, ev: Dictionary) -> void:
 			var e4: SimEntity = world.entities.get(int(ev.id))
 			if e4:
 				fx.number(_wpos(e4.x, e4.y, 50), "卡壳", Color("#ff8a7a"), 0.8)
+
+
+func _music_tick() -> void:
+	## 背景音乐：平时 match，加速决战 rush；鼠王出现后 / 和人交战时 boss，脱战 8 秒或鼠王倒下后切回去
+	if world.over:
+		return
+	var b := world.boss
+	if b != null and not b.dead and b.target != null:
+		_boss_hot = maxf(_boss_hot, world.t)
+	var boss_on := b != null and not b.dead and world.t < _boss_hot + 8.0
+	Audio.play_music("boss" if boss_on else ("rush" if world.sudden else "match"), 1.5)
 
 
 func _stats() -> Dictionary:

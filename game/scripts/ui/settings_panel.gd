@@ -51,7 +51,7 @@ func _ready() -> void:
 	var pa: VBoxContainer = pages.audio
 	_slider(pa, "总音量", Settings.master_volume, 0.0, 1.0, func(x: float) -> void: Settings.master_volume = x)
 	_slider(pa, "音效", Settings.sfx_volume, 0.0, 1.0, func(x: float) -> void: Settings.sfx_volume = x)
-	_slider(pa, "环境音", Settings.music_volume, 0.0, 1.0, func(x: float) -> void: Settings.music_volume = x)
+	_slider(pa, "音乐", Settings.music_volume, 0.0, 1.0, func(x: float) -> void: Settings.music_volume = x)
 	var pc: VBoxContainer = pages.controls
 	var rows := [
 		["移动", "WASD", "左摇杆", "方向键"], ["瞄准", "鼠标", "右摇杆（不推时自动瞄准）", "自动瞄准"],

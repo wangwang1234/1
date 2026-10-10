@@ -12,6 +12,7 @@ extends Node
 ##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）；--tabs a,b 只拍部分分页
 ##   arsenal    批次 2：18 把武器在局里开火的样子（各带一条 9 级路线）；--weapons a,b 只拍部分
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
+##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰（--parts zones,structs,overview）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
@@ -73,6 +74,8 @@ func _run() -> void:
 			await _duo()
 		"b2world":
 			await _b2world()
+		"b3map":
+			await _b3map()
 		"gameplay":
 			await _gameplay()
 		"cards":
@@ -412,6 +415,80 @@ func _b2world() -> void:
 	await shot("b2_gadgets")
 	await _steps(60)
 	await shot("b2_gadgets_2")
+
+
+func _b3map() -> void:
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.inp.mx = 0.0
+	h.inp.my = 0.0
+	h.inp.fire = false
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	h.iframes = 9999.0
+	var parts := String(args.get("parts", "zones,structs,overview")).split(",")
+	if parts.has("zones"):
+		# [名字, x, y, 朝向]：每个区域站一个能看到代表性物件的位置
+		var spots := [["study", 700, 980, 0.6], ["kitchen", 4300, 1000, 2.6], ["living", 2050, 1600, -0.3], ["shelf", 1750, 330, 0.2],
+			["sofa", 2100, 2800, 0.3], ["fridge", 2520, 520, -1.57], ["gift", 2380, 2240, 0.0]]
+		var only := String(args.get("zones", ""))
+		for sp in spots:
+			if only != "" and not only.split(",").has(String(sp[0])):
+				continue
+			h.x = float(sp[1])
+			h.y = float(sp[2])
+			if w.map.overlaps_solid(h.x, h.y, h.r):
+				push_warning("区域 %s 的站位被挡住了" % sp[0])
+			h.px = h.x
+			h.py = h.y
+			h.inp.aim = float(sp[3])
+			h.aim = h.inp.aim
+			await _steps(45)
+			await shot("b3_zone_" + String(sp[0]))
+	if parts.has("structs"):
+		var bt: Array = w.structs.filter(func(s): return s.team == "blue" and s.kind == "turret")
+		var rt: Array = w.structs.filter(func(s): return s.team == "red" and s.kind == "turret")
+		var bb: Array = w.structs.filter(func(s): return s.team == "blue" and s.kind == "base")
+		var stages := [[bt[0], 0.55, "turret_dmg1"], [bt[1], 0.2, "turret_dmg2"], [rt[1], 0.0, "turret_wreck"], [bb[0], 0.25, "base_dmg2"]]
+		for st in stages:
+			var s: SimStructure = st[0]
+			if float(st[1]) <= 0.0:
+				w.deal_dmg(s, 999999.0, {"team": "blue" if s.team == "red" else "red", "owner": null, "x": s.x, "y": s.y})
+			else:
+				s.hp = s.max_hp * float(st[1])
+			h.x = s.x - 260.0 if s.team == "blue" else s.x + 260.0
+			h.y = s.y + 120.0
+			if w.map.overlaps_solid(h.x, h.y, h.r):
+				h.y = s.y - 150.0
+			h.px = h.x
+			h.py = h.y
+			h.inp.aim = atan2(s.y - h.y, s.x - h.x)
+			await _steps(70)
+			await shot("b3_" + String(st[2]))
+	if parts.has("overview"):
+		# 整张地图俯瞰（正交，关掉界面）
+		var cam := Camera3D.new()
+		mv.add_child(cam)
+		cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+		cam.size = (w.map.max_y - w.map.min_y) * 0.01 * 1.04
+		cam.position = Vector3((w.map.min_x + w.map.max_x) * 0.005, 40.0, (w.map.min_y + w.map.max_y) * 0.005 + 6.0)
+		cam.rotation = Vector3(-deg_to_rad(80.0), 0, 0)
+		cam.far = 200.0
+		cam.cull_mask = 0xFFFFF
+		cam.current = true
+		for c in mv.get_children():
+			if c is CanvasLayer:
+				(c as CanvasLayer).visible = false
+		if mv.hud:
+			mv.hud.visible = false
+		await _steps(10)
+		await shot("b3_map_overview")
 
 
 func _ui2() -> void:

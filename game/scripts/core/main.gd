@@ -82,6 +82,7 @@ static func parse_args(list: PackedStringArray) -> Dictionary:
 
 func _clear() -> void:
 	get_tree().paused = false
+	Audio.set_music_duck(false)
 	for n in [menu, match_view, pause_menu, result]:
 		if n != null and is_instance_valid(n):
 			n.queue_free()
@@ -168,6 +169,7 @@ func _on_pause() -> void:
 		return
 	get_tree().paused = true
 	match_view.set_paused(true)
+	Audio.set_music_duck(true)
 	Audio.play2d("ui_click", -6.0)
 	pause_menu = PauseMenu.new()
 	add_child(pause_menu)
@@ -181,6 +183,7 @@ func _resume() -> void:
 		pause_menu.queue_free()
 		pause_menu = null
 	get_tree().paused = false
+	Audio.set_music_duck(false)
 	if match_view != null:
 		match_view.set_paused(false)
 
