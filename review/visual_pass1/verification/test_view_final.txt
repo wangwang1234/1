@@ -1,0 +1,13 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+[view_smoke] 18 把武器开火完成
+[view_smoke] 13 种道具完成
+[view_smoke] 鼠王：true，野怪 28，宠物 3
+[view_smoke] 双人分屏：2 个镜头
+[view_smoke] 2P 手柄热插拔：切到手柄=true，拔掉切回=true
+[view_smoke] 完成 (done)
+WARNING: 40 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 2 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

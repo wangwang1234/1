@@ -1,0 +1,13 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+Vulkan 1.4.318 - Forward+ - Using Device #0: Unknown - llvmpipe (LLVM 20.1.2, 256 bits)
+
+[audio] 载入 74 种音效
+[capture] 场景 visual → /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before
+[capture] /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before/visual_study_hud.png（16.7 秒）
+[capture] /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before/visual_study.png（20.8 秒）
+[capture] /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before/visual_character.png（24.1 秒）
+[capture] /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before/visual_kitchen_hud.png（30.3 秒）
+[capture] /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before/visual_kitchen.png（33.8 秒）
+[capture] /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before/visual_living_hud.png（39.7 秒）
+[capture] /workspace/scratch/24e93959c3d8/manzai/review/visual_pass1/before/visual_living.png（42.6 秒）
+[capture] 完成

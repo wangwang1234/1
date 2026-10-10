@@ -63,6 +63,7 @@ func setup(m: MatchView, ham: SimHamster = null, camera: GameCamera = null, inp:
 
 
 func _setup_portrait() -> void:
+	var visual := VisualStyle.section("character")
 	portrait_vp = SubViewport.new()
 	portrait_vp.size = Vector2i(256, 256)
 	portrait_vp.transparent_bg = true
@@ -77,21 +78,24 @@ func _setup_portrait() -> void:
 	cam.position = Vector3(0, 0.27, 0.95)
 	cam.look_at(Vector3(0, 0.235, 0))
 	var key := DirectionalLight3D.new()
-	key.light_energy = 1.4
+	key.light_energy = float(visual.portraitLightEnergy)
+	key.light_color = Color(String(visual.portraitKeyColor))
 	key.rotation_degrees = Vector3(-35, 25, 0)
 	w3.add_child(key)
 	var e := Environment.new()
 	e.background_mode = Environment.BG_CLEAR_COLOR
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color(0.5, 0.45, 0.7)
-	e.ambient_light_energy = 0.8
+	e.ambient_light_color = Color(String(visual.portraitAmbientColor))
+	e.ambient_light_energy = float(visual.portraitAmbientEnergy)
+	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	var we := WorldEnvironment.new()
 	we.environment = e
 	w3.add_child(we)
 	var h := me if me != null else mv.world.hams[0]
 	portrait_ham = ToonMaterials.instance(HamsterView.MODEL, 2.0)
 	w3.add_child(portrait_ham)
-	portrait_ham.rotation.y = deg_to_rad(18)
+	# 模型正面朝 -Z，头像相机在 +Z；转到正面再加少量侧角。
+	portrait_ham.rotation.y = deg_to_rad(float(visual.portraitYawDegrees))
 	ToonMaterials.set_param(portrait_ham, "team_index", 0 if h.team == "blue" else 1)
 	ToonMaterials.set_param(portrait_ham, "skin_index", maxi(0, Data.skin_ids().find(h.skin)))
 	_portrait_anim = portrait_ham.find_child("AnimationPlayer", true, false)

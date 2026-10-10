@@ -35,6 +35,7 @@ var art: Dictionary = {}
 var _big := Vector2(-1e9, -1e9)    # 大礼箱位置（礼物区中心）
 var _flicker: Array = []           # [{light, base}]
 var _t := 0.0
+var decor_placements: Array[Dictionary] = [] # 审阅与碰撞净空测试使用，厘米坐标
 
 
 func build(m: SimMap, seed_: int = 1234) -> void:
@@ -50,6 +51,7 @@ func build(m: SimMap, seed_: int = 1234) -> void:
 	_build_pads()
 	_build_base_rugs()
 	_build_zone_props()
+	_build_decor_clusters()
 	_scatter_decor()
 	_flush()
 	_build_lights()
@@ -193,7 +195,7 @@ func _build_lights() -> void:
 		l.light_energy = float(L.energy)
 		l.omni_range = float(L.range)
 		l.omni_attenuation = 1.2
-		l.light_specular = 0.0
+		l.light_specular = 0.5
 		l.shadow_enabled = false
 		l.position = w(x, y, float(L.get("h", 1.0)))
 		add_child(l)
@@ -292,7 +294,7 @@ func _build_base_rugs() -> void:
 func _scatter_decor() -> void:
 	## 装饰：靠边、靠障碍物更密，路中间稀疏。不参与碰撞。
 	var area := (map.max_x - map.min_x) * (map.max_y - map.min_y)
-	var n := int(area * 0.0001 * float(art.get("decoPerM2", 0.34)) * 1.2)
+	var n := int(area * 0.0001 * float(art.get("decoPerM2", 0.34)) * float(VisualStyle.section("decor").looseDensityScale))
 	var placed := 0
 	var tries := 0
 	while placed < n and tries < n * 8:
@@ -323,8 +325,8 @@ func _scatter_decor() -> void:
 			continue
 		var d: Array = _pick_deco(z)
 		var s := float(d[1]) * rng.randf_range(0.85, 1.1)
-		_add("env/env_deco_" + String(d[0]), Transform3D(Basis(Vector3.UP, rng.randf() * TAU).scaled(Vector3.ONE * s), w(x, y, 0.004)))
-		placed += 1
+		if _place_decor(String(d[0]), s, Vector2(x, y), rng.randf() * TAU):
+			placed += 1
 
 
 func _pick_deco(z: String) -> Array:
@@ -338,3 +340,66 @@ func _pick_deco(z: String) -> Array:
 		if r < 0:
 			return d
 	return list[0]
+
+
+func _decor_radius(module: String, scale_: float) -> float:
+	var footprints: Dictionary = VisualStyle.section("decor").footprintsCm
+	return float(footprints.get(module, 25.0)) * scale_
+
+
+func _decoration_clear(p: Vector2, radius: float) -> bool:
+	# 以整件物体的包围半径检查，避免叉子、纸张穿进掩体或铺到地图之外。
+	if p.x - radius < map.min_x or p.x + radius > map.max_x or p.y - radius < map.min_y or p.y + radius > map.max_y:
+		return false
+	if map.overlaps_solid(p.x, p.y, radius + 4.0):
+		return false
+	for team: String in ["blue", "red"]:
+		if p.distance_to(map.base_pos[team]) < 240.0 + radius:
+			return false
+		for tp: Vector2 in map.turret_pos[team]:
+			if p.distance_to(tp) < 90.0 + radius:
+				return false
+	for pad in map.pads:
+		if p.distance_to(Vector2(pad.x, pad.y)) < 60.0 + radius:
+			return false
+	for old: Dictionary in decor_placements:
+		if p.distance_to(old.position) < (radius + float(old.radius)) * 0.7:
+			return false
+	return true
+
+
+func _place_decor(module: String, scale_: float, p: Vector2, angle: float) -> bool:
+	var radius := _decor_radius(module, scale_)
+	if not _decoration_clear(p, radius):
+		return false
+	_add("env/env_deco_" + module, Transform3D(Basis(Vector3.UP, angle).scaled(Vector3.ONE * scale_), w(p.x, p.y, 0.004)))
+	decor_placements.append({"module": module, "position": p, "radius": radius, "angle": angle, "scale": scale_})
+	return true
+
+
+func _build_decor_clusters() -> void:
+	# 少量成组物件交代人的生活痕迹；靠掩体摆放，交战路面保留空白。
+	var cfg := VisualStyle.section("decor")
+	var recipes: Dictionary = cfg.recipes
+	var anchors: Array[Vector2] = []
+	var budget := int(cfg.clusters)
+	for attempt in budget * 30:
+		if anchors.size() >= budget:
+			break
+		var p := Vector2(rng.randf_range(map.min_x + 160.0, map.max_x - 160.0), rng.randf_range(map.min_y + 160.0, map.max_y - 160.0))
+		if not _decoration_clear(p, 70.0):
+			continue
+		if not map.overlaps_solid(p.x, p.y, 220.0) and p.y > map.min_y + 300.0 and p.y < map.max_y - 250.0:
+			continue
+		var spaced := true
+		for previous: Vector2 in anchors:
+			if p.distance_to(previous) < 310.0:
+				spaced = false
+		if not spaced:
+			continue
+		anchors.append(p)
+		var recipe: Array = recipes.get(zone(p.x, p.y), recipes["living"])
+		var angle := rng.randf() * TAU
+		for item: Array in recipe.slice(0, int(cfg.members)):
+			var offset := Vector2(float(item[2]), float(item[3])).rotated(angle) * float(cfg.clusterRadiusCm) / 45.0
+			_place_decor(String(item[0]), float(item[1]), p + offset, angle + rng.randf_range(-0.2, 0.2))

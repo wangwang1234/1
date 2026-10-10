@@ -12,6 +12,7 @@ extends Node
 ##   codex      图鉴八页各一张（第一次打开要现场拍模型快照，等得久一些）；--tabs a,b 只拍部分分页
 ##   arsenal    批次 2：18 把武器在局里开火的样子（各带一条 9 级路线）；--weapons a,b 只拍部分
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
+##   visual     固定站位画面审阅（实际地图；HUD / 无 HUD / 角色近景）
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
@@ -76,6 +77,8 @@ func _run() -> void:
 			await _b2world()
 		"b3map":
 			await _b3map()
+		"visual":
+			await _visual_review()
 		"gameplay":
 			await _gameplay()
 		"cards":
@@ -855,3 +858,65 @@ func _perf() -> void:
 	f2.store_string("\n".join(csv))
 	f2.close()
 	print("[capture] 帧率：平均 %.1f fps，1%% 低 %.1f fps，逻辑 %.3f ms/步（%s）" % [rep.avg_fps, rep.low1_fps, savg, rep.adapter])
+
+
+func _visual_review() -> void:
+	args["mode"] = "full"
+	var mv := await _start(false, "ak47")
+	main._fade.visible = false
+	mv.paused = true
+	mv.set_process(false)
+	mv.set_physics_process(false)
+	var h := mv.local
+	h.iframes = 0.0
+	h.flash = 0.0
+	h.aim = PI * 0.5
+	for other in mv.world.hams:
+		if other != h:
+			other.alive = false
+			(mv.ham_views[other.id] as HamsterView).visible = false
+	var spots: Array = [["study", 670.0, 540.0], ["kitchen", 4420.0, 620.0], ["living", 2120.0, 1610.0]]
+	var only := String(args.get("zones", ""))
+	for sp: Array in spots:
+		if only != "" and not only.split(",").has(String(sp[0])):
+			continue
+		var desired := Vector2(float(sp[1]), float(sp[2]))
+		var placed := false
+		for ring in 12:
+			for side in 16:
+				var p := desired + Vector2.RIGHT.rotated(float(side) * TAU / 16.0) * float(ring) * 25.0
+				if mv.world.map.overlaps_solid(p.x, p.y, h.r + 8.0):
+					continue
+				h.x = p.x
+				h.y = p.y
+				placed = true
+				break
+			if placed:
+				break
+		if not placed:
+			push_error("画面审阅找不到空地：" + String(sp[0]))
+			continue
+		h.px = h.x
+		h.py = h.y
+		(mv.ham_views[h.id] as HamsterView).rotation.y = HamsterView.yaw_for(h.aim)
+		(mv.ham_views[h.id] as HamsterView).sync(h, 1.0, 1.0 / 60.0, true)
+		mv.cam.snap(MapView.w(h.x, h.y))
+		mv.hud.visible = true
+		mv.hud.refresh(0.0)
+		await _frames(8)
+		await shot("visual_" + String(sp[0]) + "_hud")
+		mv.hud.visible = false
+		await _frames(4)
+		await shot("visual_" + String(sp[0]))
+		var metrics := {"renderer": ProjectSettings.get_setting("rendering/renderer/rendering_method"), "resolution": str(get_viewport().get_texture().get_image().get_size()),
+			"draw_calls": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_DRAW_CALLS_IN_FRAME),
+			"primitives": RenderingServer.get_rendering_info(RenderingServer.RENDERING_INFO_TOTAL_PRIMITIVES_IN_FRAME),
+			"note": "软件渲染仅供画面与绘制规模检查，不代表目标电脑帧率"}
+		var f := FileAccess.open(out_dir.path_join("visual_" + String(sp[0]) + "_metrics.json"), FileAccess.WRITE)
+		f.store_string(JSON.stringify(metrics, "\t"))
+		if String(sp[0]) == "study":
+			mv.cam.view_width = 2.8
+			mv.cam.snap(MapView.w(h.x, h.y))
+			await _frames(4)
+			await shot("visual_character")
+			mv.cam.view_width = GameCamera.VIEW_WIDTH

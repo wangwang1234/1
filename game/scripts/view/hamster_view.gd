@@ -75,9 +75,9 @@ func setup(h: SimHamster, local: bool) -> void:
 	ToonMaterials.set_param(model, "team_index", 0 if h.team == "blue" else 1)
 	ToonMaterials.set_param(model, "skin_index", maxi(0, Data.skin_ids().find(h.skin)))
 	var tc := Color("#4fa3ff") if h.team == "blue" else Color("#ff5b5b")
-	ToonMaterials.set_param(model, "rim_tint", Color(tc.r, tc.g, tc.b, 0.55))
-	ToonMaterials.set_param(model, "rim_boost", 0.2)
-	ToonMaterials.set_param(model, "glow", 0.22)     # 夜里给角色一点自身亮度，俯视角下也认得出毛色
+	ToonMaterials.set_param(model, "rim_tint", Color(tc.r, tc.g, tc.b, float(VisualStyle.section("character").rimTeamMix)))
+	ToonMaterials.set_param(model, "rim_boost", float(VisualStyle.section("character").rimBoost))
+	ToonMaterials.set_param(model, "glow", float(VisualStyle.section("character").selfGlow))     # 夜里给角色一点自身亮度，俯视角下也认得出毛色
 	_setup_anim()
 	if skel:
 		rig = HamsterRig.new()
@@ -219,11 +219,13 @@ func _filter(node: AnimationNode, prefix: String, bones: Array) -> void:
 func _setup_light() -> void:
 	flashlight = SpotLight3D.new()
 	flashlight.light_color = Color(1.0, 0.93, 0.78)
-	flashlight.light_energy = 2.4 if is_local else 1.6
-	flashlight.spot_attenuation = 0.6
+	var style := VisualStyle.section("character")
+	flashlight.light_energy = float(style.flashlightEnergyLocal if is_local else style.flashlightEnergyOther)
+	flashlight.spot_attenuation = 1.0
+	flashlight.spot_angle_attenuation = 1.4
 	flashlight.shadow_enabled = is_local
 	flashlight.shadow_bias = 0.05
-	flashlight.light_specular = 0.0
+	flashlight.light_specular = float(style.flashlightSpecular)
 	flashlight.top_level = true      # 朝向直接取瞄准角，不跟随身体的平滑转身（否则会叠加两次旋转）
 	add_child(flashlight)
 	beam = MeshInstance3D.new()
@@ -238,6 +240,7 @@ func _setup_light() -> void:
 	beam.mesh = cone
 	var m := ShaderMaterial.new()
 	m.shader = preload("res://shaders/light_beam.gdshader")
+	m.set_shader_parameter("strength", float(style.beamStrength))
 	beam.material_override = m
 	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	beam.top_level = true

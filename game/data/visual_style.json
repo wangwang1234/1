@@ -1,0 +1,335 @@
+{
+  "_doc": "画面升级第一轮：保留夜晚人类房子与三渲二，参数仅用于表现，不修改 sim 或视野范围。",
+  "environment": {
+    "ambientColor": "#a7afc9",
+    "ambientEnergy": 0.3,
+    "moonColor": "#9db9e8",
+    "moonEnergy": 0.68,
+    "moonRotation": [
+      -48,
+      -32,
+      0
+    ],
+    "moonSpecular": 0.6,
+    "shadowDistance": 24.0,
+    "shadowSoftness": 0.7,
+    "exposure": 1.0,
+    "saturation": 0.94,
+    "contrast": 1.03,
+    "glowIntensity": 0.22,
+    "glowThreshold": 1.6,
+    "aoRadius": 0.19,
+    "aoIntensity": 1.65,
+    "indirectIntensity": 0.35
+  },
+  "camera": {
+    "pitchDegrees": 52.0
+  },
+  "character": {
+    "selfGlow": 0.065,
+    "rimBoost": 0.085,
+    "rimTeamMix": 0.25,
+    "flashlightEnergyLocal": 1.9,
+    "flashlightEnergyOther": 1.2,
+    "flashlightSpecular": 0.55,
+    "beamStrength": 0.018,
+    "portraitYawDegrees": 198.0,
+    "portraitLightEnergy": 1.1,
+    "portraitAmbientEnergy": 0.5,
+    "portraitKeyColor": "#ffe7ca",
+    "portraitAmbientColor": "#b6c4df"
+  },
+  "materials": {
+    "object": {
+      "surfaceMode": 0,
+      "rim": 0.075,
+      "outlineScale": 0.8,
+      "roughness": 0.8
+    },
+    "wood": {
+      "surfaceMode": 1,
+      "rim": 0.0,
+      "outlineScale": 0.0,
+      "roughness": 0.74,
+      "color": "#76563d",
+      "colorBlend": 0.44
+    },
+    "tile": {
+      "surfaceMode": 2,
+      "rim": 0.0,
+      "outlineScale": 0.0,
+      "roughness": 0.42,
+      "color": "#bba78e",
+      "colorBlend": 0.28
+    },
+    "fabric": {
+      "surfaceMode": 3,
+      "rim": 0.0,
+      "outlineScale": 0.0,
+      "roughness": 1.0,
+      "color": "#646371",
+      "colorBlend": 0.18
+    },
+    "decor": {
+      "surfaceMode": 0,
+      "rim": 0.025,
+      "outlineScale": 0.45,
+      "roughness": 0.72
+    },
+    "character": {
+      "surfaceMode": 0,
+      "rim": 0.11,
+      "outlineScale": 0.85,
+      "roughness": 0.9
+    }
+  },
+  "decor": {
+    "clusters": 28,
+    "members": 5,
+    "looseDensityScale": 0.65,
+    "clusterRadiusCm": 90,
+    "recipes": {
+      "study": [
+        [
+          "notebook",
+          0.8,
+          0,
+          0
+        ],
+        [
+          "pen",
+          0.9,
+          24,
+          20
+        ],
+        [
+          "paper",
+          0.75,
+          -40,
+          22
+        ],
+        [
+          "clip",
+          0.5,
+          -20,
+          -24
+        ],
+        [
+          "eraser",
+          0.5,
+          44,
+          -18
+        ]
+      ],
+      "kitchen": [
+        [
+          "cookie",
+          0.85,
+          0,
+          0
+        ],
+        [
+          "crumbs",
+          1.0,
+          25,
+          18
+        ],
+        [
+          "fork",
+          0.8,
+          -42,
+          10
+        ],
+        [
+          "cereal",
+          0.9,
+          18,
+          -28
+        ],
+        [
+          "peas",
+          0.9,
+          45,
+          38
+        ]
+      ],
+      "living": [
+        [
+          "car",
+          0.85,
+          0,
+          0
+        ],
+        [
+          "puzzle",
+          0.9,
+          28,
+          25
+        ],
+        [
+          "card",
+          0.7,
+          -35,
+          16
+        ],
+        [
+          "popcorn",
+          0.9,
+          20,
+          -20
+        ],
+        [
+          "wrapper",
+          0.8,
+          -18,
+          -38
+        ]
+      ],
+      "shelf": [
+        [
+          "paper",
+          0.8,
+          0,
+          0
+        ],
+        [
+          "pen",
+          0.9,
+          35,
+          12
+        ],
+        [
+          "notebook",
+          0.65,
+          -30,
+          -28
+        ],
+        [
+          "dust",
+          0.7,
+          30,
+          -36
+        ],
+        [
+          "paperball",
+          0.5,
+          -36,
+          30
+        ]
+      ],
+      "sofa": [
+        [
+          "remote",
+          0.7,
+          0,
+          0
+        ],
+        [
+          "dust",
+          0.9,
+          32,
+          24
+        ],
+        [
+          "hairtie",
+          0.8,
+          -32,
+          20
+        ],
+        [
+          "crumbs",
+          1.0,
+          -12,
+          -26
+        ],
+        [
+          "coin",
+          0.4,
+          42,
+          -18
+        ]
+      ],
+      "fridge": [
+        [
+          "magnet",
+          0.9,
+          0,
+          0
+        ],
+        [
+          "puddle",
+          0.9,
+          38,
+          18
+        ],
+        [
+          "ice",
+          0.9,
+          -32,
+          -18
+        ],
+        [
+          "grape",
+          0.8,
+          -15,
+          28
+        ],
+        [
+          "crumbs",
+          0.8,
+          26,
+          -35
+        ]
+      ],
+      "gift": [
+        [
+          "bow",
+          0.9,
+          0,
+          0
+        ],
+        [
+          "ribbon",
+          0.8,
+          30,
+          20
+        ],
+        [
+          "confetti",
+          1.0,
+          -30,
+          -20
+        ],
+        [
+          "tag",
+          0.7,
+          -18,
+          32
+        ],
+        [
+          "wrapper",
+          0.8,
+          34,
+          -26
+        ]
+      ]
+    },
+    "footprintsCm": {
+      "notebook": 62,
+      "paper": 58,
+      "fork": 44,
+      "spoon": 42,
+      "pen": 37,
+      "remote": 53,
+      "car": 30,
+      "cookie": 28,
+      "wrapper": 34,
+      "puddle": 44,
+      "sock": 50,
+      "ruler": 95,
+      "chopstick": 60,
+      "pencil": 62,
+      "glue": 30
+    }
+  }
+}

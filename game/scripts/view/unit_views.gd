@@ -125,7 +125,8 @@ class StructureView:
 		light.light_energy = 0.6
 		light.omni_range = 2.2 if s.kind == "base" else 1.8
 		light.position = Vector3(0, 1.3 if s.kind == "base" else 0.8, 0)
-		light.light_specular = 0.0
+		light.light_specular = 0.55
+		light.light_size = 0.14
 		add_child(light)
 
 	func sync(s: SimStructure, delta: float) -> void:
@@ -241,7 +242,8 @@ class PropView:
 			light.position = Vector3(0, 0.46, 0)
 			light.shadow_enabled = true
 			light.omni_shadow_mode = OmniLight3D.SHADOW_DUAL_PARABOLOID   # 2 次阴影渲染（立方体是 6 次）
-			light.light_specular = 0.0
+			light.light_specular = 0.55
+			light.light_size = 0.14
 			add_child(light)
 
 	func sync(p: SimProp, delta: float) -> void:

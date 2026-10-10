@@ -23,14 +23,22 @@ static func kind_of(mat_name: String) -> int:
 	return 0
 
 
-static func material(kind: int, outline_px: float = 1.5) -> ShaderMaterial:
-	var key := "%d_%.2f" % [kind, outline_px]
+static func material(kind: int, outline_px: float = 1.5, surface: String = "object") -> ShaderMaterial:
+	var key := "%d_%.2f_%s" % [kind, outline_px, surface]
 	if _cache.has(key):
 		return _cache[key]
 	var m := ShaderMaterial.new()
 	m.shader = TOON
 	m.set_shader_parameter("palette", PALETTE)
 	m.set_shader_parameter("kind", kind)
+	var profiles := VisualStyle.section("materials")
+	var p: Dictionary = profiles.get(surface, profiles["object"])
+	m.set_shader_parameter("surface_mode", int(p.surfaceMode))
+	m.set_shader_parameter("rim_strength", float(p.rim))
+	m.set_shader_parameter("material_roughness", float(p.roughness))
+	m.set_shader_parameter("surface_color", Color(String(p.get("color", "#ffffff"))))
+	m.set_shader_parameter("surface_color_blend", float(p.get("colorBlend", 0.0)))
+	outline_px *= float(p.outlineScale)
 	if kind == 3:
 		m.set_shader_parameter("spec_strength", 0.5)
 	if kind == 4:
@@ -49,7 +57,7 @@ static func material(kind: int, outline_px: float = 1.5) -> ShaderMaterial:
 	return m
 
 
-static func apply(root: Node, outline_px: float = 1.5) -> void:
+static func apply(root: Node, outline_px: float = 1.5, surface: String = "object") -> void:
 	## 遍历子树，把所有 MeshInstance3D 的表面材质换成 toon。
 	for mi in root.find_children("*", "MeshInstance3D", true, false):
 		var m := mi as MeshInstance3D
@@ -58,7 +66,7 @@ static func apply(root: Node, outline_px: float = 1.5) -> void:
 		for s in m.mesh.get_surface_count():
 			var src := m.mesh.surface_get_material(s)
 			var nm := src.resource_name if src != null else "M_toon_base"
-			m.set_surface_override_material(s, material(kind_of(nm), outline_px))
+			m.set_surface_override_material(s, material(kind_of(nm), outline_px, surface))
 
 
 static func set_param(root: Node, param: StringName, value: Variant) -> void:
@@ -74,7 +82,7 @@ static func instance(path: String, outline_px: float = 1.5) -> Node3D:
 		push_error("ToonMaterials: 无法加载 %s" % path)
 		return Node3D.new()
 	var n: Node3D = ps.instantiate()
-	apply(n, outline_px)
+	apply(n, outline_px, VisualStyle.surface_for(path))
 	return n
 
 
@@ -111,7 +119,7 @@ static func merged_mesh(path: String, outline_px: float = 1.5) -> ArrayMesh:
 	for k in tools:
 		var st: SurfaceTool = tools[k]
 		st.commit(out)
-		out.surface_set_material(out.get_surface_count() - 1, material(k, outline_px))
+		out.surface_set_material(out.get_surface_count() - 1, material(k, outline_px, VisualStyle.surface_for(path)))
 	root.free()
 	_mesh_cache[key] = out
 	return out

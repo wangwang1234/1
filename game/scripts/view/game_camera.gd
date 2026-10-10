@@ -1,6 +1,6 @@
 class_name GameCamera
 extends Camera3D
-## 俯视斜角跟随相机（ART_BIBLE 第 2 节）：俯角 56°、视野角 34°，按屏幕宽高自动定距离，
+## 俯视斜角跟随相机：俯角由 visual_style 配置、视野角 34°，按屏幕宽高自动定距离，
 ## 跟随玩家并往准星方向带一点前瞻；震屏（trauma²）+ 开火后坐偏移。地图边缘夹紧。
 
 const PITCH_DEG := 56.0
@@ -13,6 +13,7 @@ var lead := Vector3.ZERO
 var trauma := 0.0
 var kick := Vector3.ZERO
 var bounds := Rect2(0, 0, 50.4, 30.96)
+var pitch_deg := float(VisualStyle.section("camera").get("pitchDegrees", PITCH_DEG))
 var view_width := VIEW_WIDTH
 var _pos := Vector3.ZERO
 var _t := 0.0
@@ -63,7 +64,7 @@ func update(delta: float, follow: Vector3, aim_point: Vector3, alive: bool) -> v
 
 func _apply(_delta: float) -> void:
 	var dist := distance()
-	var pitch := deg_to_rad(PITCH_DEG)
+	var pitch := deg_to_rad(pitch_deg)
 	var p := _pos + kick
 	# 地图边缘夹紧（让画面不出界太多）
 	var half_w := view_width * 0.5
