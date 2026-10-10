@@ -43,7 +43,7 @@
 
 ## 常用命令（已在本机验证；Windows 下把 `tools/xxx.sh` 换成 `tools\xxx.bat`）
 - 运行游戏：`tools/run.sh`（= `godot --path game`）；直接开局 `tools/run.sh --match --weapon ak47`；AI 观战 `tools/run.sh --match --autoplay`
-  - 游戏参数（写在 `--` 之后）：`--match` `--autoplay` `--mode full|slice`（默认 full 完整地图）`--seed N` `--skin gold|pudding|silver|stripe` `--weapon <武器 id>`（18 把，见 `weapons.json`）`--duo`（本地双人分屏）`--p2 pad|keys2`（2P 用手柄 / 方向键）`--quit-after 秒`
+  - 游戏参数（写在 `--` 之后）：`--match` `--autoplay` `--mode full|slice`（默认 full 完整地图）`--seed N` `--difficulty easy|normal|hard|hell`（AI 难度，默认 normal）`--skin gold|pudding|silver|stripe` `--weapon <武器 id>`（18 把，见 `weapons.json`）`--duo`（本地双人分屏）`--p2 pad|keys2`（2P 用手柄 / 方向键）`--quit-after 秒`
 - 全部测试：`tools/test.sh`（sim 测试 + 表现层 headless 跑 2 分钟 AI 对局 + `tests/view_smoke.tscn`（18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏）+ 主菜单冒烟，日志里有 SCRIPT ERROR 即失败）
   - 只跑 sim 测试：`godot --headless --path game -s res://tests/run_all.gd`（`-- --only 名称` 只跑一个文件）
   - 注意：`-s` 脚本模式下没有自动加载（Settings / Audio / Capture），用到它们的表现层测试要写成场景（`godot --headless --path game res://tests/view_smoke.tscn`）
@@ -53,7 +53,7 @@
 - 生成图标：`tools/assets.sh icon_kit`（道具 / 宠物 / 强化 / 天赋 / 进化配件，出 PNG 到 `game/assets/icons/`）
 - 改了调色板 / 模型 / 音效后让 Godot 重新导入：`godot --headless --path game --import`
 - 截图（窗口模式；无显示器时自动套 xvfb-run）：`tools/capture.sh <场景> <输出目录> [分辨率] [参数]`
-  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
+  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `fb1` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
   - `b3map`：七个美术区域、建筑破损阶段、新特效、整张地图俯瞰（`--parts zones,structs,fx,overview`，`--zones kitchen,fridge` 只拍部分区域）
   - 例：`tools/capture.sh style review/x 1920x1080 --n 6 --from 30 --every 5`
 - 录屏：`tools/record.sh out.mp4 [秒数] [分辨率] [种子]`（Godot Movie Maker 固定 30 帧 + ffmpeg 转码）
@@ -66,6 +66,7 @@
 - 操作系统：Ubuntu 24.04（Linux 容器，4 核，无显示器、无声卡、无 GPU）
 - Godot：4.7.2-stable，**从源码编译**（官方下载被网络策略挡住，git 克隆可用）
   - 编辑器：`/home/user/godotengine/godot/bin/godot.linuxbsd.editor.x86_64`，软链到 `/usr/local/bin/godot`
+  - 2026-10-10 容器重建后：GitHub 下载已放行，直接下官方 `Godot_v4.7.2-stable_linux.x86_64.zip` 解压后软链到 `/usr/local/bin/godot` 即可（不用再从源码编译）；截图要的软件 Vulkan 用 `apt-get install -y mesa-vulkan-drivers`；然后 `godot --headless --path game --import`
   - Windows 导出模板（同样从源码交叉编译，mingw）：`~/.local/share/godot/export_templates/4.7.2.stable/windows_release_x86_64.exe`
   - macOS 导出模板：2026-10 起网络策略放行了 GitHub 下载，从官方 `Godot_v4.7.2-stable_export_templates.tpz` 里解出 `macos.zip` 放到同一目录（容器重建后要重新下载）
   - 窗口模式靠 `xvfb-run` + Mesa lavapipe（软件 Vulkan，Forward+ 能跑但 1080p 只有 1–3 帧/秒）：截图一律加 `--fixed-fps`，画面和机器快慢无关
@@ -80,6 +81,8 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-10 导演反馈第一轮（玩法，审阅包 `review/feedback1/`，汇报 `review/feedback1/REPORT.md`）：三选一时照样能开火；小兵 / 野怪多掉瓜子和加血奶酪；手动瞄准开火时轻微辅助瞄准（设置 → 操作，四档）；AI 难度四档（`game/data/difficulty.json`，开局大厅选，队友用较稳的一档）+ AI 新战术（躲子弹、集火残血、不越塔、回家补血、捡瓜子奶酪、换弹后撤、记忆目标、被围撤退、支援队友）；鼠窝回血每 0.3 秒一跳、每秒 25%；武器射程整体收短约 35%（普通枪 ≤ 620，狙击类 ≤ 900），建筑射程跟着收短；加速决战时 AI 拼命推。
+  - 分工：ChatGPT / Codex 负责画面（分支 `codex/visual-polish-pass1`），我负责玩法和内容；尽量不动对方改的文件。
 - 已完成：批次 0（交接包）；批次 1 垂直切片（审阅包 `review/batch1/`）；**批次 2 全部系统**（2026-10，审阅包 `review/batch2/`，汇报 `review/batch2/REPORT.md`，Windows 包 `release/manzai_batch2_win64.zip`）。
   - 批次 2 内容：18 把武器 × 3 路线 × 9 级（含质变）、13 种道具、22 种强化（全部有外观）、12 个天赋、3 个宠物；蟑螂窝 / 鼠帮枪手营地、鼠王；完整地图 5 对 5（三条兵线、3 炮台 + 鼠窝护盾规则、加速决战）；全部 AI 行为、视野听觉；开局大厅、图鉴 8 页、设置 3 页、结算、本地双人分屏、HUD 补全；新模型都是风格统一的简化版。
   - 测试：sim 测试（504 种武器 × 路线 × 等级组合、道具、野怪鼠王宠物天赋、切片和完整地图都能分出胜负）+ 表现层冒烟（`tests/view_smoke.tscn`）+ 主菜单冒烟，`tools/test.sh` 一条命令。

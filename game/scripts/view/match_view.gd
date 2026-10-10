@@ -379,7 +379,7 @@ func _physics_process(dt: float) -> void:
 			var mp := get_viewport().get_mouse_position()
 			if split:
 				mp = pl.box.get_local_mouse_position()
-			pl.input.poll(pl.ham, pl.cam, mp, not pl.ham.choices.is_empty(), world)
+			pl.input.poll(pl.ham, pl.cam, mp, not pl.ham.choices.is_empty() and pl.hud.card_at(mp) >= 0, world)
 	var steps := 1
 	if time_scale < 1.0:
 		# 慢动作：按比例跳过逻辑帧

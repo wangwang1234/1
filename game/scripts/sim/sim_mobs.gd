@@ -117,8 +117,7 @@ static func on_kill(w: SimWorld, t: SimMob, src: Dictionary) -> void:
 		if int(t.camp.alive) <= 0:
 			t.camp.resp = w.t + float(D.resp)
 	w.xp_near(killer, t, float(D.xp))
-	if w.rnd() < float(D.gemChance):
-		w.drop_gem(t.x, t.y, float(D.gemXp))
+	w.drop_loot(t.x, t.y, D)
 	if t.kind == "rat":
 		w.emit({"t": "pop", "x": t.x, "y": t.y, "h": t.r * 2.8, "text": "吱！", "color": "#ffb3c1", "size": 18})
 	w.emit({"t": "kill", "id": t.id, "kind": t.kind, "x": t.x, "y": t.y, "team": "neutral", "killer": killer.id if killer != null else -1})

@@ -16,7 +16,8 @@
   "respawnPerLevel": 0.6,
   "respawnMax": 14,
   "baseHealRadius": 340,
-  "baseHeal": 14,
+  "baseHealPct": 0.25,
+  "baseHealTick": 0.3,
   "revealOnFire": 0.45,
   "dmgPerLevel": 0.03,
   "killXpBase": 22,
@@ -128,12 +129,13 @@
   "maxMinions": 96,
   "weights": {"minion": 1.0, "ham": 1.3, "other": 1.6},
   "xp": 7,
+  "drop": {"_doc": "被仓鼠（或仓鼠的宠物、炮台、道具）打死时掉落：瓜子数量区间、每颗经验、奶酪概率", "gems": [1, 3], "gemXp": 4, "cheese": 0.07},
   "nearRadiusNonHam": 650,
   "nearShareNonHam": 0.5
  },
  "structure": {
-  "base": {"r": 110, "hp": 5200, "range": 560, "dmg": 40, "cd": 0.8, "muzzleH": 96, "alt": 15},
-  "turret": {"r": 34, "hp": 1700, "range": 480, "dmg": 30, "cd": 1.0, "muzzleH": 60, "alt": 0},
+  "base": {"r": 110, "hp": 5200, "range": 460, "dmg": 40, "cd": 0.8, "muzzleH": 96, "alt": 15},
+  "turret": {"r": 34, "hp": 1700, "range": 400, "dmg": 30, "cd": 1.0, "muzzleH": 60, "alt": 0},
   "turnRate": 6,
   "fireAngle": 0.3,
   "retarget": 0.25,
@@ -274,6 +276,7 @@
   "cardDelay": 0.9,
   "retarget": [0.25, 0.45],
   "lowHp": 0.3,
+  "suddenLowHp": 0.18,
   "recoverHp": 0.85,
   "aimJitter": 0.05,
   "leadK": 0.7,
@@ -301,6 +304,10 @@
    "maxLevel": 9,
    "first": [12, 30]
   },
+  "dodge": {"_doc": "躲子弹（概率按难度 dodge）：every 秒看一次，look 范围内朝自己飞来、离弹道 半径和+pad 以内的子弹，往侧面闪 time 秒", "every": 0.15, "look": 260, "pad": 14, "time": 0.3},
+  "outnumberR": 560,
+  "towerMargin": 40,
+  "tacticsEvery": 0.5,
   "meleeRangeK": 0.85,
   "flameRangeK": 0.8,
   "meleeKeep": 18
@@ -336,6 +343,15 @@
    "padTargets": [[1890, 1150], [3150, 1150], [1890, 1946], [3150, 1946]]
   }
  },
+ "aimAssist": {
+  "_doc": "手动瞄准（鼠标 / 右摇杆）的轻微辅助：只在开火时生效。cone = 吸附角（弧度，另加目标自身张角）；pull = 拉回偏差的比例；maxTurn = 最多修正多少弧度；rangeK = 射程倍数；hamBias < 1 优先仓鼠。levels 是设置里的强度档（乘到 cone / pull / maxTurn 上）",
+  "cone": 0.14,
+  "pull": 0.5,
+  "maxTurn": 0.07,
+  "rangeK": 1.05,
+  "hamBias": 0.7,
+  "levels": {"off": 0, "light": 0.6, "normal": 1.0, "strong": 1.4}
+ },
  "homing": {
   "retarget": 0.15,
   "range": 520,
@@ -355,8 +371,9 @@
   "roach": {
    "camp": 6,
    "xp": 6,
-   "gemChance": 0.3,
-   "gemXp": 5,
+   "gems": [1, 2],
+   "gemXp": 4,
+   "cheese": 0.06,
    "aggroR": 190,
    "wander": 50,
    "bite": 5,
@@ -368,8 +385,9 @@
   "rat": {
    "camp": 3,
    "xp": 16,
-   "gemChance": 0.8,
-   "gemXp": 8,
+   "gems": [2, 3],
+   "gemXp": 7,
+   "cheese": 0.3,
    "aggroR": 260,
    "wander": 110,
    "keep": 250,

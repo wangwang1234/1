@@ -34,6 +34,7 @@ static func talents() -> Dictionary: return load_json("talents")
 static func pets() -> Dictionary: return load_json("pets")
 static func skins() -> Dictionary: return load_json("skins")
 static func map_layout() -> Dictionary: return load_json("map_layout")
+static func difficulty() -> Dictionary: return load_json("difficulty")
 static func rules() -> Dictionary: return load_json("rules")
 
 

@@ -15,6 +15,7 @@ extends Node
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
+##   fb1        导演反馈第一轮：三选一时照样开火、小怪掉瓜子和奶酪、鼠窝快速回血（再配合 ui2 看大厅难度和设置里的辅助瞄准）
 ##   perf       帧率测试：AI 对局实时跑 --dur 秒，写 perf.json / perf.csv（逻辑耗时、帧时间、1% 低帧）
 ## 建议配合 --fixed-fps 60（截图确定性，每帧 = 一步逻辑）；perf 不要加 --fixed-fps。
 
@@ -80,6 +81,8 @@ func _run() -> void:
 			await _gameplay()
 		"cards":
 			await _cards()
+		"fb1":
+			await _fb1()
 		"loadout":
 			await _loadout()
 		"lineup":
@@ -609,6 +612,43 @@ func _gameplay() -> void:
 		await _wait(every, true)
 		t += every
 	print("[capture] 对局时间 %.1f 秒，结束=%s 胜方=%s" % [mv.world.t, mv.world.over, mv.world.winner])
+
+
+func _fb1() -> void:
+	var mv := await _start(true, String(args.get("weapon", "ak47")))
+	var w := mv.world
+	var h := mv.local
+	h.ai.prof.cardDelay = 999.0     # 让卡一直挂着，看 AI 边选边打
+	await _wait(1.0)
+	# 1) 三选一挂着的时候照样开火：前方放几只敌方小兵
+	var fw := 1.0 if h.team == "blue" else -1.0
+	for i in 3:
+		var m := w.spawn_minion("red" if h.team == "blue" else "blue", "mid")
+		m.x = h.x + fw * (230.0 + i * 30.0)
+		m.y = h.y + (i - 1) * 40.0
+		m.px = m.x
+		m.py = m.y
+	SimHamsterLogic.give_xp(w, h, float(h.xp_next - h.xp) + 1.0)
+	await _wait(0.9)
+	await shot("fb1_cards_firing_a")
+	await _wait(0.25)
+	await shot("fb1_cards_firing_b")
+	# 2) 小怪掉瓜子和奶酪
+	var foe := "red" if h.team == "blue" else "blue"
+	for i in 6:
+		var m := w.spawn_minion(foe, "mid")
+		m.x = h.x + fw * (170.0 + (i % 3) * 45.0)
+		m.y = h.y - 90.0 + (i / 3) * 180.0
+		w.deal_dmg(m, 9999.0, {"team": h.team, "owner": h, "x": m.x, "y": m.y})
+	w._add_item("cheese", h.x + fw * 200.0, h.y, 0.0)
+	await _wait(0.7)
+	await shot("fb1_drops")
+	# 3) 鼠窝快速回血：残血站回自家鼠窝
+	h.hp = h.max_hp * 0.15
+	SimHamsterLogic.place_at_base(w, h)
+	h.ai.state = "retreat"
+	await _wait(0.65)
+	await shot("fb1_base_heal")
 
 
 func _cards() -> void:

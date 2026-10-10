@@ -193,6 +193,39 @@ static func alt_target(w: SimWorld, h: SimHamster, rr: float) -> SimEntity:
 	return l[0] if not l.is_empty() else null
 
 
+static func aim_assist(w: SimWorld, h: SimHamster, aim: float, k: float) -> float:
+	## 手动瞄准的轻微辅助（玩家开火时）：准星方向离某个看得见的敌人只差一点（角度在 cone×k + 目标自身张角内）时，
+	## 把枪口往目标中心拉 pull×k 的偏差，最多拉 maxTurn×k 弧度。优先仓鼠（hamBias 越小越优先）。抛射武器不吸附（它们瞄的是落点）。
+	var A: Dictionary = w.R.aimAssist
+	var kind := String(h.weapon().get("kind", "bullet"))
+	if k <= 0.0 or kind == "lob":
+		return aim
+	var rr := maxf(float(h.weapon().get("reach", 0.0)) * 1.4, range_of(h)) * float(A.rangeK)
+	var V: Dictionary = w.vis[h.team]
+	var best_e := 0.0
+	var best_s := 1e9
+	for e: SimEntity in w.foe_candidates(true):
+		if e.team == h.team or not V.has(e.id):
+			continue
+		var dx := e.x - h.x
+		var dy := e.y - h.y
+		var d := sqrt(dx * dx + dy * dy)
+		if d > rr + e.r or d < 1.0:
+			continue
+		var err := SimUtil.ang_diff(aim, atan2(dy, dx))
+		var cone := float(A.cone) * k + atan2(e.r, d)
+		if absf(err) > cone:
+			continue
+		var score := absf(err) / cone * (float(A.hamBias) if e is SimHamster else 1.0)
+		if score < best_s and w.map.has_los(h.x, h.y, e.x, e.y):
+			best_s = score
+			best_e = err
+	if best_s >= 1e9:
+		return aim
+	var m := float(A.maxTurn) * k
+	return aim + clampf(best_e * float(A.pull) * k, -m, m)
+
+
 static func auto_aim(w: SimWorld, h: SimHamster, rr: float) -> SimEntity:
 	## 手柄辅助瞄准（原型 autoAim）：看得见的敌方仓鼠 → 小兵 / 野怪（0.75 倍距离）→ 没有护盾的敌方建筑
 	var V: Dictionary = w.vis[h.team]

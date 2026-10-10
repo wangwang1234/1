@@ -466,10 +466,10 @@
        "special": {"homeCone": 3.2}
       },
       "6": {
-       "special": {"homeRange": 720}
+       "special": {"homeRange": 480}
       },
       "9": {
-       "special": {"multi": 3, "multiSpread": 0.25, "multiDmg": 0.6, "multiRange": 820, "multiCone": 1.2, "multiCd": 1.3}
+       "special": {"multi": 3, "multiSpread": 0.25, "multiDmg": 0.6, "multiRange": 540, "multiCone": 1.2, "multiCd": 1.3}
       }
      }
     }
@@ -864,7 +864,7 @@
       "3": {"spdMul": 1.2},
       "6": {"magAdd": 6},
       "9": {
-       "special": {"gunKata": 8, "kataSpd": 1100, "kataRange": 500, "kataKb": 60, "kataR": 4.5}
+       "special": {"gunKata": 8, "kataSpd": 1100, "kataRange": 380, "kataKb": 60, "kataR": 4.5}
       }
      }
     }

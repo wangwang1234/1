@@ -1,5 +1,5 @@
 extends Node
-## 设置（自动加载 Settings）：音量、特效强度、震屏、伤害数字、帧率显示、全屏、垂直同步、渲染比例，以及开局大厅上次的选择。
+## 设置（自动加载 Settings）：音量、特效强度、震屏、伤害数字、帧率显示、全屏、垂直同步、渲染比例、辅助瞄准强度，以及开局大厅上次的选择。
 ## 保存在 user://settings.cfg。按键自定义留到批次 5。
 
 const PATH := "user://settings.cfg"
@@ -14,6 +14,7 @@ var shake := 1.0
 var show_fps := false
 var vsync := true
 var render_scale := 1.0
+var aim_assist := "normal"    # 手动瞄准辅助：off / light / normal / strong（rules.json 的 aimAssist.levels）
 var lobby := {}               # 开局大厅上次的选择
 
 
@@ -37,6 +38,7 @@ func load_cfg() -> void:
 	show_fps = bool(c.get_value("game", "fps", show_fps))
 	vsync = bool(c.get_value("video", "vsync", vsync))
 	render_scale = float(c.get_value("video", "scale", render_scale))
+	aim_assist = String(c.get_value("game", "aim_assist", aim_assist))
 	lobby = c.get_value("lobby", "last", {})
 
 
@@ -52,11 +54,13 @@ func save_cfg() -> void:
 	c.set_value("game", "fps", show_fps)
 	c.set_value("video", "vsync", vsync)
 	c.set_value("video", "scale", render_scale)
+	c.set_value("game", "aim_assist", aim_assist)
 	c.set_value("lobby", "last", lobby)
 	c.save(PATH)
 
 
 func apply() -> void:
+	PlayerInput.assist_level = float(Data.rule("aimAssist.levels." + aim_assist, 1.0))
 	_bus("Master", master_volume)
 	_bus("SFX", sfx_volume)
 	_bus("UI", sfx_volume)

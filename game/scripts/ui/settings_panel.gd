@@ -53,8 +53,10 @@ func _ready() -> void:
 	_slider(pa, "音效", Settings.sfx_volume, 0.0, 1.0, func(x: float) -> void: Settings.sfx_volume = x)
 	_slider(pa, "音乐", Settings.music_volume, 0.0, 1.0, func(x: float) -> void: Settings.music_volume = x)
 	var pc: VBoxContainer = pages.controls
+	_seg(pc, "辅助瞄准", Settings.aim_assist, [["off", "关"], ["light", "轻微"], ["normal", "标准"], ["strong", "强"]],
+		func(x: String) -> void: Settings.aim_assist = x)
 	var rows := [
-		["移动", "WASD", "左摇杆", "方向键"], ["瞄准", "鼠标", "右摇杆（不推时自动瞄准）", "自动瞄准"],
+		["移动", "WASD", "左摇杆", "方向键"], ["瞄准", "鼠标（带辅助瞄准）", "右摇杆（不推时自动瞄准）", "自动瞄准"],
 		["射击", "鼠标左键", "RT", "回车"], ["翻滚", "空格", "A", "右 Shift"], ["换弹", "R", "X", "/"],
 		["道具", "Q", "LB", "."], ["选升级", "1 / 2 / 3", "X / Y / B", "8 / 9 / 0"], ["暂停", "Esc", "Start", "Esc"],
 	]
@@ -115,6 +117,25 @@ func _slider(v: VBoxContainer, text: String, val: float, lo: float, hi: float, c
 		Settings.apply())
 	h.add_child(s)
 	h.add_child(pct)
+
+
+func _seg(v: VBoxContainer, text: String, val: String, opts: Array, cb: Callable) -> void:
+	var h := _row(v, text)
+	var grp := ButtonGroup.new()
+	for op in opts:
+		var b := Button.new()
+		b.theme_type_variation = "GhostButton"
+		b.toggle_mode = true
+		b.button_group = grp
+		b.text = String(op[1])
+		b.custom_minimum_size = Vector2(96, 0)
+		b.button_pressed = val == String(op[0])
+		var key := String(op[0])
+		b.pressed.connect(func() -> void:
+			cb.call(key)
+			Settings.apply()
+			Audio.play2d("ui_click", -8.0))
+		h.add_child(b)
 
 
 func _check(v: VBoxContainer, text: String, val: bool, cb: Callable) -> void:

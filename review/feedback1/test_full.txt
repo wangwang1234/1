@@ -1,0 +1,92 @@
+== sim 测试 ==
+  ok   test_cards.test_roll_basic (52 ms)
+  ok   test_cards.test_no_maxed_path (37 ms)
+  ok   test_cards.test_weapon_swap_resets_evo (32 ms)
+  ok   test_cards.test_swap_probability (365 ms)
+  ok   test_cards.test_label_hides_level_numbers (33 ms)
+  ok   test_data.test_all_json_load (0 ms)
+  ok   test_data.test_weapons_have_fields (0 ms)
+  ok   test_data.test_evolutions_cover_all_weapons (1 ms)
+  ok   test_data.test_scope_abilities_exist (0 ms)
+  ok   test_data.test_xp_curve_matches_formula (0 ms)
+  ok   test_gadgets.test_frag (94 ms)
+  ok   test_gadgets.test_molotov_fire (83 ms)
+  ok   test_gadgets.test_flash_blinds_ai (107 ms)
+  ok   test_gadgets.test_mine_triggers (100 ms)
+  ok   test_gadgets.test_sentry_fires (644 ms)
+  ok   test_gadgets.test_eshield_absorbs (52 ms)
+  ok   test_gadgets.test_smoke_blocks_vision (80 ms)
+  ok   test_gadgets.test_flare_reveals (74 ms)
+  ok   test_gadgets.test_decoy (51 ms)
+  ok   test_gadgets.test_jetpack (63 ms)
+  ok   test_gadgets.test_medkit_heals (104 ms)
+  ok   test_gadgets.test_freeze (79 ms)
+  ok   test_gadgets.test_beacon_teleport (51 ms)
+  ok   test_gadgets.test_gadget_levels_cd (50 ms)
+  ok   test_map.test_full_map_builds (41 ms)
+  ok   test_map.test_slice_map_builds (29 ms)
+  ok   test_map.test_resolve_circle_pushes_out (56 ms)
+  ok   test_map.test_los_blocked_by_wall (41 ms)
+  ok   test_map.test_flow_field_reaches_goal (52 ms)
+  ok   test_match.test_ai_match_slice_2min (8799 ms)  slice 2 分钟：8763 ms，最高 Lv5，击杀 15，小兵 6，波次 4
+  ok   test_match.test_ai_match_full_2min (28351 ms)  full 2 分钟：28298 ms
+  ok   test_match.test_determinism (8490 ms)
+  ok   test_match.test_all_weapon_evo_levels (154538 ms)  504 种组合（18 把武器 × 3 路线 × 9 级 + 全满）
+  ok   test_match.test_match_can_end (35 ms)
+  ok   test_match.test_dispose_frees_world (2598 ms)
+  ok   test_match.test_slice_match_finishes (60267 ms)
+  ok   test_match.test_full_match_finishes (344054 ms)  full 5v5：1276 秒分出胜负，blue 胜
+  ok   test_mobs.test_camps_spawn_full_map (91 ms)
+  ok   test_mobs.test_mobs_aggro_and_attack (437 ms)
+  ok   test_mobs.test_camp_clear_and_respawn (12975 ms)
+  ok   test_mobs.test_boss_spawn_and_crown (2054 ms)
+  ok   test_mobs.test_pets (166 ms)
+  ok   test_mobs.test_talent_squad_and_detonate (79 ms)
+  ok   test_mobs.test_full_match_5min_everything (75414 ms)  full 5v5 5 分钟：75355 ms，最高 Lv8，宠物 2，道具种类 1，事件种类 39，结束=false
+  ok   test_tuning.test_fire_while_choosing_cards (44 ms)
+  ok   test_tuning.test_base_heal_ticks_fast (88 ms)
+  ok   test_tuning.test_minion_and_mob_drops (91 ms)
+  ok   test_tuning.test_cheese_kept_at_full_hp (52 ms)
+  ok   test_tuning.test_aim_assist (34 ms)
+  ok   test_tuning.test_difficulty_profiles (145 ms)
+  ok   test_tuning.test_difficulty_changes_outcome (18326 ms)  地狱 vs 简单 4 分钟击杀 39 : 3
+  ok   test_tuning.test_ai_dodges_bullets (34 ms)
+  ok   test_tuning.test_ai_tower_safe (49 ms)
+  ok   test_tuning.test_ranges_fit_screen (0 ms)
+  ok   test_tuning.test_ai_full_match_each_difficulty (194877 ms)
+  ok   test_weapons.test_pistol_params (35 ms)
+  ok   test_weapons.test_ak_params (33 ms)
+  ok   test_weapons.test_shotgun_params (33 ms)
+  ok   test_weapons.test_fire_spawns_bullets_and_uses_ammo (35 ms)
+  ok   test_weapons.test_damage_falloff (36 ms)
+  ok   test_weapons.test_pvp_hit_cap (35 ms)
+  ok   test_weapons_b2.test_params_sample (1 ms)
+  ok   test_weapons_b2.test_every_path_has_effects (0 ms)
+  ok   test_weapons_b2.test_rocket_explodes (72 ms)
+  ok   test_weapons_b2.test_rocket_cluster_and_multi (169 ms)
+  ok   test_weapons_b2.test_katana_swing_and_deflect (71 ms)
+  ok   test_weapons_b2.test_katana_wave_and_iaido (61 ms)
+  ok   test_weapons_b2.test_flame (67 ms)
+  ok   test_weapons_b2.test_gl_lob_and_sticky (158 ms)
+  ok   test_weapons_b2.test_rail_charge_and_beam (69 ms)
+  ok   test_weapons_b2.test_laser_ticks (83 ms)
+  ok   test_weapons_b2.test_minigun_spin (101 ms)
+  ok   test_weapons_b2.test_revolver_deadeye (74 ms)
+  ok   test_weapons_b2.test_smg_split_and_bounce_home (57 ms)
+  ok   test_weapons_b2.test_dual_alternates (55 ms)
+  ok   test_weapons_b2.test_amr_wall_pierce (83 ms)
+  ok   test_weapons_b2.test_all_kinds_ai_full_match (23756 ms)
+测试：77 项，失败 0 项，用时 940.1 秒
+[audio] 载入 74 种音效
+WARNING: 24932 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 9 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)
+== 表现层冒烟：2 分钟 AI 对局 ==
+表现层冒烟：通过
+== 表现层冒烟：18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏 ==
+武器 / 道具 / 分屏冒烟：通过
+== 主菜单冒烟 ==
+主菜单冒烟：通过
+全部通过
+exit 0
