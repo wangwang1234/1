@@ -21,10 +21,14 @@ tools/blender/
   lib/anim.py           关键姿势、插值缓动、循环、挤压拉伸
   lib/export.py         glTF 导出设置
   lib/preview.py        预览渲染（游戏镜头 / 正面 / 侧面 / 转台）、图标渲染
+  lib/gun_parts.py      枪械通用零件和细节件（螺丝、抛壳窗、贴花、警示条纹、爪印贴纸、背带环）
   assets/<类别>/<名称>.py  每个资产一个脚本，build(params) 生成；皮肤、颜色、等级等都是参数
+  assets/env/env_zone_kit.py   批次 3 分区美术：冰箱、橱柜、沙发裙边、分区地面、41 种分区装饰
+  assets/icons/icon_kit.py     全套图标（道具 / 宠物 / 强化 / 天赋 / 进化配件），只出 PNG 到 game/assets/icons/
 ```
 - 运行方式：`blender --background --python tools/blender/build.py -- --asset chr_hamster`
-- 输出：模型到 `game/assets/models/<类别>/`，预览图到 `review/previews/<类别>/`。
+- 输出：模型到 `game/assets/models/<类别>/`，预览图到 `review/previews/<类别>/`。一个脚本导出多件时可以用 `item_previews` 给每件单独出图。
+- 图标：3D 模型直接渲染（3/4 视角、描边、透明底、256×256）。武器图标由武器脚本自己出（`wpn_<id>.png`），其余由 `icon_kit.py` 出：`gad_<道具>`、`pet_<宠物>`、`abl_<强化>`、`tal_<天赋>`、`evo_<配件类>_<a|b|c>`（进化路线按 `evolutions.json` 的 `attachmentType` 对应到配件图）。界面里统一用 `UiTheme.icon(名)` / `card_icon()` / `evo_icon()` 取。
 - 好处：风格参数集中，改一处（比如描边粗细、调色板）就能整批重新生成。
 - **质量要求**：
   - 不能有“默认几何体拼起来”的感觉。有机形体用细分 / metaball / remesh 后再整理；硬表面用倒角加加权法线。
@@ -33,7 +37,7 @@ tools/blender/
 
 ## 4. 材质约定
 - Blender 里只放材质槽名和调色板 UV。Godot 导入脚本按材质名换成 toon 着色器：`M_toon_<部位>`、`M_metal`、`M_emissive_<色名>`、`M_glass`、`M_team`（运行时换队伍色）。
-- 调色板贴图 `palette.png`，256×256，每格 16×16 一个色块；上半部分是固有色，下半部分是自发光色。
+- 调色板贴图 `palette.png`，256×512（批次 3 从 256×256 扩大），16 列 × 32 行，每格 16×16 一个色块；上半部分（第 0～15 行）是固有色，下半部分是对应的自发光色。队伍色在第 6 / 7 行（运行时按 1/32 纵向偏移）、皮肤色和路线色按 1/16 横向偏移。颜色名 → 格子见 `palette.json`（Godot 端程序生成的网格用）。
 
 ## 5. 骨骼与动画
 - 仓鼠骨架：root、pelvis、spine、head、ear_L/R、arm_L/R（2 节）、leg_L/R（2 节）、tail（2 节），挂点 weapon_socket、hat_socket、back_socket、face_socket。
@@ -66,6 +70,7 @@ game/
   - 本地分屏：两个 SubViewport 共用主 3D 世界，每人一个 `GameCamera` + 一套 `Hud`；视野靠渲染层（蓝队第 2 位、红队第 3 位，相机 `cull_mask = 1 | 队伍位`），`MatchView.apply_mask()` 把几何体和点光 / 聚光放到“哪些本地队伍看得见”的层上。
 - 固定逻辑帧 60Hz，渲染插值；随机数用带种子的 RNG，方便复现和联机。
 - 大量重复物体（子弹、弹壳、小兵、装饰）用 MultiMesh 或对象池。
+- 批次 3 新增：地图分区美术（`map_view.gd` 按 `map_layout.json` 的 `art` 分区铺地面、边界、装饰和区域灯光；地面、地毯和小装饰不投影）；建筑三阶段破损（模型里的 `dmg1` / `dmg2` / `wreck` 节点，阈值在 `rules.json` 的 `view.structDamage`）；鼠王出场演出和披风摆动（`b2_views.gd`）；新特效形状（冰晶、六边形、加号、火舌）、锯齿闪电和光柱（`fx_system.gd`、`world_fx.gd`）。
 
 ## 7. 渲染方案
 - toon.gdshader：色阶明暗、冷紫阴影色、边缘光、队伍色、受击闪白、溶解消失。
@@ -79,10 +84,11 @@ game/
 - 用 Python 离线合成音效，参照原型 `reference/prototype/src/n1b.js` 的枪声配方（瞬态 + 主体 + 尾音 + 混响 + 弹壳），每种至少 3 个变体，导出 OGG。
 - 可以加入 CC0（公有领域）素材补足质感；来源和授权写进 `game/assets/audio/CREDITS.md`。不用任何不可商用的素材。
 - Godot 里用随机变体和音高、3D 衰减，分 SFX / 音乐 / UI 三条总线。
+- 音乐（批次 3）：`tools/audio/music.py --all` 合成 6 首（menu / match / rush / boss 循环曲，victory / defeat 短曲），乐谱写在脚本里、固定种子；`--analyze` 出频谱图和响度数据到 `review/batch3/audio/`。游戏里 `Audio.play_music()` 交叉淡入淡出，对局按状态切 match / rush / boss。
 
 ## 9. 测试
 - **sim 测试（headless）**：全部 18 把武器 × 各进化等级的 AI 对局，跑 2 分钟无报错（原型就是这样压力测试的）；同种子结果一致；升级卡规则（不出满级路线、换武器清零等）。
-  - 现状（批次 2）：`tests/test_*.gd`，`godot --headless --path game -s res://tests/run_all.gd`。武器 × 路线 × 等级共 504 种组合、13 种道具、野怪 / 鼠王 / 宠物 / 天赋、切片和完整地图对局都能分出胜负。
+  - 现状（批次 2～3）：`tests/test_*.gd`，`godot --headless --path game -s res://tests/run_all.gd`。武器 × 路线 × 等级共 504 种组合、13 种道具、野怪 / 鼠王 / 宠物 / 天赋、切片和完整地图对局都能分出胜负。
 - **表现层冒烟（headless，带自动加载）**：`tests/view_smoke.tscn` 把 18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏的表现层全部跑一遍，日志里不能有 SCRIPT ERROR。`-s` 脚本模式下没有自动加载，所以用到 Settings / Audio 的测试要写成场景。
 - **截图测试（窗口模式，headless 不渲染画面）**：固定场景、固定镜头批量截图到 `review/`，用来自查和给导演审阅。
 - **性能**：固定场景记录帧时间。目标 PC 1080p 稳 60（争取 120），中端手机稳 30（争取 60）。

@@ -103,7 +103,8 @@ func _flush() -> void:
 		var mmi := MultiMeshInstance3D.new()
 		mmi.multimesh = mm
 		mmi.name = String(p).get_file().get_basename()
-		if String(p).contains("floor"):
+		if String(p).contains("floor") or String(p).contains("rug_") or String(p).contains("deco"):
+			# 地面、地毯、小装饰不投影：几乎看不出来，却要在月光和每盏台灯的阴影里各画一遍
 			mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		add_child(mmi)
 	_batches.clear()

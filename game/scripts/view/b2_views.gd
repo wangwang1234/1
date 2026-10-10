@@ -155,6 +155,8 @@ class MobView:
 			model.scale = Vector3(0.85, 1.25, 0.85)
 		else:
 			var u := t - fall
+			if u < delta * 1.01:
+				Audio.play3d("boom_big", global_position, -4.0, 0.05, 0.5)
 			model.position.y = 0.0
 			var sq := exp(-u * 7.0) * cos(u * 22.0) * 0.32
 			model.scale = Vector3(1.0 + sq, 1.0 - sq, 1.0 + sq)

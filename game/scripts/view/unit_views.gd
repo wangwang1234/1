@@ -171,6 +171,8 @@ class StructureView:
 		elif st == 3 and head:
 			head.rotation.x = 0.5
 			head.position.y = 0.45
+		if up and st < 3:
+			Audio.play3d("clank", global_position + Vector3(0, 0.5, 0), -3.0, 0.15, 0.2)
 		if up and fx and st < 3:
 			# 掉一个破损阶段：一小撮碎片 + 尘土
 			var p := global_position + Vector3(0, 1.0 if kind == "base" else 0.5, 0)
