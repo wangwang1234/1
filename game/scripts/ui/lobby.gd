@@ -8,7 +8,9 @@ signal closed
 signal skin_changed(skin: String)
 
 const DEFAULTS := {"duo": false, "mode": "full", "p1_team": "blue", "p2_team": "red", "p2_input": "pad", "skin": "gold", "skin2": "pudding",
-	"ai_blue": 4, "ai_red": 4, "weapon": "pistol"}
+	"ai_blue": 4, "ai_red": 5, "ai_auto": true, "weapon": "pistol"}
+## AI 自动配平时每队凑满几只（完整地图 5 对 5，中路小图 3 对 3）
+const TEAM_SIZE := {"full": 5, "slice": 3}
 
 var o := {}
 var rows := {}
@@ -16,6 +18,7 @@ var ai_labels := {}
 var help: Label
 var weapon_pick: OptionButton
 var seg_btns: Array = []      # [[key, value, Button]]
+var auto_btn: Button
 
 
 func _ready() -> void:
@@ -55,6 +58,17 @@ func _ready() -> void:
 		var gap := Control.new()
 		gap.custom_minimum_size = Vector2(18, 0)
 		ar.add_child(gap)
+	# 自动配平：按队伍里的真人数补满（手动按 +/− 后关掉，按这个按钮再打开）
+	auto_btn = Button.new()
+	auto_btn.theme_type_variation = "GhostButton"
+	auto_btn.toggle_mode = true
+	auto_btn.text = "自动配平"
+	auto_btn.add_theme_font_size_override("font_size", 18)
+	auto_btn.toggled.connect(func(on: bool) -> void:
+		o.ai_auto = on
+		Audio.play2d("ui_click", -8.0)
+		_refresh())
+	ar.add_child(auto_btn)
 	# 初始武器（测试用）
 	var wr := _row(v, "初始武器")
 	weapon_pick = OptionButton.new()
@@ -144,6 +158,7 @@ func _small_btn(t: String) -> Button:
 
 
 func _ai(key: String, d: int) -> void:
+	o.ai_auto = false
 	o[key] = clampi(int(o[key]) + d, 0, 6)
 	Audio.play2d("ui_click", -8.0)
 	_refresh()
@@ -157,6 +172,15 @@ func _refresh() -> void:
 		(rows[k] as Control).visible = duo
 	((rows.p1_team as HBoxContainer).get_meta("label") as Label).text = "玩家1 队伍" if duo else "队伍"
 	((rows.skin as HBoxContainer).get_meta("label") as Label).text = "玩家1 形象" if duo else "形象"
+	var humans := {"blue": 0, "red": 0}
+	humans[String(o.p1_team)] += 1
+	if duo:
+		humans[String(o.p2_team)] += 1
+	if bool(o.get("ai_auto", true)):
+		var per := int(TEAM_SIZE.get(String(o.mode), 5))
+		for team in ["blue", "red"]:
+			o["ai_" + team] = maxi(0, per - int(humans[team]))
+	auto_btn.set_pressed_no_signal(bool(o.get("ai_auto", true)))
 	for team in ["blue", "red"]:
 		(ai_labels[team] as Label).text = str(int(o["ai_" + team]))
 	var t := ""

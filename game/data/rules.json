@@ -270,6 +270,7 @@
   "stickR": 8
  },
  "ai": {
+  "nav": {"_doc": "寻路流场：每个逻辑帧最多新算 bfsPerStep 个（算不动时借用目标附近 borrow 格内已缓存的流场），缓存 cache 个", "bfsPerStep": 1, "cache": 96, "borrow": 3},
   "cardDelay": 0.9,
   "retarget": [0.25, 0.45],
   "lowHp": 0.3,

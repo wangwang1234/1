@@ -22,6 +22,7 @@ class LocalPlayer:
 	var box: SubViewportContainer
 	var dead_time := 0.0
 	var last_alive := Vector3.ZERO
+	var want_pad := false     # 大厅里选了手柄（开局时没接上就先用方向键，中途接上自动切换）
 
 var world: SimWorld
 var local: SimHamster
@@ -71,6 +72,7 @@ func start(cfg: Dictionary) -> void:
 			var pc: Dictionary = pcfg[pi] if pi < pcfg.size() else {}
 			pl.input.scheme = String(pc.get("input", "kbm"))
 			pl.input.pad_index = int(pc.get("pad", 0))
+			pl.want_pad = bool(pc.get("want_pad", false))
 			players.append(pl)
 			pi += 1
 	if not players.is_empty():
@@ -81,6 +83,7 @@ func start(cfg: Dictionary) -> void:
 		var p2: LocalPlayer = players[1]
 		players[0].input.allow_pad = p2.input.scheme != "pad"
 		players[0].input.arrows = p2.input.scheme != "keys2"
+		Input.joy_connection_changed.connect(_on_joy_changed)
 	if local != null and autoplay:
 		for pl in players:
 			pl.ham.ctl = "ai"
@@ -251,7 +254,8 @@ static func apply_mask(n: Node, mask: int) -> void:
 		(g as GeometryInstance3D).layers = layers
 	if n is GeometryInstance3D:
 		(n as GeometryInstance3D).layers = layers
-	# 点光 / 聚光（手电、枪口光）也按相机的渲染层过滤：分屏对打时，看不见的敌人的手电不会照亮另一边的画面
+	# 挂在单位节点下的点光 / 聚光（手电、宠物 / 哨戒炮台 / 照明弹的灯）也按相机的渲染层过滤：分屏对打时，看不见的敌人的手电不会照亮另一边的画面。
+	# 注意：FxSystem 的枪口火光、粒子、弹壳、伤害数字是共用池子，都在第 1 层，两边画面都看得见（已知问题，见批次 2 汇报）
 	for l in n.find_children("*", "Light3D", true, false):
 		if not l is DirectionalLight3D:
 			(l as Light3D).layers = layers
@@ -301,6 +305,31 @@ func team_sees(e: SimEntity) -> bool:
 	if players.size() > 1:
 		return vis_mask(e) != 0
 	return e.team == local_team or world.vis[local_team].has(e.id)
+
+
+func _on_joy_changed(device: int, connected: bool) -> void:
+	## 双人分屏：2P 在大厅选了手柄但开局时没接上 → 先用方向键；中途接上就切到手柄，拔掉再切回方向键
+	if not split or players.size() < 2:
+		return
+	var p1: LocalPlayer = players[0]
+	var p2: LocalPlayer = players[1]
+	if connected and p2.want_pad and p2.input.scheme == "keys2":
+		p2.input.scheme = "pad"
+		p2.input.pad_index = device
+		p1.input.allow_pad = false
+		p1.input.arrows = true
+		if p2.hud:
+			p2.hud.toast(p2.ham.id, "接上手柄了：玩家2 改用手柄", Color("#9fe8ff"), 2.4)
+	elif not connected and p2.input.scheme == "pad" and p2.input.pad_index == device:
+		p2.input.scheme = "keys2"
+		p1.input.arrows = false
+		if p2.hud:
+			p2.hud.toast(p2.ham.id, "手柄断开了：玩家2 改用方向键", Color("#ffd166"), 2.4)
+
+
+func _input(ev: InputEvent) -> void:
+	if ev is InputEventKey:
+		PlayerInput.track_key(ev)
 
 
 func _unhandled_input(ev: InputEvent) -> void:

@@ -60,5 +60,16 @@ func _duo() -> void:
 		"ai": {"blue": 3, "red": 3}})
 	await _drive(mv, 240)
 	print("[view_smoke] 双人分屏：%d 个镜头" % mv.players.size())
+	# 2P 中途接上手柄：模拟手柄接入 → 2P 切到手柄方案（没有真手柄时摇杆读数为 0，只验证这条代码路径不报错），再拔掉切回方向键
+	mv.players[1].want_pad = true
+	mv._on_joy_changed(0, true)
+	var switched: bool = mv.players[1].input.scheme == "pad" and not mv.players[0].input.allow_pad
+	await _drive(mv, 60)
+	mv._on_joy_changed(0, false)
+	var back: bool = mv.players[1].input.scheme == "keys2"
+	await _drive(mv, 30)
+	print("[view_smoke] 2P 手柄热插拔：切到手柄=%s，拔掉切回=%s" % [switched, back])
+	if not switched or not back:
+		push_error("2P 手柄热插拔切换失败")
 	mv.queue_free()
 	await get_tree().process_frame

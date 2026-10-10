@@ -135,11 +135,12 @@ func make_cfg(o: Dictionary) -> Dictionary:
 	var players: Array = [{"team": String(o.get("p1_team", "blue")), "ctl": "player", "name": "玩家1" if duo else "你", "skin": String(o.get("skin", "gold")), "weapon": w, "input": "kbm"}]
 	if duo:
 		var p2in := String(o.get("p2_input", "pad"))
+		var want_pad := p2in == "pad"
 		var pads := Input.get_connected_joypads()
 		if p2in == "pad" and pads.is_empty():
-			p2in = "keys2"
+			p2in = "keys2"     # 还没接手柄：先用方向键，接上后 MatchView 自动切换
 		players.append({"team": String(o.get("p2_team", "red")), "ctl": "player", "name": "玩家2", "skin": String(o.get("skin2", "pudding")), "weapon": w,
-			"input": p2in, "pad": int(pads[0]) if not pads.is_empty() else 0})
+			"input": p2in, "pad": int(pads[0]) if not pads.is_empty() else 0, "want_pad": want_pad})
 	elif not o.has("ai_blue"):
 		# 默认 5 对 5：玩家在哪队，哪队少补一个 AI
 		var pt := String(o.get("p1_team", "blue"))

@@ -627,7 +627,7 @@
        "special": {"puddle": 65}
       },
       "9": {
-       "special": {"burnSpread": 3, "spreadR": 80, "spreadBurn": 1.5}
+       "special": {"burnSpread": 3}
       }
      }
     }

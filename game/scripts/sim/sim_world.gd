@@ -72,6 +72,8 @@ func setup(cfg: Dictionary) -> void:
 	rng.seed = seed_value
 	mode = String(cfg.get("mode", "slice"))
 	map.build(mode)
+	map.field_cache_max = int(R.ai.nav.cache)
+	map.field_near = int(R.ai.nav.borrow)
 	t = 0.0
 	tick = 0
 	uid = 1
@@ -355,6 +357,7 @@ func add_feed(text: String, color: String) -> void:
 func step(dt: float) -> void:
 	tick += 1
 	t += dt
+	map.bfs_budget = int(R.ai.nav.bfsPerStep)
 	for h in hams:
 		h.save_prev()
 	for m in minions:

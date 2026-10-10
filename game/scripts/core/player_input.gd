@@ -19,6 +19,8 @@ var allow_pad := true    # kbm 方案是否同时接手柄（2P 用手柄时，�
 var arrows := true       # kbm 方案是否也认方向键（2P 用方向键时方向键归 2P）
 var _pad_aim := 0.0
 var _edge := {}
+## 右 Shift 是否按着（Input 分不清左右 Shift，所以由 MatchView._input 按按键事件的 location 记下来；2P 方向键方案的翻滚只认右 Shift）
+static var right_shift_down := false
 
 
 static func ensure_actions() -> void:
@@ -116,7 +118,8 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 	inp.fire = fire and not picking_cards
 	var K: Dictionary = KEYS_P2 if scheme == "keys2" else KEYS_P1
 	var kb := scheme != "pad"
-	var dash := (kb and _key(K.dash)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A))
+	var kb_dash := right_shift_down if scheme == "keys2" else _key(K.dash)
+	var dash := (kb and kb_dash) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A))
 	var reload := (kb and _key(K.reload)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_X) and h.choices.is_empty())
 	var gadget := (kb and _key(K.gadget)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_LEFT_SHOULDER))
 	if _pressed_edge("dash", dash):
@@ -135,6 +138,16 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 			if _pressed_edge("pcard%d" % i, Input.is_joy_button_pressed(pad_index, btns[i])):
 				inp.card = i
 				device = "pad"
+
+
+static func track_key(ev: InputEvent) -> void:
+	## 由 MatchView._input 调用：记录右 Shift 的按下 / 松开（左 Shift 不算）
+	var k := ev as InputEventKey
+	if k == null or k.echo or k.physical_keycode != KEY_SHIFT:
+		return
+	# 平台报不出左右（UNSPECIFIED）时按右 Shift 处理，至少不比以前差
+	if k.location != KEY_LOCATION_LEFT:
+		right_shift_down = k.pressed
 
 
 func card_hint() -> String:

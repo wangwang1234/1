@@ -7,7 +7,12 @@ set -e
 source "$(dirname "$0")/_env.sh"
 LOG="$(mktemp)"
 echo "== sim 测试 =="
-"$GODOT" --headless --path "$ROOT/game" -s res://tests/run_all.gd -- "$@"
+# 测试断言之外，日志里出现任何脚本错误（比如某个武器组合里的运行时错误）也算失败
+set +e
+"$GODOT" --headless --path "$ROOT/game" -s res://tests/run_all.gd -- "$@" 2>&1 | tee "$LOG"
+SIM_RC=${PIPESTATUS[0]}
+set -e
+if [ "$SIM_RC" -ne 0 ] || ! check_log "$LOG"; then echo "sim 测试：失败"; exit 1; fi
 echo "== 表现层冒烟：2 分钟 AI 对局 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 -- --match --autoplay --seed 3 --quit-after 125 >"$LOG" 2>&1 || true
 if check_log "$LOG"; then echo "表现层冒烟：通过"; else echo "表现层冒烟：失败"; exit 1; fi

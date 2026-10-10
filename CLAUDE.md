@@ -56,6 +56,7 @@
   - 例：`tools/capture.sh style review/x 1920x1080 --n 6 --from 30 --every 5`
 - 录屏：`tools/record.sh out.mp4 [秒数] [分辨率] [种子]`（Godot Movie Maker 固定 30 帧 + ffmpeg 转码）
 - 帧率测试：`tools/capture.sh perf <目录> 1920x1080 --dur 60` → `perf.json` / `perf.csv`；导出版里双击 `帧率测试.bat`
+- 逻辑耗时基准（只跑 sim）：`godot --headless --path game -s res://tests/bench_sim.gd -- --seconds 600`
 - 导出 Windows：`tools/export.sh windows`（= `godot --headless --path game --export-release "Windows Desktop" <绝对路径>/build/win/manzai.exe`）
 
 ## 环境（2026-10 第一次会话填写；云端容器，无 GPU）

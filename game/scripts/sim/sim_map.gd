@@ -53,8 +53,15 @@ var _grid: Dictionary = {}          # int key -> Array[Solid]
 var nav_gc := 0
 var nav_gr := 0
 var nav_pass := PackedByteArray()
+var nav_adj := PackedInt32Array()   # 每格 8 个邻居的格号（不可走 / 斜穿墙角为 -1），流场 BFS 直接查表
+var bfs_count := 0                  # 统计用：一共算了几次流场
+var bfs_budget := 1 << 30           # 这一逻辑帧还能新算几个流场（SimWorld 每步按 rules.ai.nav.bfsPerStep 重置）
+var field_cache_max := 40           # 流场缓存个数（rules.ai.nav.cache）
+var field_near := 3                 # 本帧算不动时，借用目标格附近几格内已缓存的流场（rules.ai.nav.borrow）
 var _field_cache: Dictionary = {}   # cell -> PackedInt32Array
-var _field_order: Array = []
+var _field_order: Array = []        # 缓存的先后顺序（淘汰最早的）
+var _field_gen: Dictionary = {}     # cell -> 算这个流场时的 nav_gen
+var nav_gen := 0                    # 物件打碎 / 复原（nav_patch）一次加 1：旧流场标记为过期但先留着用
 
 
 func build(mode_: String = "full") -> void:
@@ -400,8 +407,12 @@ func build_nav() -> void:
 			var y := (j + 0.5) * NAV_CELL
 			var ok := x > min_x and x < max_x and y > min_y and y < max_y and not overlaps_solid(x, y, NAV_CLEARANCE)
 			nav_pass[j * nav_gc + i] = 1 if ok else 0
+	nav_adj.resize(nav_gc * nav_gr * 8)
+	_adj_update(0, nav_gc - 1, 0, nav_gr - 1)
 	_field_cache.clear()
 	_field_order.clear()
+	_field_gen.clear()
+	nav_gen = 0
 
 
 func nav_patch(px: float, py: float, radius: float) -> void:
@@ -415,8 +426,32 @@ func nav_patch(px: float, py: float, radius: float) -> void:
 			var y := (j + 0.5) * NAV_CELL
 			var ok := x > min_x and x < max_x and y > min_y and y < max_y and not overlaps_solid(x, y, NAV_CLEARANCE)
 			nav_pass[j * nav_gc + i] = 1 if ok else 0
-	_field_cache.clear()
-	_field_order.clear()
+	_adj_update(c0 - 1, c1 + 1, r0 - 1, r1 + 1)
+	# 不清空缓存：旧流场只在这块物件附近不准，预算允许时再按需重算（见 field_to）
+	nav_gen += 1
+
+
+func _adj_update(c0: int, c1: int, r0: int, r1: int) -> void:
+	## 重算一块区域里每格的 8 个邻居（和原型 fieldTo 的规则一样：邻格要可走，斜着走时两侧直角格也要可走）
+	var gc := nav_gc
+	var gr := nav_gr
+	for j in range(maxi(0, r0), mini(gr - 1, r1) + 1):
+		for i in range(maxi(0, c0), mini(gc - 1, c1) + 1):
+			var c := j * gc + i
+			var m := 0
+			for dj in range(-1, 2):
+				for di in range(-1, 2):
+					if di == 0 and dj == 0:
+						continue
+					var ni := i + di
+					var nj := j + dj
+					var nk := -1
+					if ni >= 0 and nj >= 0 and ni < gc and nj < gr:
+						nk = nj * gc + ni
+						if nav_pass[nk] == 0 or (di != 0 and dj != 0 and (nav_pass[j * gc + ni] == 0 or nav_pass[nj * gc + i] == 0)):
+							nk = -1
+					nav_adj[c * 8 + m] = nk
+					m += 1
 
 
 func cell_of(x: float, y: float) -> int:
@@ -448,15 +483,39 @@ func field_to(x: float, y: float) -> PackedInt32Array:
 		if best < 0:
 			return PackedInt32Array()
 		k = best
-	if _field_cache.has(k):
-		return _field_cache[k]
-	if _field_order.size() > 40:
-		_field_cache.erase(_field_order.pop_front())
+	var cached := _field_cache.has(k)
+	if cached and (int(_field_gen.get(k, -1)) == nav_gen or bfs_budget <= 0):
+		return _field_cache[k]     # 新的直接用；过期的在这一帧算不动时也先用着
+	if bfs_budget <= 0:
+		# 这一帧已经算过流场了：借用目标附近已缓存的流场（新的优先，没有就用过期的），够把人带到目标附近，下一帧再算
+		var ci2 := k % gc
+		var cj2 := k / gc
+		var best_f := PackedInt32Array()
+		var best_d := 1 << 30
+		for key in _field_cache:
+			var kk2: int = key
+			var ddi := absi(kk2 % gc - ci2)
+			var ddj := absi(kk2 / gc - cj2)
+			if ddi <= field_near and ddj <= field_near:
+				var dd2 := ddi * ddi + ddj * ddj + (0 if int(_field_gen.get(kk2, -1)) == nav_gen else 1000)
+				if dd2 < best_d:
+					best_d = dd2
+					best_f = _field_cache[key]
+		return best_f
+	bfs_budget -= 1
+	bfs_count += 1
+	if cached:
+		_field_order.erase(k)      # 过期流场原地重算：先从顺序表里拿掉，下面重新排到最后
+	elif _field_order.size() >= field_cache_max:
+		var old_k: int = _field_order.pop_front()
+		_field_cache.erase(old_k)
+		_field_gen.erase(old_k)
 	var F := PackedInt32Array()
 	F.resize(gc * gr)
 	F.fill(-1)
 	var Q := PackedInt32Array()
 	Q.resize(gc * gr)
+	var adj := nav_adj
 	var head := 0
 	var tail := 0
 	F[k] = 0
@@ -465,26 +524,17 @@ func field_to(x: float, y: float) -> PackedInt32Array:
 	while head < tail:
 		var c := Q[head]
 		head += 1
-		var i := c % gc
-		var j := c / gc
 		var dv := F[c] + 1
-		for dj in range(-1, 2):
-			for di in range(-1, 2):
-				if di == 0 and dj == 0:
-					continue
-				var ni := i + di
-				var nj := j + dj
-				if ni < 0 or nj < 0 or ni >= gc or nj >= gr:
-					continue
-				var nk := nj * gc + ni
-				if nav_pass[nk] == 0 or F[nk] >= 0:
-					continue
-				if di != 0 and dj != 0 and (nav_pass[j * gc + ni] == 0 or nav_pass[nj * gc + i] == 0):
-					continue
-				F[nk] = dv
-				Q[tail] = nk
-				tail += 1
+		var b := c * 8
+		for m in 8:
+			var nk := adj[b + m]
+			if nk < 0 or F[nk] >= 0:
+				continue
+			F[nk] = dv
+			Q[tail] = nk
+			tail += 1
 	_field_cache[k] = F
+	_field_gen[k] = nav_gen
 	_field_order.append(k)
 	return F
 
