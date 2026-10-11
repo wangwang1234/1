@@ -37,6 +37,8 @@ var _flicker: Array = []           # [{light, base}]
 var _t := 0.0
 var decor_placements: Array[Dictionary] = [] # 审阅与碰撞净空测试使用，厘米坐标
 var surface_placements: Array[Dictionary] = [] # 台面组合：完整落在既有静态掩体内
+var islands: LightIslands                       # 光岛（visual_style.json 的 lightIslands）
+var decals: FloorDecals                         # 地面贴花（visual_style.json 的 floorDecals）
 
 
 func build(m: SimMap, seed_: int = 1234) -> void:
@@ -55,6 +57,9 @@ func build(m: SimMap, seed_: int = 1234) -> void:
 	_build_zone_props()
 	_build_surface_dressing()
 	_build_room_accents()
+	islands = LightIslands.build(self, map)
+	decor_placements.append_array(islands.placements)
+	decals = FloorDecals.build(self, map, seed_)
 	_build_decor_clusters()
 	_scatter_decor()
 	_flush()

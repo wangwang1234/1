@@ -1364,8 +1364,8 @@
     "giftR": 240,
     "decoPerM2": 0.34,
     "lights": [
-      {"x": 2520, "y": 180, "h": 1.4, "color": "#bfe6ff", "energy": 0.75, "range": 6.0},
-      {"x": 2520, "y": 3000, "h": 0.6, "color": "#7fa8ff", "energy": 0.9, "range": 6.0, "flicker": true},
+      {"x": 2520, "y": 180, "h": 1.4, "color": "#bfe6ff", "energy": 0.35, "range": 6.0},
+      {"x": 2520, "y": 3000, "h": 0.6, "color": "#a9bce6", "energy": 0.9, "range": 6.0, "flicker": true},
       {"x": 4900, "y": 900, "h": 1.5, "color": "#ffd9a0", "energy": 0.9, "range": 5.0},
       {"x": 4900, "y": 2200, "h": 1.5, "color": "#ffd9a0", "energy": 0.9, "range": 5.0}
     ]

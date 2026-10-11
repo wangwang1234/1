@@ -14,6 +14,7 @@ extends Node
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
 ##   visual     固定站位画面审阅（实际地图；HUD / 无 HUD / 角色近景）
 ##   materials  实际引擎材质审阅：四种皮肤 × 两队、组合装备、家具分件
+##   identity   画面个性化（2026-10-11）：光岛、画面外巨物投影、手机、彩灯、袜子脚印、光束灰尘（--spots a,b 只拍部分）
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
@@ -83,6 +84,8 @@ func _run() -> void:
 			await _b3map()
 		"visual":
 			await _visual_review()
+		"identity":
+			await _identity()
 		"lighting_walk":
 			await _lighting_walk()
 		"materials":
@@ -1142,3 +1145,55 @@ func _material_review() -> void:
 	await _sync_all(st, 0.12)
 	await shot("materials_furniture")
 	st.free()
+
+
+func _identity() -> void:
+	## 画面个性化审阅：每个光岛 / 尺度细节一张，手电朝开不挡住要看的东西；带 HUD 和无 HUD 只拍无 HUD（构图看得清）
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.inp.mx = 0.0
+	h.inp.my = 0.0
+	h.inp.fire = false
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	h.iframes = 9999.0
+	mv.hud.visible = false
+	# [名字, x, y, 朝向（弧度，0 = 东，PI/2 = 南）, 视宽米（0 = 默认）]
+	var spots := [["moon_window", 1880.0, 1560.0, PI, 0.0], ["street_blinds", 3150.0, 1560.0, 0.0, 0.0], ["kitchen_table", 4180.0, 1500.0, PI * 0.5, 0.0],
+		["fridge_wedge", 2250.0, 560.0, PI, 0.0], ["study_window", 700.0, 980.0, PI * 0.5, 0.0], ["phone", 1700.0, 2840.0, -0.9, 0.0],
+		["footprints", 2380.0, 2480.0, 2.08, 0.0], ["fairy_lights", 2520.0, 2250.0, -PI * 0.5, 0.0], ["beam_dust", 2050.0, 1650.0, 0.2, 3.6]]
+	var only := String(args.get("spots", ""))
+	for sp: Array in spots:
+		if only != "" and not only.split(",").has(String(sp[0])):
+			continue
+		var desired := Vector2(float(sp[1]), float(sp[2]))
+		var placed := false
+		for ring in 12:
+			for side in 16:
+				var p := desired + Vector2.RIGHT.rotated(float(side) * TAU / 16.0) * float(ring) * 25.0
+				if w.map.overlaps_solid(p.x, p.y, h.r + 8.0):
+					continue
+				h.x = p.x
+				h.y = p.y
+				placed = true
+				break
+			if placed:
+				break
+		h.px = h.x
+		h.py = h.y
+		h.inp.aim = float(sp[3])
+		h.aim = h.inp.aim
+		mv.cam.view_width = float(sp[4]) if float(sp[4]) > 0.0 else GameCamera.VIEW_WIDTH
+		if String(sp[0]) == "phone" and mv.map_view.islands != null:
+			mv.map_view.islands._t = 6.0     # 拍在屏幕亮起（来通知）的那几秒
+		await _steps(40)
+		mv.cam.snap(MapView.w(h.x, h.y))
+		await _frames(6)
+		await shot("identity_" + String(sp[0]))
+	mv.cam.view_width = GameCamera.VIEW_WIDTH

@@ -241,6 +241,12 @@ func _setup_light() -> void:
 	var m := ShaderMaterial.new()
 	m.shader = preload("res://shaders/light_beam.gdshader")
 	m.set_shader_parameter("strength", float(style.beamStrength))
+	var motes: Dictionary = style.get("beamMotes", {})
+	if bool(motes.get("enabled", false)):
+		m.set_shader_parameter("mote_strength", float(motes.strength) * (1.0 if is_local else float(motes.get("otherScale", 0.5))))
+		m.set_shader_parameter("mote_density", float(motes.density))
+		m.set_shader_parameter("mote_size", float(motes.size))
+		m.set_shader_parameter("mote_fill", float(motes.fill))
 	beam.material_override = m
 	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	beam.top_level = true
