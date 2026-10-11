@@ -1,0 +1,24 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+CHECK respawn first fresh dash false
+CHECK respawn first fresh reload false
+CHECK respawn first fresh gadget false
+CHECK held dash across death suppressed true
+CHECK held death action recovers after release true
+CHECK pad upgrade 2 cycle 0 true
+CHECK pad upgrade 2 cycle 1 false
+CHECK pad upgrade 2 cycle 2 false
+CHECK pad upgrade 3 cycle 0 true
+CHECK pad upgrade 3 cycle 1 false
+CHECK pad upgrade 3 cycle 2 false
+CHECK pad upgrade 1 cycle 0 true
+CHECK pad upgrade 1 cycle 1 false
+CHECK pad upgrade 1 cycle 2 false
+CHECK hybrid controller shoulder fires false
+CHECK keyboard returns mouse aiming without mouse motion false
+LIFECYCLE_RECEIPT {"failures":["respawn first fresh dash","respawn first fresh reload","respawn first fresh gadget","pad upgrade 2 cycle 1","pad upgrade 2 cycle 2","pad upgrade 3 cycle 1","pad upgrade 3 cycle 2","pad upgrade 1 cycle 1","pad upgrade 1 cycle 2","hybrid controller shoulder fires","keyboard returns mouse aiming without mouse motion"],"ok":false}
+WARNING: 8 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 4 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

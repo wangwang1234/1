@@ -1,0 +1,26 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+CHECK respawn first fresh dash true
+CHECK respawn first fresh reload true
+CHECK respawn first fresh gadget true
+CHECK fresh movement during resume guard is not latched as held menu input true
+CHECK held dash across death suppressed true
+CHECK held death action recovers after release true
+CHECK pad upgrade 2 cycle 0 true
+CHECK pad upgrade 2 cycle 1 true
+CHECK pad upgrade 2 cycle 2 true
+CHECK pad upgrade 3 cycle 0 true
+CHECK pad upgrade 3 cycle 1 true
+CHECK pad upgrade 3 cycle 2 true
+CHECK pad upgrade 1 cycle 0 true
+CHECK pad upgrade 1 cycle 1 true
+CHECK pad upgrade 1 cycle 2 true
+CHECK X still reloads outside upgrades true
+CHECK held reload does not select a newly appearing upgrade true
+CHECK upgrade accepts X after release true
+CHECK hybrid controller shoulder fires true
+CHECK keyboard returns mouse aiming without mouse motion true
+CHECK split player 0 fresh reload after death true
+CHECK split player 1 fresh reload after death true
+LIFECYCLE_RECEIPT {"failures":[],"ok":true}

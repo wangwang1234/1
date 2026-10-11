@@ -385,6 +385,10 @@ func _physics_process(dt: float) -> void :
 	if local != null and not autoplay:
 		for pl in players:
 			if paused or _resume_guard > 0 or not pl.ham.alive or world.over:
+				# Death skips polling, but releases must still clear old action edges.
+				# Do not latch fresh presses during the short resume guard.
+				if not pl.ham.alive:
+					pl.input.block_held()
 				NetInput.clear(pl.ham.inp)
 				continue
 			var mp: = get_viewport().get_mouse_position()

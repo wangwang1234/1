@@ -28,5 +28,8 @@ if check_log "$LOG" && grep -q 'QOL_UI_RECEIPT.*"ok":true' "$LOG"; then echo "�
 echo "== 切屏输入恢复 / 武器持握 / 王冠挂载回归 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 res://tests/bugfix_smoke.tscn >"$LOG" 2>&1 || true
 if check_log "$LOG" && grep -q 'BUGFIX_RECEIPT.*"ok":true' "$LOG"; then echo "输入 / 挂载回归：通过"; else cat "$LOG"; exit 1; fi
+echo "== 死亡复活 / 连续选卡 / 输入设备切换回归 =="
+"$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 res://tests/input_lifecycle_smoke.tscn >"$LOG" 2>&1 || true
+if check_log "$LOG" && grep -q 'LIFECYCLE_RECEIPT.*"ok":true' "$LOG"; then echo "输入生命周期回归：通过"; else cat "$LOG"; exit 1; fi
 rm -f "$LOG"
 echo "全部通过"

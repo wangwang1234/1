@@ -97,9 +97,19 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 			mv = pad_mv if pad_mv.length() > 0.2 else Vector2.ZERO
 		_:
 			mv = Vector2(float(_action("move_right")) - float(_action("move_left")), float(_action("move_down")) - float(_action("move_up")))
-			if use_pad and (pad_mv.length() > 0.25 or pad_aim.length() > 0.3):
-				device = "pad"
-			if pad_mv.length() > 0.2:
+			var keyboard_active := false
+			for a in InputBindings.DEFAULTS[profile()]:
+				if a != "pause" and not String(a).begins_with("spectate_") and not _blocked.has(a) and InputBindings.down(profile(), a):
+					keyboard_active = true
+			if keyboard_active:
+				device = "kbm"
+			elif use_pad:
+				if pad_mv.length() > 0.25 or pad_aim.length() > 0.3:
+					device = "pad"
+				for a in ["pad_fire", "pad_dash", "pad_reload", "pad_gadget", "pad_card1", "pad_card2"]:
+					if not _blocked.has(a) and _pad_down(a):
+						device = "pad"
+			if device == "pad" and pad_mv.length() > 0.2:
 				mv = pad_mv
 	if _blocked.has("pad_move"):
 		if pad_mv.length() <= 0.2:
@@ -138,7 +148,7 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 		"pad":
 			fire = _gate("pad_fire", Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4 or Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER))
 		_:
-			fire = _action("fire") or (use_pad and _gate("pad_fire", Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4))
+			fire = _action("fire") or (use_pad and _gate("pad_fire", _pad_down("pad_fire")))
 	inp.fire = fire and not picking_cards
 	var kb: = scheme != "pad"
 	var dash: = (kb and _action("dash")) or (use_pad and _gate("pad_dash", Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A)))
@@ -154,10 +164,12 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 		var down: = kb and _action("card_%d" % (i + 1))
 		if _pressed_edge("card%d" % i, down):
 			inp.card = i
-	if use_pad and not h.choices.is_empty():
+	if use_pad:
 		var btns: = [JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B]
 		for i in 3:
-			if _pressed_edge("pcard%d" % i, _gate("pad_card%d" % i, Input.is_joy_button_pressed(pad_index, btns[i]))):
+			# Observe releases between upgrades too, so a later fresh press works.
+			var pressed := _pressed_edge("pcard%d" % i, _gate("pad_card%d" % i, Input.is_joy_button_pressed(pad_index, btns[i])))
+			if pressed and not h.choices.is_empty():
 				inp.card = i
 				device = "pad"
 
