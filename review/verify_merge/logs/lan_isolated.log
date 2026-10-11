@@ -1,0 +1,23 @@
+resume passed
+expiry passed
+invalid passed
+mismatch passed
+quality passed
+ui passed
+ghost passed
+pending passed
+malformed passed
+stress passed
+return passed
+return_ui passed
+actions passed
+Traceback (most recent call last):
+  File "/workspace/1/tools/test_lan_resume.py", line 118, in <module>
+    assert len(rows) == 1 and rows[0]["ok"], path.name + "\n" + text[-4000:]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ten_client3.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":14.566666666667,"idx":3,"match_seconds":7.36666666666665,"ok":false,"reason":"session ended: 重连超时：房主可能已退出，请重新加入房间","role":"client","snapshots":281}
+

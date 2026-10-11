@@ -1,0 +1,15 @@
+Traceback (most recent call last):
+  File "/workspace/1/tools/test_lan_resume.py", line 84, in <module>
+    assert code == 0 and not errors, text[-4000:]
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+ERROR: Parent node is busy setting up children, `add_child()` failed. Consider using `add_child.call_deferred(child)` instead.
+   at: add_child (scene/main/node.cpp:1721)
+   GDScript backtrace (most recent call first):
+       [0] _on_pause (res://scripts/core/main.gd:223)
+       [1] _notification (res://scripts/core/main.gd:274)
+       [2] _enter_tree (res://tests/lan_resume_peer.gd:44)
+RECEIPT {"case":"resume","checks":0,"discarded_events":0,"elapsed_seconds":8.51666666666667,"lobby_returns":1,"matches":2,"max_event_count":0,"max_event_frames":0,"ok":true,"reason":"two reconnects and second match","repaired_snapshots":0,"resumes":0,"role":"host","snapshots":0}
+

@@ -31,6 +31,19 @@ var lobby_returns := 0
 var returned_during_reconnect := false
 var seat_reserved := false
 
+class FocusLossProbe extends Node:
+	func _enter_tree() -> void:
+		# Main is still entering its child hierarchy, as during a native focus change.
+		var main := get_parent()
+		var placeholder := MatchView.new()
+		placeholder.networked = true
+		placeholder.hud = Hud.new()
+		placeholder.hud.mv = placeholder
+		placeholder.add_child(placeholder.hud)
+		main.match_view = placeholder
+		main._notification(NOTIFICATION_APPLICATION_FOCUS_OUT)
+		queue_free()
+
 func _ready() -> void:
 	var args: Dictionary = get_tree().root.get_node("Main").parse_args(OS.get_cmdline_user_args()) if get_tree().root.has_node("Main") else _args()
 	role = String(args.get("test-role", "host"))
@@ -40,6 +53,7 @@ func _ready() -> void:
 	LanSession._net.connectTimeout = 8.0 if scenario == "stress" else (3.0 if args.has("quality") else 0.6)
 	if args.has("ui"):
 		ui_main = load("res://scenes/main.tscn").instantiate()
+		ui_main.add_child(FocusLossProbe.new())
 		get_tree().root.add_child.call_deferred(ui_main)
 		ui_main.match_started.connect(_view_begin)
 	LanSession.match_requested.connect(_begin)
@@ -195,7 +209,10 @@ func _physics_process(dt: float) -> void:
 			LanSession._server_lost()
 			LanSession._retry_age = 0.0
 		if scenario == "return" and matches == 2 and match_age > (2.0 if role == "host" else 1.0):
-			_finish(lobby_returns == 1 and resumes == 0 and (role == "host" or received > 20), "host returned during reconnect and both played second match")
+			# Let the client finish its snapshot checks before the host closes the room.
+			# Different process clocks can otherwise end this test at exactly 20 packets.
+			if (role == "host" and LanSession.roster.size() == 1) or (role == "client" and received > 20):
+				_finish(lobby_returns == 1 and resumes == 0 and (role == "host" or received > 20), "host returned during reconnect and both played second match")
 		if scenario == "resume" and role == "client" and matches == 1 and match_age > 1.0 + 1.7 * drops and drops < 2:
 			drops += 1
 			snapshots_at_drop = received

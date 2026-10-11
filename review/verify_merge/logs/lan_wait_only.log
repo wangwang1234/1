@@ -1,0 +1,24 @@
+resume passed
+expiry passed
+invalid passed
+mismatch passed
+quality passed
+ui passed
+ghost passed
+pending passed
+malformed passed
+stress passed
+return passed
+return_ui passed
+actions passed
+Traceback (most recent call last):
+  File "/workspace/1/tools/test_lan_resume.py", line 118, in <module>
+    assert len(rows) == 1 and rows[0]["ok"], path.name + "\n" + text[-4000:]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ten_host.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+METRIC {"avg_snapshot_bytes":12988,"clients":7,"host_upload_kbps_per_client":2029.51475694443,"snapshots":180,"tick":600}
+RECEIPT {"case":"ten","elapsed_seconds":21.7833333333334,"idx":-1,"match_seconds":18.0000000000003,"ok":false,"reason":"9 seats still human, dropped seat played by AI, match continues","role":"host","snapshots":0}
+

@@ -1,0 +1,20 @@
+resume passed
+expiry passed
+invalid passed
+mismatch passed
+quality passed
+ui passed
+ghost passed
+pending passed
+malformed passed
+stress passed
+return passed
+Traceback (most recent call last):
+  File "/workspace/1/tools/test_lan_resume.py", line 84, in <module>
+    assert code == 0 and not errors, text[-4000:]
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"return","checks":20,"discarded_events":0,"elapsed_seconds":3.96666666666666,"lobby_returns":1,"matches":2,"max_event_count":0,"max_event_frames":0,"ok":false,"reason":"host returned during reconnect and both played second match","repaired_snapshots":0,"resumes":0,"role":"client","snapshots":20}
+

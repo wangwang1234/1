@@ -20,6 +20,7 @@ var team_counts := {}
 var start_bytes := 0
 var start_sent := 0
 var verdict := {}
+var host_checked := false
 
 
 func _ready() -> void:
@@ -73,6 +74,11 @@ func _snapshot(packet: Dictionary) -> void:
 	received += 1
 
 
+@rpc("authority", "call_remote", "reliable")
+func _host_checkpoint() -> void:
+	host_checked = true
+
+
 func _physics_process(dt: float) -> void:
 	if done:
 		return
@@ -118,8 +124,11 @@ func _physics_process(dt: float) -> void:
 				"host_upload_kbps_per_client": float(bytes) / maxf(1.0, match_age - 1.0) / 1024.0 * 8.0,
 				"clients": LanSession.peer_hams.size() - 1, "tick": w.tick}))
 			verdict = {"ok": seen_reserved and quitter.size() == 1 and quitter[0].ctl == "ai" and LanSession.peer_hams.size() == 9 and LanSession.roster.size() == 9}
+			_host_checkpoint.rpc()
 		# Stay up until every client has checked its own movement.
-		if match_age > 18.0:
+		# On a CPU-limited runner the clients' physics clocks can lag behind the host.
+		# Each client leaves in _finish(); wait for those checks instead of closing early.
+		if match_age > 18.0 and LanSession.roster.size() == 1:
 			_finish(bool(verdict.get("ok", false)), "9 seats still human, dropped seat played by AI, match continues")
 		return
 	local_ham.inp.mx = dir.x
@@ -127,10 +136,12 @@ func _physics_process(dt: float) -> void:
 	local_ham.inp.ml = 1.0
 	LanSession.send_input(local_ham)
 	LanSession.drain_events()
-	if args.has("quit") and match_age > 4.0:
+	if args.has("quit") and match_age > 4.0 and received > 30:
 		_finish(received > 30, "left mid-match after %d snapshots" % received)
 		return
-	if match_age > 14.0:
+	# Keep all nine remaining seats connected until the host has checked AI takeover.
+	# CPU scheduling can advance different peers' simulation clocks at different rates.
+	if not args.has("quit") and host_checked and match_age > 14.0 and received > 120:
 		var moved := Vector2(local_ham.x, local_ham.y).distance_to(start_pos)
 		_finish(received > 120 and moved > 60.0, "own hamster moved %.0f, %d snapshots" % [moved, received])
 

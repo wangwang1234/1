@@ -1,0 +1,206 @@
+## lan
+
+### ten_client1.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":19.6000000000002,"idx":1,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 1076, 104 snapshots","role":"client","snapshots":104}
+
+### ten_client2.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":19.5166666666668,"idx":2,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 1779, 105 snapshots","role":"client","snapshots":105}
+
+### ten_client3.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":15.0500000000003,"idx":3,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 1043, 73 snapshots","role":"client","snapshots":73}
+
+### ten_client4.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":17.5833333333336,"idx":4,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 647, 101 snapshots","role":"client","snapshots":101}
+
+### ten_client5.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":16.5500000000003,"idx":5,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 607, 103 snapshots","role":"client","snapshots":103}
+
+### ten_client6.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":23.0,"idx":6,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 1015, 105 snapshots","role":"client","snapshots":105}
+
+### ten_client7.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":22.9333333333333,"idx":7,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 1203, 106 snapshots","role":"client","snapshots":106}
+
+### ten_client8.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":18.2500000000002,"idx":8,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 933, 105 snapshots","role":"client","snapshots":105}
+
+### ten_client9.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":4.43333333333332,"idx":9,"match_seconds":4.01666666666666,"ok":false,"reason":"left mid-match after 17 snapshots","role":"client","snapshots":17}
+
+### ten_host.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+METRIC {"avg_snapshot_bytes":13793,"clients":1,"host_upload_kbps_per_client":2155.30381944443,"snapshots":180,"tick":600}
+RECEIPT {"case":"ten","elapsed_seconds":19.4166666666668,"idx":-1,"match_seconds":18.0000000000003,"ok":false,"reason":"9 seats still human, dropped seat played by AI, match continues","role":"host","snapshots":0}
+
+### ten_overflow10.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":0.950000000000001,"idx":10,"match_seconds":0.0,"ok":true,"reason":"eleventh player refused: 房间已满或对局已经开始","role":"client","snapshots":0}
+
+## lan-isolated
+
+### ten_client1.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":24.7166666666665,"idx":1,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 2709, 255 snapshots","role":"client","snapshots":255}
+
+### ten_client2.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":15.716666666667,"idx":2,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 1523, 154 snapshots","role":"client","snapshots":154}
+
+### ten_client3.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":14.566666666667,"idx":3,"match_seconds":7.36666666666665,"ok":false,"reason":"session ended: 重连超时：房主可能已退出，请重新加入房间","role":"client","snapshots":281}
+
+### ten_client4.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":22.5833333333333,"idx":4,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 1347, 248 snapshots","role":"client","snapshots":248}
+
+### ten_client5.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":14.5500000000003,"idx":5,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 2306, 175 snapshots","role":"client","snapshots":175}
+
+### ten_client6.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":14.0500000000003,"idx":6,"match_seconds":9.91666666666674,"ok":false,"reason":"session ended: 重连超时：房主可能已退出，请重新加入房间","role":"client","snapshots":292}
+
+### ten_client7.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":12.3000000000002,"idx":7,"match_seconds":7.08333333333331,"ok":false,"reason":"session ended: 重连超时：房主可能已退出，请重新加入房间","role":"client","snapshots":273}
+
+### ten_client8.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":20.9500000000001,"idx":8,"match_seconds":11.3833333333335,"ok":false,"reason":"session ended: 重连超时：房主可能已退出，请重新加入房间","role":"client","snapshots":296}
+
+### ten_client9.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":4.51666666666666,"idx":9,"match_seconds":4.01666666666666,"ok":true,"reason":"left mid-match after 33 snapshots","role":"client","snapshots":33}
+
+### ten_host.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+METRIC {"avg_snapshot_bytes":13427,"clients":8,"host_upload_kbps_per_client":2098.05381944443,"snapshots":180,"tick":600}
+RECEIPT {"case":"ten","elapsed_seconds":19.9333333333335,"idx":-1,"match_seconds":18.0000000000003,"ok":true,"reason":"9 seats still human, dropped seat played by AI, match continues","role":"host","snapshots":0}
+
+### ten_overflow10.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":0.816666666666668,"idx":10,"match_seconds":0.0,"ok":true,"reason":"eleventh player refused: 房间已满或对局已经开始","role":"client","snapshots":0}
+
+## lan-final
+
+### ten_client1.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":21.75,"idx":1,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 2516, 243 snapshots","role":"client","snapshots":243}
+
+### ten_client2.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":15.7500000000004,"idx":2,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 2086, 171 snapshots","role":"client","snapshots":171}
+
+### ten_client3.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":14.6000000000003,"idx":3,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 2148, 243 snapshots","role":"client","snapshots":243}
+
+### ten_client4.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":17.566666666667,"idx":4,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 813, 181 snapshots","role":"client","snapshots":181}
+
+### ten_client5.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":16.6333333333337,"idx":5,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 944, 189 snapshots","role":"client","snapshots":189}
+
+### ten_client6.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":14.616666666667,"idx":6,"match_seconds":14.0000000000003,"ok":false,"reason":"own hamster moved 1430, 117 snapshots","role":"client","snapshots":117}
+
+### ten_client7.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":14.8833333333337,"idx":7,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 1517, 198 snapshots","role":"client","snapshots":198}
+
+### ten_client8.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":15.4833333333337,"idx":8,"match_seconds":14.0000000000003,"ok":true,"reason":"own hamster moved 1529, 184 snapshots","role":"client","snapshots":184}
+
+### ten_client9.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":4.79999999999999,"idx":9,"match_seconds":4.01666666666666,"ok":true,"reason":"left mid-match after 38 snapshots","role":"client","snapshots":38}
+
+### ten_host.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+METRIC {"avg_snapshot_bytes":12988,"clients":7,"host_upload_kbps_per_client":2029.51475694443,"snapshots":180,"tick":600}
+RECEIPT {"case":"ten","elapsed_seconds":21.7833333333334,"idx":-1,"match_seconds":18.0000000000003,"ok":false,"reason":"9 seats still human, dropped seat played by AI, match continues","role":"host","snapshots":0}
+
+### ten_overflow10.log
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"ten","elapsed_seconds":3.96666666666666,"idx":10,"match_seconds":0.0,"ok":true,"reason":"eleventh player refused: 房间已满或对局已经开始","role":"client","snapshots":0}
