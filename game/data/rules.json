@@ -291,7 +291,9 @@
   "gadgetRate": 0.9,
   "gadgetRange": [140, 480],
   "gadgetWant": {"_doc": "AI 什么时候用道具（原型 aiWantGadget）：hp 项是生命比例，其余是到目标的距离", "eshieldHp": 0.7, "medkitHp": 0.5, "beaconSetHp": 0.8, "beaconBackHp": 0.3, "mine": 220, "sentry": 460, "jetpack": [260, 480], "decoy": 520},
+  "_skillRateDoc": "skillRate：右键武器技能——目标进了技能距离（weapons.json 的 skill.aiRange）且冷却好时，每秒放技能的概率（再乘难度的 gadgetK）",
   "dim": {"_doc": "AI 对暗处（在视线内但没被照亮）的敌人：只在 see 距离内察觉，换到这样的目标后反应时间 × reactK、瞄准误差 × aimK；难度里的 dimSee / dimReactK / dimAimK 会覆盖", "see": 340, "reactK": 1.7, "aimK": 1.6},
+  "skillRate": 1.2,
   "maxRange": 560,
   "keepRatio": 0.62,
   "buildingRatio": 0.85,
@@ -324,8 +326,8 @@
   "visionAbilities": ["torch", "wide", "ears", "nvg", "recon", "binoc"]
  },
  "scope": {
-  "_doc": "批次 2：卡池全部开放",
-  "weapons": ["pistol", "deagle", "ak47", "smg", "shotgun", "sniper", "lmg", "rocket", "katana", "flame", "minigun", "autoshot", "amr", "dual", "revolver", "gl", "rail", "laser"],
+  "_doc": "卡池范围。weapons：2026-10-11 导演定的精简方案 A（10 把）；沙漠之鹰、左轮、双持、轻机枪、自动霰弹、反器材狙、电磁炮、榴弹发射器的代码和数据保留，加回来把 id 写回这个列表",
+  "weapons": ["pistol", "smg", "ak47", "minigun", "shotgun", "sniper", "rocket", "katana", "flame", "laser"],
   "abilities": ["strong", "armor", "regen", "vamp", "speed", "dash", "magnet", "torch", "wide", "ears", "nvg", "recon", "rage", "crit", "rate", "frost", "chain", "scholar", "scav", "gcd", "aura", "banner", "binoc"],
   "gadgets": ["frag", "molotov", "flash", "mine", "sentry", "eshield", "smoke", "flare", "decoy", "jetpack", "medkit", "freeze", "beacon"],
   "talents": true,

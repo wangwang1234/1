@@ -1,0 +1,4 @@
+seed 1 winner blue 770 s
+seed 2 winner blue 838 s
+seed 3 winner blue 825 s
+seed 4 winner red 838 s

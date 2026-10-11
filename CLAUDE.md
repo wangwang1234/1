@@ -54,7 +54,7 @@
 - 生成图标：`tools/assets.sh icon_kit`（道具 / 宠物 / 强化 / 天赋 / 进化配件，出 PNG 到 `game/assets/icons/`）
 - 改了调色板 / 模型 / 音效后让 Godot 重新导入：`godot --headless --path game --import`
 - 截图（窗口模式；无显示器时自动套 xvfb-run）：`tools/capture.sh <场景> <输出目录> [分辨率] [参数]`
-  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `visual` `identity` `dim` `fb3` `fb1` `fb2` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
+  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `visual` `identity` `dim` `fb3` `skills` `fb1` `fb2` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
   - `visual`：完整地图固定种子与站位的书房、厨房、客厅和角色近景；带 HUD / 无 HUD 两版。例：`tools/capture.sh visual review/visual 1600x900 --seed 11`；可用 `--zones study,kitchen` 只拍部分。
   - `b3map`：七个美术区域、建筑破损阶段、新特效、整张地图俯瞰（`--parts zones,structs,fx,overview`，`--zones kitchen,fridge` 只拍部分区域）
   - 例：`tools/capture.sh style review/x 1920x1080 --n 6 --from 30 --every 5`
@@ -84,6 +84,9 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-11 武器精简到 10 把 + 右键武器专属技能（导演定：方案 A + 武器专属技能；审阅包 `review/skills/`，汇报 `review/skills/REPORT.md`，安装包 `release/manzai_skills_win64.zip` / `manzai_skills_mac.zip`）：开放武器由 `rules.json` 的 `scope.weapons` 决定（`Data.active_weapons()`，大厅 / 图鉴 / 卡池都用它；收起的 8 把代码数据保留）。技能在 `scripts/sim/sim_skills.gd`，数值在 `weapons.json` 每把的 `skill`（type / cd / 参数 / aiRange）；输入右键 / E / 手柄左扳机 / 2P 逗号；AI 用 `rules.json` 的 `ai.skillRate`。
+  - **建议的下一步**：10 把武器的基础平衡（AK、冲锋枪、霰弹枪偏弱，见汇报里的胜率表）；技能专属特效音效。
+  - 坑：HUD 冷却扇形不能画整圈或极窄扇形（三角化失败会让冒烟测试失败），已经夹在 0.02～0.995。
 - 2026-10-11 导演反馈第三轮（审阅包 `review/feedback3/`，汇报 `review/feedback3/REPORT.md`，安装包 `release/manzai_fb3_win64.zip` / `manzai_fb3_mac.zip`）：手枪不升级（`weapons.json` 的 `noEvo`，拿手枪时第一张卡固定换武器）、Tab 比分板（`Hud._draw_board`）、瓜子放大 + 发光（`visual_style.json` 的 `pickups`）、金瓜子（`rules.json` 的 `items.gold`）、小兵被非仓鼠打死也掉瓜子（`minion.dropOther`）、前期经验打折（`progression.json`）、宠物加强到 5 级 + 萤火虫连锁、新强化“望远镜” `binoc`（画面范围 / 暗处视野 +15% 每级，挂件 `acc_spyglass`）。
   - **等导演定**：武器精简（方案 A 10 把 / B 12 把 / C 8 把）和右键技能（武器专属 / 手电聚焦 / 道具挪到右键），方案在 `review/feedback3/方案_武器精简与右键技能.md`。
   - 导出模板：容器重建后用 `scratchpad` 里的 Range 下载脚本从官方 tpz 只取 `windows_release_x86_64.exe` 和 `macos.zip`（整包 1.2 GB 不用下）。

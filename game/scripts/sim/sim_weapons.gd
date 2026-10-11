@@ -280,6 +280,8 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 	var rate := base_rate * float(st.rate) * float(P.rate) * (1.3 if berserk else 1.0)
 	if h.haste_t > 0.0:
 		rate *= float(Data.rule("combat.hasteRate", 1.3))
+	if h.sk_rate_t > 0.0:
+		rate *= h.sk_rate_k     # 右键技能：扫射
 	if float(P.stormCap) > 0.0:
 		rate *= 1.0 + minf(float(P.stormCap), h.ramp * float(P.stormRamp))
 	if S.has("deployRate") and deployed:
@@ -290,7 +292,7 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 	if W.has("dual"):
 		h.dual_side = -h.dual_side
 	var pause := w.t - h.last_shot_t
-	var dmg := float(W.dmg) * float(st.dmg) * float(P.dmg) * (1.4 if berserk else 1.0)
+	var dmg := float(W.dmg) * float(st.dmg) * float(P.dmg) * (1.4 if berserk else 1.0) * h.sk_dmg_k
 	var crit_add := float(P.crit)
 	var force := false
 	var pierce := int(W.get("pierce", 0)) + int(P.pierce)
@@ -328,6 +330,8 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 		use = false
 	if use and S.has("stillFree") and Vector2(h.vx, h.vy).length() < float(S.stillFree):
 		use = false
+	if use and h.sk_free_t > 0.0:
+		use = false     # 右键技能期间不耗子弹
 	if use:
 		h.ammo -= 1
 	var a0 := h.aim

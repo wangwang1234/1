@@ -12,6 +12,7 @@ class HamInput:
 	var dash := false
 	var reload := false
 	var gadget := false
+	var skill := false    # 右键武器技能（按下即触发，冷却好了才生效）
 	var card := -1
 	var aim_x := 0.0      # 鼠标指向的地面点（投掷落点用）
 	var aim_y := 0.0
@@ -94,6 +95,17 @@ var shot_n := 0
 var ramp := 0.0
 var burst_n := 0
 var burst_t := 0.0
+# 右键武器技能（SimSkills）
+var skill_cd := 0.0
+var sk_free_t := 0.0     # 不耗子弹
+var sk_rate_t := 0.0     # 射速加成剩余时间
+var sk_rate_k := 1.0
+var sk_dmg_k := 1.0      # 技能弹伤害倍率（三联火箭用）
+var sk_spin_t := 0.0     # 加特林保持满转
+var sk_slash_t := 0.0    # 拔刀斩冲刺中
+var sk_slash_k := 0.0
+var sk_od_t := 0.0       # 激光过载
+var sk_od_k := 1.0
 var steady_t := 0.0
 var dazzle_t := 0.0
 var aggro_t := -9.0

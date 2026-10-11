@@ -124,6 +124,7 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 	inp.dash = false
 	inp.reload = false
 	inp.gadget = false
+	inp.skill = false
 	inp.card = -1
 	inp.mx = 0.0
 	inp.my = 0.0
@@ -202,6 +203,9 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 		_aim_at(w, h, tg)
 		if d < rng_ + tg.r and ai.react_t <= 0.0 and _burst_ok(ai, P, tg, dt):
 			inp.fire = true
+		# 右键武器技能：目标进了技能距离、冷却好了，按难度的道具频率随机放
+		if ai.react_t <= 0.0 and SimSkills.ai_want(w, h, tg, d) and w.rnd() < dt * float(A.get("skillRate", 1.2)) * float(P.get("gadgetK", 1.0)):
+			inp.skill = true
 		if ai.state == "retreat":
 			var b: Vector2 = w.map.base_pos[h.team]
 			gx = b.x

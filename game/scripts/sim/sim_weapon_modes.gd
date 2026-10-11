@@ -205,7 +205,7 @@ static func katana_tick(w: SimWorld, h: SimHamster, dt: float) -> void:
 		var W := h.weapon()
 		var perfect := S.has("perfectWindow") and h.swing_t > 0.0 and (float(W.get("swingTime", 0.22)) - h.swing_t) < float(S.perfectWindow)
 		deflect(w, h, P, perfect)
-	if float(P.iaido) > 0.0 and h.roll_t > 0.0 and h.iaido_on:
+	if (float(P.iaido) > 0.0 or h.sk_slash_t > 0.0) and h.roll_t > 0.0 and h.iaido_on:
 		iaido(w, h, P)
 
 
@@ -253,7 +253,7 @@ static func deflect(w: SimWorld, h: SimHamster, P: Dictionary, perfect: bool) ->
 static func iaido(w: SimWorld, h: SimHamster, P: Dictionary) -> void:
 	var W := h.weapon()
 	var I: Dictionary = W.get("iaido", {})
-	var dmg := float(W.dmg) * float(h.st.dmg) * float(P.iaido)
+	var dmg := float(W.dmg) * float(h.st.dmg) * maxf(float(P.iaido), h.sk_slash_k if h.sk_slash_t > 0.0 else 0.0)     # 拔刀斩（右键技能）用技能倍率
 	for e: SimEntity in w.hash_range(h.x, h.y, h.r + float(I.get("scan", 40))):
 		if h.iaido_hit.has(e.id) or not w.can_hit(h.team, e) or e.kind == "base" or e.kind == "turret" or e.is_prop:
 			continue
@@ -503,7 +503,7 @@ static func fire_rail(w: SimWorld, h: SimHamster) -> void:
 
 static func laser_update(w: SimWorld, h: SimHamster, dt: float, can_shoot: bool) -> void:
 	var W := h.weapon()
-	if h.inp.fire and can_shoot:
+	if (h.inp.fire or h.sk_od_t > 0.0) and can_shoot:
 		h.beam_t -= dt
 		if h.beam_t <= 1e-6:
 			h.beam_t = float(W.get("tick", 0.1))
@@ -528,14 +528,14 @@ static func laser_tick(w: SimWorld, h: SimHamster) -> void:
 	h.beam_tick_t = w.t
 	h.shot_n += 1
 	h.last_shot_t = w.t
-	var od := overdrive(w, h)
+	var od := overdrive(w, h) or h.sk_od_t > 0.0     # 右键技能：过载光束
 	var cost := 0.0 if od else maxf(float(W.get("costFloor", 0.2)), float(P.cost))
 	h.ammo_f += cost
 	while h.ammo_f >= 1.0:
 		h.ammo_f -= 1.0
 		h.ammo -= 1
 	var rng_ := float(W.range) * float(P.range)
-	var base := float(W.dmg) * float(P.dmg) * float(h.st.dmg) * (float(S.get("odDmg", 1.3)) if od else 1.0)
+	var base := float(W.dmg) * float(P.dmg) * float(h.st.dmg) * (float(S.get("odDmg", 1.3)) if od else 1.0) * (h.sk_od_k if h.sk_od_t > 0.0 else 1.0)
 	var angs: Array = [[0.0, 1.0]]
 	var sa := float(S.get("sideAng", 0.22))
 	var side_n := int(S.get("sideBeams", 0))
@@ -546,7 +546,7 @@ static func laser_tick(w: SimWorld, h: SimHamster) -> void:
 	if side_n >= 2:
 		angs.append([-sa, float(P.sideK) if int(S.get("sideBeams", 0)) >= 2 else 0.5])
 	# 穿透：光束打中后继续往前照，后面的敌人吃 beamPierceK 倍伤害
-	var pierce := int(S.get("beamPierce", 0)) + (int(S.get("odPierce", 0)) if od else 0)
+	var pierce := int(S.get("beamPierce", 0)) + (int(S.get("odPierce", 0)) if od else 0) + (2 if h.sk_od_t > 0.0 else 0)
 	var R := h.r
 	var gh := R + h.z
 	var step := float(W.get("step", 8))

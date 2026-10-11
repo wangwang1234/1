@@ -79,7 +79,7 @@ func _ready() -> void:
 	weapon_pick = OptionButton.new()
 	weapon_pick.theme_type_variation = "GhostButton"
 	weapon_pick.add_theme_font_size_override("font_size", 20)
-	var ids: Array = Data.weapons().keys()
+	var ids: Array = Data.active_weapons()
 	for i in ids.size():
 		weapon_pick.add_item(String(Data.weapon(ids[i]).name), i)
 		var ip := "res://assets/icons/wpn_%s.png" % ids[i]

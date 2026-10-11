@@ -382,5 +382,6 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 			var ks: Variant = SimWeapons.special(h, "keepSpin")
 			if not (ks != null and w.t - h.last_shot_t < float(ks)):
 				h.spin = maxf(0.0, h.spin - dt / float(W.get("spinDown", 0.9)))
+	SimSkills.tick(w, h, dt)
 	SimWeaponModes.update_weapon(w, h, dt, can_shoot)
 	h.bloom = maxf(0.0, h.bloom - dt * (float(HR.bloomDecayFiring) if inp.fire else float(HR.bloomDecayIdle)))

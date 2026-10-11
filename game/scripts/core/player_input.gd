@@ -9,8 +9,8 @@ const ACTIONS := {
 	"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN], "move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
 	"dash": [KEY_SPACE], "reload": [KEY_R], "gadget": [KEY_Q], "card_1": [KEY_1], "card_2": [KEY_2], "card_3": [KEY_3], "pause": [KEY_ESCAPE, KEY_P],
 }
-const KEYS_P1 := {"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "dash": KEY_SPACE, "reload": KEY_R, "gadget": KEY_Q, "card": [KEY_1, KEY_2, KEY_3]}
-const KEYS_P2 := {"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "fire": KEY_ENTER, "dash": KEY_SHIFT, "reload": KEY_SLASH, "gadget": KEY_PERIOD, "card": [KEY_8, KEY_9, KEY_0]}
+const KEYS_P1 := {"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "dash": KEY_SPACE, "reload": KEY_R, "gadget": KEY_Q, "skill": KEY_E, "card": [KEY_1, KEY_2, KEY_3]}
+const KEYS_P2 := {"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "fire": KEY_ENTER, "dash": KEY_SHIFT, "reload": KEY_SLASH, "gadget": KEY_PERIOD, "skill": KEY_COMMA, "card": [KEY_8, KEY_9, KEY_0]}
 
 var scheme := "kbm"      # kbm / pad / keys2
 var device := "kbm"      # 当前实际在用的设备（kbm 方案里接上手柄会切到 pad）
@@ -135,6 +135,9 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool
 	var dash := (kb and kb_dash) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A))
 	var reload := (kb and _key(K.reload)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_X) and h.choices.is_empty())
 	var gadget := (kb and _key(K.gadget)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_LEFT_SHOULDER))
+	# 右键武器技能：鼠标右键（键鼠方案）/ E（1P 键盘）/ 逗号（2P 方向键方案）/ 手柄左扳机；按住时冷却一好就放
+	var mouse_skill := scheme == "kbm" and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
+	inp.skill = mouse_skill or (kb and _key(K.skill)) or (use_pad and Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_LEFT) > 0.4)
 	if _pressed_edge("dash", dash):
 		inp.dash = true
 	if _pressed_edge("reload", reload):
@@ -170,6 +173,15 @@ func card_hint() -> String:
 		"keys2":
 			return "按 8 / 9 / 0 选升级，不耽误射击"
 	return "按 1 / 2 / 3 选升级，不耽误射击"
+
+
+func skill_key() -> String:
+	match device:
+		"pad":
+			return "LT"
+		"keys2":
+			return ","
+	return "右键"
 
 
 func gadget_key() -> String:

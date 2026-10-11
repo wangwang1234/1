@@ -326,8 +326,8 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 	c.draw_circle(gpos, gr, Color(0.086, 0.063, 0.15, 0.95))
 	var gcd := float(h.gadget.cd)
 	var gmax := float(Data.gadgets().get(String(h.gadget.id), {"cd": 7}).cd) * float(h.st.get("gcd", 1.0))
-	if gcd > 0.0:
-		var k := clampf(gcd / maxf(0.1, gmax), 0.0, 1.0)
+	if gcd > 0.0 and gcd / maxf(0.1, gmax) > 0.02:     # 扇形太窄时三角化会失败
+		var k := clampf(gcd / maxf(0.1, gmax), 0.0, 0.995)
 		var pts := PackedVector2Array([gpos])
 		for i in 33:
 			var a := -PI * 0.5 + TAU * k * float(i) / 32.0
@@ -345,6 +345,27 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 		c.draw_circle(gpos + Vector2(-gr + 4 * s + d * 7 * s, -gr - 3 * s), 2.6 * s, Color("#c77dff"))
 	if gid == "beacon" and not h.beacon.is_empty():
 		c.draw_arc(gpos, gr + 4 * s, 0, TAU, 32, Color("#7fe3ff"), 2.0 * s, true)
+	# 右键武器技能：冷却扇形 + 按键提示（武器没有技能就不画）
+	var SD: Dictionary = h.weapon().get("skill", {})
+	if not SD.is_empty():
+		var kpos := pc + Vector2(58, -50) * s
+		var kr := 21.0 * s
+		var kcd := h.skill_cd
+		var kmax := maxf(0.1, float(SD.cd))
+		c.draw_circle(kpos, kr, Color(0.086, 0.063, 0.15, 0.95))
+		if icons.has(h.weapon_id):
+			c.draw_texture_rect(icons[h.weapon_id], Rect2(kpos - Vector2(kr, kr) * 1.1, Vector2(kr, kr) * 2.2), false, Color(1, 1, 1, 0.45 if kcd > 0.0 else 1.0))
+		if kcd > 0.0:
+			var kk := clampf(kcd / kmax, 0.0, 0.995)     # 整圆首尾点重合、太窄都会让三角化失败
+			if kk > 0.02:
+				var kp := PackedVector2Array([kpos])
+				for i in 33:
+					var a := -PI * 0.5 + TAU * kk * float(i) / 32.0
+					kp.append(kpos + Vector2(cos(a), sin(a)) * kr)
+				c.draw_colored_polygon(kp, Color(0.04, 0.02, 0.08, 0.7))
+			_txt(c, kpos + Vector2(-kr, 7 * s), str(ceili(kcd)), 18 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, true, kr * 2.0, 4)
+		c.draw_arc(kpos, kr, 0, TAU, 40, Color(1, 1, 1, 0.3) if kcd > 0.0 else UiTheme.GOLD, 3 * s, true)
+		_txt(c, kpos + Vector2(-34, -kr / s - 6) * s, pin.skill_key(), 14 * s, UiTheme.GOLD if kcd <= 0.0 else UiTheme.SUB, HORIZONTAL_ALIGNMENT_CENTER, false, 68 * s, 4)
 	# 右侧信息
 	var bx := x + 182 * s
 	var bw := x + w - 18 * s - bx
@@ -473,6 +494,11 @@ func _draw_crosshair(c: Control, s: float, h: SimHamster) -> void:
 		p = cam.unproject_position(Vector3((h.x + cos(h.aim) * ahead) * 0.01, 0.16, (h.y + sin(h.aim) * ahead) * 0.01))
 	var col := UiTheme.CREAM
 	var r := 11.0 * s
+	# 右键技能冷却：准星外一圈细弧，转满就是好了（好了的瞬间不画，免得一直有一圈）
+	var SD: Dictionary = h.weapon().get("skill", {})
+	if not SD.is_empty() and h.skill_cd > 0.0:
+		var kk := 1.0 - clampf(h.skill_cd / maxf(0.1, float(SD.cd)), 0.0, 1.0)
+		c.draw_arc(p, r * 2.1, -PI * 0.5, -PI * 0.5 + TAU * kk, 40, Color(1.0, 0.82, 0.4, 0.55), 2.5 * s, true)
 	for k: int in [0, 1, 2, 3]:
 		var a := k * PI * 0.5
 		var d := Vector2(cos(a), sin(a))
@@ -718,6 +744,8 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		if e2.team == team or e2.mark_team != team or w.t >= e2.mark_until:
 			continue
 		var pk: Vector2 = proj.call(e2.x, e2.y, 0.9 if e2 is SimHamster else 0.6)
+		if not pk.is_finite() or not Rect2(Vector2.ZERO, root.size).grow(40.0).has_point(pk):
+			continue     # 画面外（或在镜头背后投影无效）的标记不画
 		var dsz := 7.0 * s
 		c.draw_colored_polygon(PackedVector2Array([pk + Vector2(0, -dsz), pk + Vector2(dsz * 0.7, 0), pk + Vector2(0, dsz), pk + Vector2(-dsz * 0.7, 0)]), Color("#ff4d5e"))
 	# 神枪手标记

@@ -15,6 +15,7 @@ extends Node
 ##   visual     固定站位画面审阅（实际地图；HUD / 无 HUD / 角色近景）
 ##   materials  实际引擎材质审阅：四种皮肤 × 两队、组合装备、家具分件
 ##   identity   画面个性化（2026-10-11）：光岛、画面外巨物投影、手机、彩灯、袜子脚印、光束灰尘（--spots a,b 只拍部分）
+##   skills     右键武器专属技能：开放的 10 把武器各放一次技能（--weapons a,b 只拍部分）
 ##   fb3        导演反馈第三轮：拿手枪时的升级卡（换武器）、Tab 比分板、大瓜子和金瓜子、望远镜前后视野、满级宠物
 ##   dim        暗处可见（2026-10-11）：同一画面里黑处 / 月光里 / 手电里的敌人对比，带 HUD 和无 HUD；再把手电转向黑处那只
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
@@ -92,6 +93,8 @@ func _run() -> void:
 			await _dim()
 		"fb3":
 			await _fb3()
+		"skills":
+			await _skills()
 		"lighting_walk":
 			await _lighting_walk()
 		"materials":
@@ -1356,3 +1359,69 @@ func _fb3() -> void:
 	mv.hud.visible = true
 	await _frames(4)
 	await shot("fb3_pets")
+
+
+func _skills() -> void:
+	## 右键技能审阅：玩家站在空地，前方几只定住的小兵当靶子，放技能后在效果最明显的时刻截图
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.iframes = 9999.0
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	for e in w.mobs:
+		e.dead = true
+	var p := _free_near(w, Vector2(2050.0, 1560.0), h.r)
+	# [武器, 放完后等几帧再拍, 拍的时候是否按住左键]
+	var plan := [["pistol", 7, false], ["smg", 30, true], ["ak47", 26, false], ["minigun", 30, true], ["shotgun", 5, false],
+		["sniper", 5, false], ["rocket", 9, false], ["katana", 8, false], ["flame", 24, false], ["laser", 20, false]]
+	var only := String(args.get("weapons", ""))
+	for it: Array in plan:
+		var wid := String(it[0])
+		if only != "" and not only.split(",").has(wid):
+			continue
+		for m in w.minions:
+			m.dead = true
+		w.fires.clear()
+		w.bullets.clear()
+		w.lobs.clear()
+		await _steps(80)     # 等上一个技能的名字飘字散掉，免得叠在一起
+		h.x = p.x
+		h.y = p.y
+		h.px = p.x
+		h.py = p.y
+		h.weapon_id = wid
+		h.evo = {"a": 0, "b": 0, "c": 0}
+		SimHamsterLogic.calc_stats(h)
+		h.ammo = SimWeapons.mag_size(h)
+		h.reload_t = 0.0
+		h.aim = 0.0
+		h.inp.aim = 0.0
+		h.inp.mx = 0.0
+		h.inp.my = 0.0
+		var near := wid in ["katana", "flame"]
+		for i in 3:
+			var m := w.spawn_minion("red", w.map.lanes.keys()[0])
+			m.x = p.x + (170.0 if near else 300.0) + (i % 2) * 50.0
+			m.y = p.y - 50.0 + i * 50.0
+			m.px = m.x
+			m.py = m.y
+			m.stun = 99.0
+			m.hp = 9999.0
+			m.max_hp = 9999.0
+		await _steps(20)
+		h.skill_cd = 0.0
+		h.inp.fire = bool(it[2])
+		SimSkills.use(w, h)
+		await _steps(int(it[1]))
+		h.inp.fire = false
+		await shot("skill_" + wid)
+		h.sk_od_t = 0.0
+		h.sk_free_t = 0.0
+		h.sk_rate_t = 0.0
+		h.sk_spin_t = 0.0

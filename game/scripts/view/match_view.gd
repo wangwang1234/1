@@ -680,6 +680,16 @@ func _dispatch(events: Array) -> void:
 				if h6 != null and is_local_id(h6.id):
 					Audio.play2d("card_pick", -4.0, 0.0)
 					hud_of(h6.id).cards_picked()
+			"skill":
+				# 右键武器技能：头顶弹出技能名 + 一圈闪光
+				var hs := world.ham_by_id(int(ev.id))
+				if hs != null and team_sees(hs):
+					var tcs := Color("#7fc3ff") if hs.team == "blue" else Color("#ff8f8f")
+					fx.number(_wpos(hs.x, hs.y, 70), String(ev.name), Color("#ffd166"), 1.15)
+					fx.ring(_wpos(hs.x, hs.y, 3), 0.18, 2.6, 0.35, tcs, 0.3)
+					Audio.play3d("charge", _wpos(hs.x, hs.y, 20), -4.0 if is_local_id(hs.id) else -10.0, 0.1, 0.1)
+					if is_local_id(hs.id):
+						player_of(hs.id).cam.add_trauma(0.12 * Settings.fx_strength)
 			"gem":
 				var hv7: HamsterView = ham_views.get(ev.id)
 				if hv7:

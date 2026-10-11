@@ -17,6 +17,7 @@
 
 - `release/manzai_fb3_win64.zip`（Windows）
 - `release/manzai_fb3_mac.zip`（macOS，通用版 .app，临时签名）
+- 后续：已经被同一天的 `release/manzai_skills_*`（加了武器精简和右键技能）取代，请直接用那个。
 
 **请用这个新包试玩。** 你之前玩的应该是批次 3 的包（10 月 10 日上午打的），比第一轮反馈的修改还早：
 

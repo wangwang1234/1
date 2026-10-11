@@ -8,7 +8,7 @@ const TYPE_COLOR := {"进化": "#ff9a3c", "强化": "#5fb0ff", "道具": "#c77df
 
 
 static func _scope_weapons() -> Array:
-	return Data.rule("scope.weapons", Data.weapons().keys())
+	return Data.active_weapons()
 
 
 static func _scope_abilities() -> Array:
@@ -188,6 +188,13 @@ static func apply(w: SimWorld, h: SimHamster, i: int) -> void:
 		"weap":
 			h.weapon_id = String(c.id)
 			h.evo = {"a": 0, "b": 0, "c": 0}
+			# 右键技能：换枪后 2 秒内可用，上一把的技能效果清掉
+			h.skill_cd = minf(h.skill_cd, 2.0)
+			h.sk_free_t = 0.0
+			h.sk_rate_t = 0.0
+			h.sk_spin_t = 0.0
+			h.sk_slash_t = 0.0
+			h.sk_od_t = 0.0
 			h.ramp = 0.0
 			h.burst_n = 0
 			h.spin = 0.0
