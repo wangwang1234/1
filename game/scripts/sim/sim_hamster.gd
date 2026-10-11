@@ -10,6 +10,7 @@ class HamInput:
 	var aim := 0.0
 	var fire := false
 	var dash := false
+	var dash_direction := Vector2.ZERO # Reliable edge; zero uses current local input.
 	var reload := false
 	var gadget := false
 	var card := -1

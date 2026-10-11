@@ -59,6 +59,7 @@ func test_all_weapon_evo_levels() -> void:
 					shots += h.shot_n
 				check(shots > 0, "%s %s%d 开过火" % [wid, k, lv])
 				count += 1
+				w.dispose()
 	note = "%d 种组合（18 把武器 × 3 路线 × 9 级 + 全满）" % count
 
 

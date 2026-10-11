@@ -1,29 +1,29 @@
 class_name HamsterView
 extends Node3D
-## 仓鼠表现：模型、动画树、表情、武器与进化配件、手电、挤压拉伸、受击闪白。
-## 只读 SimHamster 状态 + 处理事件，不改逻辑。
 
-const MODEL := "res://assets/models/characters/chr_hamster.glb"
-const UPPER := ["spine", "weapon_socket", "arm_L", "forearm_L", "arm_R", "forearm_R"]
-const HURT_BONES := ["root", "pelvis", "head", "ear_L", "ear_R"]
-const LOOPS := ["idle", "run_fwd", "run_back", "run_left", "run_right", "hold_pistol", "hold_rifle", "hold_shotgun", "hold_heavy", "hold_launcher",
+
+
+const MODEL: = "res://assets/models/characters/chr_hamster.glb"
+const UPPER: = ["spine", "weapon_socket", "arm_L", "forearm_L", "arm_R", "forearm_R"]
+const HURT_BONES: = ["root", "pelvis", "head", "ear_L", "ear_R"]
+const LOOPS: = ["idle", "run_fwd", "run_back", "run_left", "run_right", "hold_pistol", "hold_rifle", "hold_shotgun", "hold_heavy", "hold_launcher",
 	"hold_melee", "hold_flame", "hold_dual", "hold_beam", "victory"]
-const CLASS_OF := {"pistol": "pistol", "deagle": "pistol", "revolver": "pistol", "dual": "dual", "ak47": "rifle", "smg": "rifle", "sniper": "rifle",
+const CLASS_OF: = {"pistol": "pistol", "deagle": "pistol", "revolver": "pistol", "dual": "dual", "ak47": "rifle", "smg": "rifle", "sniper": "rifle",
 	"lmg": "heavy", "amr": "rifle", "minigun": "heavy", "rail": "beam", "laser": "beam", "flame": "flame", "katana": "melee", "rocket": "launcher",
 	"gl": "launcher", "shotgun": "shotgun", "autoshot": "shotgun"}
-## 强化外观挂件：强化 id -> [[glb 名, 骨骼], ...]（模型在仓鼠模型空间建模，挂到骨骼上跟着动）
-const ACC := {
+
+const ACC: = {
 	"armor": [["acc_vest", "spine"]], "scholar": [["acc_glasses", "head"]], "nvg": [["acc_nvg", "head"]], "recon": [["acc_antenna", "head"]],
 	"rage": [["acc_headband", "head"]], "crit": [["acc_clover", "head"]], "vamp": [["acc_fangs", "head"]], "scav": [["acc_bando", "spine"]],
 	"gcd": [["acc_belt", "pelvis"]], "magnet": [["acc_magnet", "spine"]], "chain": [["acc_coilpack", "spine"]], "banner": [["acc_banner", "spine"]],
 	"speed": [["acc_shoe_L", "shin_L"], ["acc_shoe_R", "shin_R"]],
 }
-## 换弹音效：新姿势类别沿用三种基础换弹声
-const RELOAD_SND := {"pistol": "pistol", "dual": "pistol", "rifle": "rifle", "heavy": "rifle", "flame": "rifle", "beam": "rifle", "shotgun": "shotgun", "launcher": "shotgun", "melee": "pistol"}
 
-var sim_id := 0
-var team := "blue"
-var is_local := false
+const RELOAD_SND: = {"pistol": "pistol", "dual": "pistol", "rifle": "rifle", "heavy": "rifle", "flame": "rifle", "beam": "rifle", "shotgun": "shotgun", "launcher": "shotgun", "melee": "pistol"}
+
+var sim_id: = 0
+var team: = "blue"
+var is_local: = false
 var model: Node3D
 var skel: Skeleton3D
 var anim: AnimationPlayer
@@ -31,37 +31,37 @@ var tree: AnimationTree
 var rig: HamsterRig
 var socket: BoneAttachment3D
 var weapon_node: Node3D
-var weapon_id := ""
-var evo_sig := ""
+var weapon_id: = ""
+var evo_sig: = ""
 var flashlight: SpotLight3D
 var beam: MeshInstance3D
-var exprs := {}
-var _sock_fix := Transform3D.IDENTITY
-var _cls := ""
-var _blink_t := 2.0
-var _blink := 0.0
-var _happy_t := 0.0
-var _squint_t := 0.0
-var _sq := 1.0
-var _sq_v := 0.0
-var _kick := 0.0
-var _kick_v := 0.0
-var _prev_vel := Vector3.ZERO
-var _prev_aim := 0.0
-var _dead := false
-var _won := false
-var _vis := 1.0
-var _shown := true
-var _air_spin := 0.0
+var exprs: = {}
+var _sock_fix: = Transform3D.IDENTITY
+var _cls: = ""
+var _blink_t: = 2.0
+var _blink: = 0.0
+var _happy_t: = 0.0
+var _squint_t: = 0.0
+var _sq: = 1.0
+var _sq_v: = 0.0
+var _kick: = 0.0
+var _kick_v: = 0.0
+var _prev_vel: = Vector3.ZERO
+var _prev_aim: = 0.0
+var _dead: = false
+var _won: = false
+var _vis: = 1.0
+var _shown: = true
+var _air_spin: = 0.0
 var spin_node: Node3D
-var _spin_a := 0.0
+var _spin_a: = 0.0
 var eshield: MeshInstance3D
-var _acc := {}               # 强化 id -> [BoneAttachment3D]
-var _acc_sig := ""
-var _slash_flip := false
+var _acc: = {}
+var _acc_sig: = ""
+var _slash_flip: = false
 
 
-func setup(h: SimHamster, local: bool) -> void:
+func setup(h: SimHamster, local: bool) -> void :
 	sim_id = h.id
 	team = h.team
 	is_local = local
@@ -74,10 +74,10 @@ func setup(h: SimHamster, local: bool) -> void:
 		exprs[String(n.name)] = n
 	ToonMaterials.set_param(model, "team_index", 0 if h.team == "blue" else 1)
 	ToonMaterials.set_param(model, "skin_index", maxi(0, Data.skin_ids().find(h.skin)))
-	var tc := Color("#4fa3ff") if h.team == "blue" else Color("#ff5b5b")
+	var tc: = Color("#4fa3ff") if h.team == "blue" else Color("#ff5b5b")
 	ToonMaterials.set_param(model, "rim_tint", Color(tc.r, tc.g, tc.b, float(VisualStyle.section("character").rimTeamMix)))
 	ToonMaterials.set_param(model, "rim_boost", float(VisualStyle.section("character").rimBoost))
-	ToonMaterials.set_param(model, "glow", float(VisualStyle.section("character").selfGlow))     # 夜里给角色一点自身亮度，俯视角下也认得出毛色
+	ToonMaterials.set_param(model, "glow", float(VisualStyle.section("character").selfGlow))
 	_setup_anim()
 	if skel:
 		rig = HamsterRig.new()
@@ -85,20 +85,20 @@ func setup(h: SimHamster, local: bool) -> void:
 		socket = BoneAttachment3D.new()
 		socket.bone_name = "weapon_socket"
 		skel.add_child(socket)
-		var bi := skel.find_bone("weapon_socket")
+		var bi: = skel.find_bone("weapon_socket")
 		if bi >= 0:
-			var rest := skel.get_bone_global_rest(bi)
+			var rest: = skel.get_bone_global_rest(bi)
 			_sock_fix = Transform3D(rest.basis.inverse(), Vector3.ZERO)
 	_setup_light()
 	_set_expr("open", "idle")
 	eshield = MeshInstance3D.new()
-	var sph := SphereMesh.new()
+	var sph: = SphereMesh.new()
 	sph.radius = 1.0
 	sph.height = 2.0
 	sph.radial_segments = 24
 	sph.rings = 12
 	eshield.mesh = sph
-	var sm := ShaderMaterial.new()
+	var sm: = ShaderMaterial.new()
 	sm.shader = preload("res://shaders/shield_bubble.gdshader")
 	sm.set_shader_parameter("color", Color("#7fe3ff"))
 	eshield.material_override = sm
@@ -109,22 +109,22 @@ func setup(h: SimHamster, local: bool) -> void:
 	add_child(eshield)
 
 
-func _setup_anim() -> void:
+func _setup_anim() -> void :
 	if anim == null:
 		return
 	for nm in LOOPS:
 		if anim.has_animation(nm):
 			anim.get_animation(nm).loop_mode = Animation.LOOP_LINEAR
-	var track_prefix := ""
-	var a0 := anim.get_animation("hold_pistol")
+	var track_prefix: = ""
+	var a0: = anim.get_animation("hold_pistol")
 	if a0 and a0.get_track_count() > 0:
-		var p := String(a0.track_get_path(0))
+		var p: = String(a0.track_get_path(0))
 		track_prefix = p.substr(0, p.find(":") + 1)
 	tree = AnimationTree.new()
 	model.add_child(tree)
 	tree.anim_player = tree.get_path_to(anim)
-	var bt := AnimationNodeBlendTree.new()
-	var bs := AnimationNodeBlendSpace2D.new()
+	var bt: = AnimationNodeBlendTree.new()
+	var bs: = AnimationNodeBlendSpace2D.new()
 	bs.add_blend_point(_a("idle"), Vector2.ZERO, -1, "idle")
 	bs.add_blend_point(_a("run_fwd"), Vector2(0, 1), -1, "run_fwd")
 	bs.add_blend_point(_a("run_back"), Vector2(0, -1), -1, "run_back")
@@ -133,12 +133,12 @@ func _setup_anim() -> void:
 	bs.sync = true
 	bt.add_node("loco", bs, Vector2(0, 0))
 	bt.add_node("hold", _a("hold_pistol"), Vector2(0, 200))
-	var up := AnimationNodeBlend2.new()
+	var up: = AnimationNodeBlend2.new()
 	_filter(up, track_prefix, UPPER)
 	bt.add_node("upper", up, Vector2(250, 100))
 	bt.connect_node("upper", 0, "loco")
 	bt.connect_node("upper", 1, "hold")
-	var fire := AnimationNodeOneShot.new()
+	var fire: = AnimationNodeOneShot.new()
 	fire.fadein_time = 0.02
 	fire.fadeout_time = 0.06
 	_filter(fire, track_prefix, UPPER)
@@ -146,16 +146,16 @@ func _setup_anim() -> void:
 	bt.add_node("fire_anim", _a("fire_pistol"), Vector2(250, 300))
 	bt.connect_node("fire", 0, "upper")
 	bt.connect_node("fire", 1, "fire_anim")
-	var rl := AnimationNodeOneShot.new()
+	var rl: = AnimationNodeOneShot.new()
 	rl.fadein_time = 0.08
 	rl.fadeout_time = 0.12
 	_filter(rl, track_prefix, UPPER)
 	bt.add_node("reload", rl, Vector2(750, 100))
 	bt.add_node("reload_anim", _a("reload_pistol"), Vector2(500, 300))
-	var ts := AnimationNodeTimeScale.new()
+	var ts: = AnimationNodeTimeScale.new()
 	bt.add_node("reload_ts", ts, Vector2(620, 300))
 	bt.connect_node("reload_ts", 0, "reload_anim")
-	var thr := AnimationNodeOneShot.new()
+	var thr: = AnimationNodeOneShot.new()
 	thr.fadein_time = 0.04
 	thr.fadeout_time = 0.1
 	_filter(thr, track_prefix, UPPER)
@@ -165,7 +165,7 @@ func _setup_anim() -> void:
 	bt.connect_node("throw", 1, "throw_anim")
 	bt.connect_node("reload", 0, "throw")
 	bt.connect_node("reload", 1, "reload_ts")
-	var hurt := AnimationNodeOneShot.new()
+	var hurt: = AnimationNodeOneShot.new()
 	hurt.fadein_time = 0.02
 	hurt.fadeout_time = 0.1
 	_filter(hurt, track_prefix, HURT_BONES)
@@ -173,21 +173,21 @@ func _setup_anim() -> void:
 	bt.add_node("hurt_anim", _a("hurt"), Vector2(750, 300))
 	bt.connect_node("hurt", 0, "reload")
 	bt.connect_node("hurt", 1, "hurt_anim")
-	var roll := AnimationNodeOneShot.new()
+	var roll: = AnimationNodeOneShot.new()
 	roll.fadein_time = 0.03
 	roll.fadeout_time = 0.08
 	bt.add_node("roll", roll, Vector2(1250, 100))
 	bt.add_node("roll_anim", _a("dash_roll"), Vector2(1000, 300))
 	bt.connect_node("roll", 0, "hurt")
 	bt.connect_node("roll", 1, "roll_anim")
-	var pop := AnimationNodeOneShot.new()
+	var pop: = AnimationNodeOneShot.new()
 	pop.fadein_time = 0.0
 	pop.fadeout_time = 0.1
 	bt.add_node("pop", pop, Vector2(1500, 100))
 	bt.add_node("pop_anim", _a("respawn_pop"), Vector2(1250, 300))
 	bt.connect_node("pop", 0, "roll")
 	bt.connect_node("pop", 1, "pop_anim")
-	var st := AnimationNodeTransition.new()
+	var st: = AnimationNodeTransition.new()
 	st.add_input("alive")
 	st.add_input("dead")
 	st.add_input("win")
@@ -205,31 +205,31 @@ func _setup_anim() -> void:
 
 
 func _a(nm: String) -> AnimationNodeAnimation:
-	var n := AnimationNodeAnimation.new()
+	var n: = AnimationNodeAnimation.new()
 	n.animation = nm
 	return n
 
 
-func _filter(node: AnimationNode, prefix: String, bones: Array) -> void:
+func _filter(node: AnimationNode, prefix: String, bones: Array) -> void :
 	node.filter_enabled = true
 	for b in bones:
 		node.set_filter_path(NodePath(prefix + String(b)), true)
 
 
-func _setup_light() -> void:
+func _setup_light() -> void :
 	flashlight = SpotLight3D.new()
 	flashlight.light_color = Color(1.0, 0.93, 0.78)
-	var style := VisualStyle.section("character")
+	var style: = VisualStyle.section("character")
 	flashlight.light_energy = float(style.flashlightEnergyLocal if is_local else style.flashlightEnergyOther)
 	flashlight.spot_attenuation = 1.0
 	flashlight.spot_angle_attenuation = 1.4
 	flashlight.shadow_enabled = is_local
 	flashlight.shadow_bias = 0.05
 	flashlight.light_specular = float(style.flashlightSpecular)
-	flashlight.top_level = true      # 朝向直接取瞄准角，不跟随身体的平滑转身（否则会叠加两次旋转）
+	flashlight.top_level = true
 	add_child(flashlight)
 	beam = MeshInstance3D.new()
-	var cone := CylinderMesh.new()
+	var cone: = CylinderMesh.new()
 	cone.top_radius = 0.0
 	cone.bottom_radius = 1.0
 	cone.height = 1.0
@@ -238,7 +238,7 @@ func _setup_light() -> void:
 	cone.cap_bottom = false
 	cone.cap_top = false
 	beam.mesh = cone
-	var m := ShaderMaterial.new()
+	var m: = ShaderMaterial.new()
 	m.shader = preload("res://shaders/light_beam.gdshader")
 	m.set_shader_parameter("strength", float(style.beamStrength))
 	beam.material_override = m
@@ -247,18 +247,18 @@ func _setup_light() -> void:
 	add_child(beam)
 
 
-func _set_expr(eyes: String, mouth: String) -> void:
+func _set_expr(eyes: String, mouth: String) -> void :
 	for k in exprs:
 		var n: Node3D = exprs[k]
 		n.visible = k == "expr_eyes_" + eyes or k == "expr_mouth_" + mouth
 
 
-func _set_weapon(h: SimHamster) -> void:
+func _set_weapon(h: SimHamster) -> void :
 	weapon_id = h.weapon_id
 	if weapon_node:
 		weapon_node.queue_free()
 		weapon_node = null
-	var path := "res://assets/models/weapons/wpn_%s.glb" % weapon_id
+	var path: = "res://assets/models/weapons/wpn_%s.glb" % weapon_id
 	if not ResourceLoader.exists(path):
 		path = "res://assets/models/weapons/wpn_pistol.glb"
 	weapon_node = ToonMaterials.instance(path, 1.5)
@@ -268,15 +268,15 @@ func _set_weapon(h: SimHamster) -> void:
 	_cls = CLASS_OF.get(weapon_id, "pistol")
 	spin_node = weapon_node.find_child("spin", true, false) as Node3D
 	if tree:
-		var bt := tree.tree_root as AnimationNodeBlendTree
+		var bt: = tree.tree_root as AnimationNodeBlendTree
 		(bt.get_node("hold") as AnimationNodeAnimation).animation = _anim_or("hold_" + _cls, "hold_pistol")
 		(bt.get_node("fire_anim") as AnimationNodeAnimation).animation = _anim_or("slash_a" if _cls == "melee" else "fire_" + _cls, "fire_pistol")
 		(bt.get_node("reload_anim") as AnimationNodeAnimation).animation = _anim_or("reload_" + _cls, "reload_pistol")
 	evo_sig = ""
 
 
-func _sync_accessories(h: SimHamster) -> void:
-	var sig := ",".join(h.ab.keys())
+func _sync_accessories(h: SimHamster) -> void :
+	var sig: = ",".join(h.ab.keys())
 	if sig == _acc_sig or skel == null:
 		return
 	_acc_sig = sig
@@ -290,14 +290,14 @@ func _sync_accessories(h: SimHamster) -> void:
 			continue
 		var nodes: Array = []
 		for spec in ACC[id]:
-			var path := "res://assets/models/characters/%s.glb" % spec[0]
-			var bi := skel.find_bone(String(spec[1]))
+			var path: = "res://assets/models/characters/%s.glb" % spec[0]
+			var bi: = skel.find_bone(String(spec[1]))
 			if bi < 0 or not ResourceLoader.exists(path):
 				continue
-			var ba := BoneAttachment3D.new()
+			var ba: = BoneAttachment3D.new()
 			ba.bone_name = String(spec[1])
 			skel.add_child(ba)
-			var m := ToonMaterials.instance(path, 2.0)
+			var m: = ToonMaterials.instance(path, 2.0)
 			ba.add_child(m)
 			m.transform = skel.get_bone_global_rest(bi).affine_inverse()
 			ToonMaterials.set_param(m, "team_index", 0 if team == "blue" else 1)
@@ -305,8 +305,8 @@ func _sync_accessories(h: SimHamster) -> void:
 		_acc[id] = nodes
 
 
-func _sync_attachments(h: SimHamster) -> void:
-	var sig := "%s_%d_%d_%d_%s" % [h.weapon_id, h.evo_lv("a"), h.evo_lv("b"), h.evo_lv("c"), str(h.ab.get("rate", 0)) + str(h.ab.get("torch", 0) + h.ab.get("wide", 0))]
+func _sync_attachments(h: SimHamster) -> void :
+	var sig: = "%s_%d_%d_%d_%s" % [h.weapon_id, h.evo_lv("a"), h.evo_lv("b"), h.evo_lv("c"), str(h.ab.get("rate", 0)) + str(h.ab.get("torch", 0) + h.ab.get("wide", 0))]
 	if sig == evo_sig or weapon_node == null:
 		return
 	evo_sig = sig
@@ -314,33 +314,33 @@ func _sync_attachments(h: SimHamster) -> void:
 		c.queue_free()
 	var types: Array = Data.evolutions().get("attachmentType", {}).get(h.weapon_id, [])
 	for i in mini(3, types.size()):
-		var lv := h.evo_lv(["a", "b", "c"][i])
+		var lv: = h.evo_lv(["a", "b", "c"][i])
 		if lv < 3:
 			continue
-		var t := String(types[i])
-		var holder := weapon_node.find_child("att_" + t, true, false) as Node3D
-		var p := "res://assets/models/attachments/att_%s.glb" % t
+		var t: = String(types[i])
+		var holder: = weapon_node.find_child("att_" + t, true, false) as Node3D
+		var p: = "res://assets/models/attachments/att_%s.glb" % t
 		if holder == null or not ResourceLoader.exists(p):
 			continue
-		var a := ToonMaterials.instance(p, 1.2)
+		var a: = ToonMaterials.instance(p, 1.2)
 		a.name = "evo_%s_%d" % [t, i]
-		var sc := 1.2 if lv >= 9 else (1.0 if lv >= 6 else 0.8)
+		var sc: = 1.2 if lv >= 9 else (1.0 if lv >= 6 else 0.8)
 		a.scale = Vector3.ONE * sc
 		holder.add_child(a)
 		ToonMaterials.set_param(a, "path_index", i)
 		ToonMaterials.set_param(a, "glow", 0.6 if lv >= 9 else 0.0)
-	# 强化外观：连点手指 = 枪管金环；强光手电 / 广角镜头 = 枪上大手电
+
 	if int(h.ab.get("rate", 0)) > 0:
-		var holder2 := weapon_node.find_child("att_coil", true, false) as Node3D
+		var holder2: = weapon_node.find_child("att_coil", true, false) as Node3D
 		if holder2:
-			var r := ToonMaterials.instance("res://assets/models/attachments/att_ring.glb", 1.2)
+			var r: = ToonMaterials.instance("res://assets/models/attachments/att_ring.glb", 1.2)
 			r.name = "evo_ring"
 			r.position = Vector3(0, 0, 0.03)
 			holder2.add_child(r)
 	if int(h.ab.get("torch", 0)) + int(h.ab.get("wide", 0)) > 0:
-		var holder3 := weapon_node.find_child("att_torch", true, false) as Node3D
+		var holder3: = weapon_node.find_child("att_torch", true, false) as Node3D
 		if holder3 and holder3.get_child_count() == 0:
-			var tb := ToonMaterials.instance("res://assets/models/attachments/att_torch_big.glb", 1.2)
+			var tb: = ToonMaterials.instance("res://assets/models/attachments/att_torch_big.glb", 1.2)
 			tb.name = "evo_torchbig"
 			tb.scale = Vector3.ONE * (1.0 + 0.1 * (int(h.ab.get("torch", 0)) + int(h.ab.get("wide", 0))))
 			holder3.add_child(tb)
@@ -354,23 +354,23 @@ func muzzle_node(side: int) -> Node3D:
 	if weapon_node == null:
 		return null
 	if side < 0:
-		var l := weapon_node.find_child("muzzle_L", true, false) as Node3D
+		var l: = weapon_node.find_child("muzzle_L", true, false) as Node3D
 		if l:
 			return l
 	return weapon_node.find_child("muzzle", true, false) as Node3D
 
 
 static func yaw_for(a: float) -> float:
-	## 逻辑朝向（原型平面角）-> 模型绕 Y 旋转（模型正面朝 -Z）
-	return -a - PI * 0.5
+
+	return - a - PI * 0.5
 
 
-var frozen := false
+var frozen: = false
 
 
-func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> void:
-	# 迷雾：看不见的敌人直接隐藏
-	var want := visible_to_local and (h.alive or _dead)
+func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool, pose: Dictionary = {}) -> void :
+
+	var want: = visible_to_local and (h.alive or _dead)
 	_vis = move_toward(_vis, 1.0 if want else 0.0, delta * 8.0)
 	visible = _vis > 0.02
 	if not visible:
@@ -379,52 +379,53 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 		_set_weapon(h)
 	_sync_attachments(h)
 	_sync_accessories(h)
-	var x := lerpf(h.px, h.x, alpha) * 0.01
-	var z := lerpf(h.py, h.y, alpha) * 0.01
-	position = Vector3(x, h.z * 0.01, z)
-	var face := h.aim
+	var x: = lerpf(h.px, h.x, alpha) * 0.01
+	var z: = lerpf(h.py, h.y, alpha) * 0.01
+	position = Vector3(x, float(pose.get("z", h.z)) * 0.01, z)
+	var aim: = float(pose.get("aim", h.aim))
+	var face: = aim
 	if h.roll_t > 0.0:
 		face = atan2(h.rdy, h.rdx)
 	rotation.y = lerp_angle(rotation.y, yaw_for(face), 1.0 - exp(-30.0 * delta))
-	var vel := Vector3(h.vx, 0, h.vy) * 0.01
-	var local_v := vel.rotated(Vector3.UP, -rotation.y)
-	var speed := vel.length()
-	var run := clampf(speed / 2.3, 0.0, 1.2)
+	var vel: = Vector3(float(pose.get("vx", h.vx)), 0, float(pose.get("vy", h.vy))) * 0.01
+	var local_v: = vel.rotated(Vector3.UP, - rotation.y)
+	var speed: = vel.length()
+	var run: = clampf(speed / 2.3, 0.0, 1.2)
 	if tree:
-		var bp := Vector2(local_v.x, -local_v.z) / 2.3
+		var bp: = Vector2(local_v.x, - local_v.z) / 2.3
 		if bp.length() > 1.0:
 			bp = bp.normalized()
 		if speed < 0.15:
 			bp = Vector2.ZERO
 		tree.set("parameters/loco/blend_position", bp)
-	# 挤压拉伸弹簧 + 后坐
+
 	_sq_v += ((1.0 - _sq) * 260.0 - _sq_v * 11.0) * delta
 	_sq += _sq_v * delta
 	_kick_v += ((0.0 - _kick) * 400.0 - _kick_v * 22.0) * delta
 	_kick += _kick_v * delta
-	var s := float(h.st.get("scale", 1.0)) * (1.35 if h.tal.has("giant") else 1.0)
-	var sq := clampf(_sq, 0.6, 1.5)
+	var s: = float(h.st.get("scale", 1.0)) * (1.35 if h.tal.has("giant") else 1.0)
+	var sq: = clampf(_sq, 0.6, 1.5)
 	model.scale = Vector3(s * sq, s * (2.0 - sq), s * sq)
 	model.position = Vector3(0, 0, _kick * 0.01)
 	if not h.air.is_empty():
 		_air_spin += delta * TAU / float(h.air.get("dur", 1.15))
-		model.rotation.x = -_air_spin
+		model.rotation.x = - _air_spin
 	else:
 		_air_spin = 0.0
 		model.rotation.x = 0.0
-	# 程序叠加
+
 	if rig:
-		var acc := (vel - _prev_vel) / maxf(delta, 0.001)
-		rig.accel = acc.rotated(Vector3.UP, -rotation.y)
-		rig.turn_rate = SimUtil.ang_diff(_prev_aim, h.aim) / maxf(delta, 0.001)
+		var acc: = (vel - _prev_vel) / maxf(delta, 0.001)
+		rig.accel = acc.rotated(Vector3.UP, - rotation.y)
+		rig.turn_rate = SimUtil.ang_diff(_prev_aim, aim) / maxf(delta, 0.001)
 		rig.puff = h.puff
 		rig.munch = h.munch_t
 		rig.ear_scale = 1.0 + 0.14 * float(h.ab.get("ears", 0))
 	_prev_vel = vel
-	_prev_aim = h.aim
-	# 状态：死亡 / 胜利
+	_prev_aim = aim
+
 	if tree:
-		var state := "alive"
+		var state: = "alive"
 		if not h.alive:
 			state = "dead"
 		elif _won:
@@ -432,7 +433,7 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 		if tree.get("parameters/state/current_state") != state:
 			tree.set("parameters/state/transition_request", state)
 	_dead = not h.alive
-	# 表情
+
 	_blink_t -= delta
 	if _blink_t <= 0.0:
 		_blink_t = randf_range(2.0, 4.5)
@@ -454,10 +455,10 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 		_set_expr("blink", "idle")
 	else:
 		_set_expr("open", "idle")
-	# 受击闪白、无敌闪烁
+
 	ToonMaterials.set_param(model, "flash", clampf(h.flash / 0.09, 0.0, 1.0) * 0.85)
-	var inv := h.iframes > 0.0 and h.roll_t <= 0.0 and h.alive and fmod(Time.get_ticks_msec() / 1000.0, 0.16) < 0.08
-	var tint := Color(1, 1, 1, 1)
+	var inv: = h.iframes > 0.0 and h.roll_t <= 0.0 and h.alive and fmod(Time.get_ticks_msec() / 1000.0, 0.16) < 0.08
+	var tint: = Color(1, 1, 1, 1)
 	if inv:
 		tint = Color(1.6, 1.6, 1.8, 1)
 	elif frozen:
@@ -472,25 +473,25 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 		spin_node.rotation.y = _spin_a
 	eshield.visible = h.eshield_t > 0.0 and h.alive
 	if eshield.visible:
-		var ek := clampf(h.eshield / maxf(1.0, h.max_hp), 0.2, 1.0)
+		var ek: = clampf(h.eshield / maxf(1.0, h.max_hp), 0.2, 1.0)
 		eshield.scale = Vector3.ONE * h.r * 0.024 * (0.9 + 0.1 * sin(Time.get_ticks_msec() * 0.01))
 		(eshield.material_override as ShaderMaterial).set_shader_parameter("hit", 0.3 * ek)
-	# 手电
-	var lr := SimWeapons.light_range(h) * 0.01
-	var lc := SimWeapons.light_cos(h)
-	var ang := rad_to_deg(acos(clampf(lc, -1.0, 1.0)))
+
+	var lr: = SimWeapons.light_range(h) * 0.01
+	var lc: = SimWeapons.light_cos(h)
+	var ang: = rad_to_deg(acos(clampf(lc, -1.0, 1.0)))
 	flashlight.visible = h.alive
 	flashlight.spot_range = lr * 1.05
 	flashlight.spot_angle = ang
-	flashlight.global_transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-9.0), yaw_for(h.aim), 0)), global_position + Vector3(0, 0.55, 0))
+	flashlight.global_transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-9.0), yaw_for(aim), 0)), global_position + Vector3(0, 0.55, 0))
 	beam.visible = h.alive
-	var bl := lr * 0.62
-	var br := tan(deg_to_rad(ang)) * bl * 0.55
-	var dir := Vector3(cos(h.aim), 0, sin(h.aim))
-	beam.global_transform = Transform3D(Basis(Vector3.UP, yaw_for(h.aim)) * Basis(Vector3.RIGHT, deg_to_rad(90.0)) * Basis.from_scale(Vector3(br, bl, br)), global_position + Vector3(0, 0.36, 0) + dir * bl * 0.5)
+	var bl: = lr * 0.62
+	var br: = tan(deg_to_rad(ang)) * bl * 0.55
+	var dir: = Vector3(cos(aim), 0, sin(aim))
+	beam.global_transform = Transform3D(Basis(Vector3.UP, yaw_for(aim)) * Basis(Vector3.RIGHT, deg_to_rad(90.0)) * Basis.from_scale(Vector3(br, bl, br)), global_position + Vector3(0, 0.36, 0) + dir * bl * 0.5)
 
 
-func on_event(ev: Dictionary) -> void:
+func on_event(ev: Dictionary) -> void :
 	match String(ev.t):
 		"fire":
 			_kick_v -= 14.0 * float(Data.weapon(weapon_id).get("fx", {}).get("gk", 4.0 if _cls != "melee" else 1.0))
@@ -498,7 +499,7 @@ func on_event(ev: Dictionary) -> void:
 			if tree:
 				if _cls == "melee":
 					_slash_flip = not _slash_flip
-					var bt := tree.tree_root as AnimationNodeBlendTree
+					var bt: = tree.tree_root as AnimationNodeBlendTree
 					(bt.get_node("fire_anim") as AnimationNodeAnimation).animation = _anim_or("slash_b" if _slash_flip else "slash_a", "fire_pistol")
 				if String(ev.get("kind", "")) != "flame" or randf() < 0.15:
 					tree.set("parameters/fire/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
@@ -507,7 +508,7 @@ func on_event(ev: Dictionary) -> void:
 				tree.set("parameters/throw/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		"reload":
 			if tree:
-				var dur := maxf(0.2, float(ev.dur))
+				var dur: = maxf(0.2, float(ev.dur))
 				tree.set("parameters/reload_ts/scale", 1.0 / dur)
 				tree.set("parameters/reload/request", AnimationNodeOneShot.ONE_SHOT_REQUEST_FIRE)
 		"dash":
@@ -534,5 +535,5 @@ func on_event(ev: Dictionary) -> void:
 			_sq_v += 2.0
 
 
-func set_victory(v: bool) -> void:
+func set_victory(v: bool) -> void :
 	_won = v
