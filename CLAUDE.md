@@ -86,6 +86,8 @@
 - 每次合并前在本文件“当前进度”最上面加一条：做了什么、审阅包 / 汇报路径、新坑。
 - 分工：ChatGPT 负责画面和联机，Claude 负责玩法和内容；尽量不同时改同一个文件，冲突时由合并的一方解决并在 PR 里写明。
 - 测试：`tools/test.sh`（全部）+ `python3 tools/test_lan_resume.py`（联机，约 10 分钟）。
+- 安装包不进代码仓库：发到 GitHub Releases（标签如 `v0.3.7`，附件 `manzai_<版本>_win64.zip` / `manzai_<版本>_mac.zip`）。`release/`、`review/previews/` 已在 .gitignore。
+- 审阅包只在当批保留截图；过了验收的旧批次只留 `REPORT.md`（截图在 git 历史里）。一次性的测量 / 图库脚本用完删掉，不要留在 `game/tests`、`tools`。
 
 ## 第一次会话
 1. 检查 Godot、Blender、Python、git 是否可用；缺什么就告诉导演怎么安装（这属于需要导演操作的事），装好后继续。
@@ -93,13 +95,14 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-11 仓库清理（导演同意）：删掉旧安装包 `release/`（以后发 GitHub Releases）、资产预览图 `review/previews/`（`tools/assets.sh` 重新生成，不入库）、10-10 及更早审阅包的截图（只留 REPORT.md）、ChatGPT 的一次性测量脚本和画面图库脚本。仓库文件约 2000 → 1420 个，772MB → 58MB；需要旧文件从 git 历史找。
 - 2026-10-11 **合并：主线 + 第三轮（武器精简 10 把 / 右键技能 / 黑暗视野 / 画面个性化）+ 局域网联机（ChatGPT 的 v0.3.6-lan6 + 我改的 10 人房间，版本 0.3.7-lan7）**。审阅包 `review/lan10/`，联机说明 `docs/LAN.md`。
   - ChatGPT 上传的联机文件是从编译包恢复的（注释全丢、`-> void :` 格式）；合并前按原文件重建，只保留真实代码改动（合并提交里有说明）。新建的 `scripts/net/*`、`lan_lobby.gd` 仍是恢复后的格式，以后改到时顺手整理。
   - 联机回归：`python3 tools/test_lan_resume.py`（`LAN_ONLY=ten` 只跑 11 进程的十人局）；完整地图 10 人 / 中路小图 6 人，自动分队，掉线超时由 AI 接管。
-- 2026-10-11 武器精简到 10 把 + 右键武器专属技能（导演定：方案 A + 武器专属技能；审阅包 `review/skills/`，汇报 `review/skills/REPORT.md`，安装包 `release/manzai_skills_win64.zip` / `manzai_skills_mac.zip`）：开放武器由 `rules.json` 的 `scope.weapons` 决定（`Data.active_weapons()`，大厅 / 图鉴 / 卡池都用它；收起的 8 把代码数据保留）。技能在 `scripts/sim/sim_skills.gd`，数值在 `weapons.json` 每把的 `skill`（type / cd / 参数 / aiRange）；输入右键 / E / 手柄左扳机 / 2P 逗号；AI 用 `rules.json` 的 `ai.skillRate`。
+- 2026-10-11 武器精简到 10 把 + 右键武器专属技能（导演定：方案 A + 武器专属技能；审阅包 `review/skills/`，汇报 `review/skills/REPORT.md`）：开放武器由 `rules.json` 的 `scope.weapons` 决定（`Data.active_weapons()`，大厅 / 图鉴 / 卡池都用它；收起的 8 把代码数据保留）。技能在 `scripts/sim/sim_skills.gd`，数值在 `weapons.json` 每把的 `skill`（type / cd / 参数 / aiRange）；输入右键 / E / 手柄左扳机 / 2P 逗号；AI 用 `rules.json` 的 `ai.skillRate`。
   - **建议的下一步**：10 把武器的基础平衡（AK、冲锋枪、霰弹枪偏弱，见汇报里的胜率表）；技能专属特效音效。
   - 坑：HUD 冷却扇形不能画整圈或极窄扇形（三角化失败会让冒烟测试失败），已经夹在 0.02～0.995。
-- 2026-10-11 导演反馈第三轮（审阅包 `review/feedback3/`，汇报 `review/feedback3/REPORT.md`，安装包 `release/manzai_fb3_win64.zip` / `manzai_fb3_mac.zip`）：手枪不升级（`weapons.json` 的 `noEvo`，拿手枪时第一张卡固定换武器）、Tab 比分板（`Hud._draw_board`）、瓜子放大 + 发光（`visual_style.json` 的 `pickups`）、金瓜子（`rules.json` 的 `items.gold`）、小兵被非仓鼠打死也掉瓜子（`minion.dropOther`）、前期经验打折（`progression.json`）、宠物加强到 5 级 + 萤火虫连锁、新强化“望远镜” `binoc`（画面范围 / 暗处视野 +15% 每级，挂件 `acc_spyglass`）。
+- 2026-10-11 导演反馈第三轮（审阅包 `review/feedback3/`，汇报 `review/feedback3/REPORT.md`）：手枪不升级（`weapons.json` 的 `noEvo`，拿手枪时第一张卡固定换武器）、Tab 比分板（`Hud._draw_board`）、瓜子放大 + 发光（`visual_style.json` 的 `pickups`）、金瓜子（`rules.json` 的 `items.gold`）、小兵被非仓鼠打死也掉瓜子（`minion.dropOther`）、前期经验打折（`progression.json`）、宠物加强到 5 级 + 萤火虫连锁、新强化“望远镜” `binoc`（画面范围 / 暗处视野 +15% 每级，挂件 `acc_spyglass`）。
   - **等导演定**：武器精简（方案 A 10 把 / B 12 把 / C 8 把）和右键技能（武器专属 / 手电聚焦 / 道具挪到右键），方案在 `review/feedback3/方案_武器精简与右键技能.md`。
   - 导出模板：容器重建后用 `scratchpad` 里的 Range 下载脚本从官方 tpz 只取 `windows_release_x86_64.exe` 和 `macos.zip`（整包 1.2 GB 不用下）。
 - 2026-10-11 黑暗系统改思路（导演定的：视线内才显示 / AI 能察觉但更迟钝 / 辅助瞄准吸附但不上小地图 / 只靠场景光；审阅包 `review/dark_vision/`，汇报 `review/dark_vision/REPORT.md`）：sim 新增 `world.seen`（视线内含暗处，`rules.json` 的 `vision.dim.range` = 780），`world.vis` 仍是“被照亮”（血条名字、小地图、追踪弹）。表现层 `vis_mask` / `team_sees` 改成按 seen 渲染，`reveal_mask` / `team_reveals` 管血条和边缘光；着色器实例参数 `lit_k`（index 10，和描边共用）把暗处敌人的边缘光、自身亮度、描边关掉。AI 暗处感知在 `difficulty.json` 的 dimSee / dimReactK / dimAimK。GDD 第 12 节已改。
@@ -120,7 +123,7 @@
   - 画面参数集中在 `game/data/visual_style.json`，不更改战斗模拟或视野范围；新增装饰净空、确定性及模拟隔离测试。
   - 地板 / 陶盆重建用 `tools/assets.sh env_visual_kit`，须在 `env_kit` 后生成（全量生成的字母顺序已满足）。
   - 本轮验证：68 项测试通过；2 分钟 AI 对局、18 把武器与进化 / 道具 / 双人分屏、主菜单冒烟均通过。Forward+ 软件 Vulkan 截图用于视觉审阅，目标 GPU 帧率尚待实机测量。
-- 已完成：批次 0（交接包）；批次 1 垂直切片（审阅包 `review/batch1/`）；**批次 2 全部系统**（2026-10，审阅包 `review/batch2/`，汇报 `review/batch2/REPORT.md`，Windows 包 `release/manzai_batch2_win64.zip`）。
+- 已完成：批次 0（交接包）；批次 1 垂直切片（审阅包 `review/batch1/`）；**批次 2 全部系统**（2026-10，审阅包 `review/batch2/`，汇报 `review/batch2/REPORT.md`）。
   - 批次 2 内容：18 把武器 × 3 路线 × 9 级（含质变）、13 种道具、22 种强化（全部有外观）、12 个天赋、3 个宠物；蟑螂窝 / 鼠帮枪手营地、鼠王；完整地图 5 对 5（三条兵线、3 炮台 + 鼠窝护盾规则、加速决战）；全部 AI 行为、视野听觉；开局大厅、图鉴 8 页、设置 3 页、结算、本地双人分屏、HUD 补全；新模型都是风格统一的简化版。
   - 测试：sim 测试（504 种武器 × 路线 × 等级组合、道具、野怪鼠王宠物天赋、切片和完整地图都能分出胜负）+ 表现层冒烟（`tests/view_smoke.tscn`）+ 主菜单冒烟，`tools/test.sh` 一条命令。
 - 等导演：批次 1、2 的试玩反馈（风格、手感、节奏、完整地图纯 AI 一局 15～27 分钟、中位数约 19 分钟是否合适）；在目标电脑上跑 `帧率测试.bat`（现在测完整地图），把 `perf` 文件夹发回来。
