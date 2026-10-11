@@ -405,10 +405,12 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool, pos
 			bp = Vector2.ZERO
 		tree.set("parameters/loco/blend_position", bp)
 	# 挤压拉伸弹簧 + 后坐
-	_sq_v += ((1.0 - _sq) * 260.0 - _sq_v * 11.0) * delta
-	_sq += _sq_v * delta
-	_kick_v += ((0.0 - _kick) * 400.0 - _kick_v * 22.0) * delta
-	_kick += _kick_v * delta
+	# 显式积分限制步长：低帧率 / 卡帧时不能让弹簧发散（和耳尾弹簧一致）。
+	var spring_dt := clampf(delta, 0.0, 0.05)
+	_sq_v += ((1.0 - _sq) * 260.0 - _sq_v * 11.0) * spring_dt
+	_sq += _sq_v * spring_dt
+	_kick_v += ((0.0 - _kick) * 400.0 - _kick_v * 22.0) * spring_dt
+	_kick += _kick_v * spring_dt
 	var s := float(h.st.get("scale", 1.0)) * (1.35 if h.tal.has("giant") else 1.0)
 	var sq := clampf(_sq, 0.6, 1.5)
 	model.scale = Vector3(s * sq, s * (2.0 - sq), s * sq)

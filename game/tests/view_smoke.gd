@@ -27,6 +27,7 @@ func _solo() -> void:
 	mv.autoplay = true
 	var w := mv.world
 	var h := mv.local
+	_low_fps_springs(mv.ham_views[h.id], h)
 	var i := 0
 	for wid in Data.weapons().keys():
 		h.weapon_id = String(wid)
@@ -55,6 +56,22 @@ func _solo() -> void:
 	print("[view_smoke] 鼠王：%s，野怪 %d，宠物 %d" % [str(w.boss != null), w.mobs.size(), w.pets.size()])
 	mv.queue_free()
 	await get_tree().process_frame
+
+
+func _low_fps_springs(view: HamsterView, h: SimHamster) -> void:
+	# 软件渲染 / 卡帧后仍应回到正常体型，后坐不能把模型弹到远处。
+	for dt in [1.0 / 60.0, 0.2, 1.0]:
+		view.on_event({"t": "picked"})
+		view.on_event({"t": "fire"})
+		for frame in 120:
+			view.sync(h, 1.0, dt, true)
+			if not is_finite(view._sq) or not is_finite(view._kick) or absf(view._sq) > 2.0 or absf(view._kick) > 10.0:
+				push_error("低帧率弹簧发散：dt=%s，sq=%s，kick=%s" % [dt, view._sq, view._kick])
+				return
+		if absf(view._sq - 1.0) > 0.01 or absf(view._kick) > 0.01:
+			push_error("低帧率弹簧未回稳：dt=%s" % dt)
+			return
+	print("[view_smoke] 挤压 / 后坐：60 FPS、5 FPS、1 秒卡帧均回稳")
 
 
 func _duo() -> void:

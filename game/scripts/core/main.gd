@@ -271,4 +271,5 @@ func _process(_delta: float) -> void:
 func _notification(what: int) -> void:
 	# 窗口失焦时自动暂停（对局中）
 	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and match_view != null and not match_view.autoplay and result == null and not args.has("capture") and not args.has("lan-auto"):
-		_on_pause()
+		# 系统通知也可能在场景挂接子节点时到来，下一轮再创建暂停菜单。
+		_on_pause.call_deferred()
