@@ -50,10 +50,11 @@
 - 生成资产：`tools/assets.sh`（全部模型 + 预览图 + 音效 + 重新导入）；单个模型 `tools/assets.sh chr_hamster`
   - 等价于 `blender --background --python tools/blender/build.py -- --asset <名称>`（`--all` 全部，`--list` 列出）；没有显示器时要套 `xvfb-run -a`（EEVEE 需要）
 - 生成音效：`python3 tools/audio/build.py --all`；生成音乐：`python3 tools/audio/music.py --all`（约 4 分钟，`--only match` 只生成一首）
+- 生成投影贴图 / 地面贴花：`python3 tools/build_gobos.py`、`python3 tools/build_decals.py`（出 PNG 到 `game/assets/textures/`，之后要 `--import`）
 - 生成图标：`tools/assets.sh icon_kit`（道具 / 宠物 / 强化 / 天赋 / 进化配件，出 PNG 到 `game/assets/icons/`）
 - 改了调色板 / 模型 / 音效后让 Godot 重新导入：`godot --headless --path game --import`
 - 截图（窗口模式；无显示器时自动套 xvfb-run）：`tools/capture.sh <场景> <输出目录> [分辨率] [参数]`
-  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `visual` `fb1` `fb2` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
+  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `visual` `identity` `fb1` `fb2` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
   - `visual`：完整地图固定种子与站位的书房、厨房、客厅和角色近景；带 HUD / 无 HUD 两版。例：`tools/capture.sh visual review/visual 1600x900 --seed 11`；可用 `--zones study,kitchen` 只拍部分。
   - `b3map`：七个美术区域、建筑破损阶段、新特效、整张地图俯瞰（`--parts zones,structs,fx,overview`，`--zones kitchen,fridge` 只拍部分区域）
   - 例：`tools/capture.sh style review/x 1920x1080 --n 6 --from 30 --every 5`
@@ -83,6 +84,12 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-11 画面个性化（导演同意的第 1、3 条：色彩光影找回个性 + 尺度感；审阅包 `review/visual_identity/`，汇报 `review/visual_identity/REPORT.md`）：全局分离色调调色（`visual_style.json` 的 `grade`）、光岛 + 投影贴图（`lightIslands`）、地面贴花（`floorDecals`）、地毯绒毛、手电光束灰尘（`character.beamMotes`）。规则写进了 ART_BIBLE 4、4.1 节。
+  - 坑：Godot 4.7 的聚光灯投影贴图（light_projector）要开阴影才生效，带投影贴图的灯所有画质档都开阴影。
+  - 坑：负缩放（镜像）的贴花会被当成背面、不受光；要镜像就在图集里画一格镜像版。
+  - 坑：重新生成 PNG 后一定要 `godot --headless --path game --import`，否则运行时还是旧贴图。
+  - 截图场景 `identity`：每个光岛 / 尺度细节一张（`--spots a,b` 只拍部分）。
+  - 下一步候选（导演还没定）：角色头部朝镜头偏转 + 队伍边缘光 + 头顶标签；特效冲击力；UI 主题化。
 - 2026-10-10 合并 ChatGPT 画面分支（画面升级第一到第六轮，审阅包 `review/merge_visual/`）：导演确认接受更写实的连续明暗方向；合并后把手电 / 黑暗感调回来（`visual_style.json` 的 `character.flashlight*`、`beamStrength`、`environment`、`roomLighting`），并加了画质档位（设置 → 画面 → 画质，`visual_style.json` 的 `quality`，手机默认低档）。**黑暗可读性是硬规则**（见 ART_BIBLE）。
   - ChatGPT 的渲染冒烟测试：`TASK_CAMERA_REVIEW=<输出目录> xvfb-run -a godot --path game --fixed-fps 60 res://tests/camera_render_smoke.tscn`（需要 Forward+，没接进 test.sh）。
 - 2026-10-10 导演反馈第二轮（审阅包 `review/feedback2/`，汇报 `review/feedback2/REPORT.md`）：武器平衡（狙击 / 武士刀 / 火箭削弱，激光 / 冲锋枪加强，狙击类单发对玩家伤害上限 `pvpCap`）；**进化重做：54 条路线 × 9 级每一级都是新效果**（`evolutions.json` 的 `lv` 是卡面文字，新机制键见 `_effectsDoc.newSpecial`）；修了多弹道正中间打不中、激光命中判定、AI 对瞬发武器乱加提前量等 bug。
