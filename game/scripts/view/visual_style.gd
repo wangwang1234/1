@@ -90,6 +90,7 @@ static func environment() -> Environment:
 	e.adjustment_enabled = true
 	e.adjustment_saturation = float(v.saturation)
 	e.adjustment_contrast = float(v.contrast)
+	ColorGrade.apply(e)
 	return e
 
 

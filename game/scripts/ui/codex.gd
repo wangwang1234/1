@@ -111,7 +111,7 @@ static func entries(key: String) -> Array:
 	match key:
 		"weapon":
 			var evo: Dictionary = Data.evolutions().get("paths", {})
-			for id in Data.weapons():
+			for id in Data.active_weapons():
 				var w: Dictionary = Data.weapon(id)
 				var st := []
 				var kind := String(w.get("kind", "bullet"))
@@ -138,16 +138,19 @@ static func entries(key: String) -> Array:
 						st.append("射程 %d（有效 %d，超出后伤害衰减）" % [int(w.range), roundi(float(w.range) * eff)])
 					else:
 						st.append("射程 %d" % int(w.range))
+				var sk: Dictionary = w.get("skill", {})
+				if not sk.is_empty():
+					st.append("右键 · %s：%s（冷却 %s 秒）" % [String(sk.name), String(sk.desc), _num(sk.cd)])
 				var paths := []
 				var path_tips := []
-				for p in evo.get(id, []):
+				for p in ([] if bool(w.get("noEvo", false)) else evo.get(id, [])):     # 手枪不升级：不列进化路线
 					paths.append(String(p.get("name", "")))
 					var lines := []
 					var lv: Array = p.get("lv", [])
 					for i in lv.size():
 						lines.append("%d 级：%s%s" % [i + 1, "质变：" if i == 8 else "", String(lv[i])])
 					path_tips.append("\n".join(lines))
-				out.append({"name": w.get("name", id), "desc": ("开局默认武器。" if id == "pistol" else "") + String(w.get("desc", "")), "stats": st, "paths": paths, "path_tips": path_tips,
+				out.append({"name": w.get("name", id), "desc": ("开局默认武器，不能升级，升级时会优先给你换武器。" if id == "pistol" else "") + String(w.get("desc", "")), "stats": st, "paths": paths, "path_tips": path_tips,
 					"icon": "res://assets/icons/wpn_%s.png" % id, "snap": "res://assets/models/weapons/wpn_%s.glb" % id, "yaw": -PI * 0.5})
 		"gadget":
 			for id in Data.gadgets():

@@ -34,6 +34,8 @@ var card_rects: Array = []
 var card_hover := -1
 var paused := false
 var _reload_hint := 0.0
+var board := false          # 按住 Tab（手柄 Select）显示比分板
+var board_force := false    # 截图脚本用：强制显示比分板
 
 
 func setup(m: MatchView, ham: SimHamster = null, camera: GameCamera = null, inp: PlayerInput = null, split_: bool = false) -> void:
@@ -246,8 +248,12 @@ func draw_all(c: Control) -> void:
 		_draw_crosshair(c, s, h)
 	_draw_score(c, s)
 	_draw_minimap(c, s)
+	if mv.networked:
+		_draw_network(c, s)
 	_draw_feed(c, s)
 	_draw_toasts(c, s)
+	if board or board_force:
+		_draw_board(c, s)
 	if h != null:
 		_draw_cards(c, s, h)
 		if not h.alive:
@@ -322,8 +328,8 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 	c.draw_circle(gpos, gr, Color(0.086, 0.063, 0.15, 0.95))
 	var gcd := float(h.gadget.cd)
 	var gmax := float(Data.gadgets().get(String(h.gadget.id), {"cd": 7}).cd) * float(h.st.get("gcd", 1.0))
-	if gcd > 0.0:
-		var k := clampf(gcd / maxf(0.1, gmax), 0.0, 1.0)
+	if gcd > 0.0 and gcd / maxf(0.1, gmax) > 0.02:     # 扇形太窄时三角化会失败
+		var k := clampf(gcd / maxf(0.1, gmax), 0.0, 0.995)
 		var pts := PackedVector2Array([gpos])
 		for i in 33:
 			var a := -PI * 0.5 + TAU * k * float(i) / 32.0
@@ -341,6 +347,27 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 		c.draw_circle(gpos + Vector2(-gr + 4 * s + d * 7 * s, -gr - 3 * s), 2.6 * s, Color("#c77dff"))
 	if gid == "beacon" and not h.beacon.is_empty():
 		c.draw_arc(gpos, gr + 4 * s, 0, TAU, 32, Color("#7fe3ff"), 2.0 * s, true)
+	# 右键武器技能：冷却扇形 + 按键提示（武器没有技能就不画）
+	var SD: Dictionary = h.weapon().get("skill", {})
+	if not SD.is_empty():
+		var kpos := pc + Vector2(58, -50) * s
+		var kr := 21.0 * s
+		var kcd := h.skill_cd
+		var kmax := maxf(0.1, float(SD.cd))
+		c.draw_circle(kpos, kr, Color(0.086, 0.063, 0.15, 0.95))
+		if icons.has(h.weapon_id):
+			c.draw_texture_rect(icons[h.weapon_id], Rect2(kpos - Vector2(kr, kr) * 1.1, Vector2(kr, kr) * 2.2), false, Color(1, 1, 1, 0.45 if kcd > 0.0 else 1.0))
+		if kcd > 0.0:
+			var kk := clampf(kcd / kmax, 0.0, 0.995)     # 整圆首尾点重合、太窄都会让三角化失败
+			if kk > 0.02:
+				var kp := PackedVector2Array([kpos])
+				for i in 33:
+					var a := -PI * 0.5 + TAU * kk * float(i) / 32.0
+					kp.append(kpos + Vector2(cos(a), sin(a)) * kr)
+				c.draw_colored_polygon(kp, Color(0.04, 0.02, 0.08, 0.7))
+			_txt(c, kpos + Vector2(-kr, 7 * s), str(ceili(kcd)), 18 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, true, kr * 2.0, 4)
+		c.draw_arc(kpos, kr, 0, TAU, 40, Color(1, 1, 1, 0.3) if kcd > 0.0 else UiTheme.GOLD, 3 * s, true)
+		_txt(c, kpos + Vector2(-34, -kr / s - 6) * s, pin.skill_key(), 14 * s, UiTheme.GOLD if kcd <= 0.0 else UiTheme.SUB, HORIZONTAL_ALIGNMENT_CENTER, false, 68 * s, 4)
 	# 右侧信息
 	var bx := x + 182 * s
 	var bw := x + w - 18 * s - bx
@@ -466,9 +493,15 @@ func _draw_crosshair(c: Control, s: float, h: SimHamster) -> void:
 	var p := c.get_local_mouse_position()
 	if pin.device != "kbm":
 		var ahead := clampf(SimWeapons.range_of(h) * 0.55, 160.0, 420.0)
-		p = cam.unproject_position(Vector3((h.x + cos(h.aim) * ahead) * 0.01, 0.16, (h.y + sin(h.aim) * ahead) * 0.01))
+		var shown: = mv.prediction.ham if mv.prediction != null and h == mv.local else h
+		p = cam.unproject_position(Vector3((shown.x + cos(shown.aim) * ahead) * 0.01, 0.16, (shown.y + sin(shown.aim) * ahead) * 0.01))
 	var col := UiTheme.CREAM
 	var r := 11.0 * s
+	# 右键技能冷却：准星外一圈细弧，转满就是好了（好了的瞬间不画，免得一直有一圈）
+	var SD: Dictionary = h.weapon().get("skill", {})
+	if not SD.is_empty() and h.skill_cd > 0.0:
+		var kk := 1.0 - clampf(h.skill_cd / maxf(0.1, float(SD.cd)), 0.0, 1.0)
+		c.draw_arc(p, r * 2.1, -PI * 0.5, -PI * 0.5 + TAU * kk, 40, Color(1.0, 0.82, 0.4, 0.55), 2.5 * s, true)
 	for k: int in [0, 1, 2, 3]:
 		var a := k * PI * 0.5
 		var d := Vector2(cos(a), sin(a))
@@ -553,12 +586,36 @@ func _draw_score(c: Control, s: float) -> void:
 		_txt(c, Vector2(cx - 200 * s, 122 * s), "加速决战：建筑受到双倍伤害", 16 * s, Color("#ff8a7a"), HORIZONTAL_ALIGNMENT_CENTER, false, 400 * s, 4)
 	# 鼠王血条（交战或看得见时）
 	var b := w.boss
-	if b != null and not b.dead and (b.hp < b.max_hp or mv.team_sees(b)):
+	if b != null and not b.dead and (b.hp < b.max_hp or mv.team_reveals(b)):
 		var bw := 420.0 * s
 		var br2 := Rect2(cx - bw * 0.5, (148.0 if w.sudden else 128.0) * s, bw, 14 * s)
 		_bar(c, br2, b.hp / b.max_hp, Color("#c77dff"), Color(0.05, 0.03, 0.08, 0.85))
 		_txt(c, br2.position + Vector2(0, -4 * s), "鼠王", 18 * s, Color("#ffd166"), HORIZONTAL_ALIGNMENT_CENTER, true, bw, 5)
 	c.draw_set_transform(Vector2.ZERO)
+
+
+func _draw_network(c: Control, s: float) -> void :
+	if LanSession.reconnecting or not LanSession._reserved.is_empty():
+		var remaining := ceili(float(Data.load_json("network").reconnectGrace) - LanSession._reconnect_age) if LanSession.reconnecting else ceili(float(LanSession._reserved.values().min()))
+		var message := "连接中断，自动重连中 · %d 秒" % remaining if LanSession.reconnecting else "%d 名玩家暂时断线，%d 秒内未回来由 AI 接管" % [LanSession._reserved.size(), remaining]
+		var r := Rect2(Vector2(520, 140) * s, Vector2(880, 54) * s)
+		_panel(c, r, 9 * s, 0.9)
+		_txt(c, r.position + Vector2(24, 36) * s, message, 22 * s, UiTheme.GOLD)
+
+	var map: = mv.world.map
+	var width: = 360.0 * s
+	var height: = width * (map.max_y - map.min_y) / (map.max_x - map.min_x)
+	var pos: = Vector2(root.size.x - width - 18 * s, 16 * s + height + 26 * s)
+	var metrics: = LanSession.metrics
+	var ping: = "%d ms" % roundi(metrics.rtt_ms) if metrics.rtt_ms >= 0 else "测量中"
+	var stale: = not LanSession.is_host() and LanSession._since > float(Data.load_json("network").inputTimeout)
+	var color: = Color("#ffd166") if stale or metrics.rtt_ms > 120 or metrics.missing_percent > 5 else Color("#9fe8b4")
+	_panel(c, Rect2(pos - Vector2(8, 6) * s, Vector2(width + 16 * s, 55 * s)), 9 * s, 0.8)
+	_txt(c, pos + Vector2(0, 15 * s), "%s · %s%s" % ["房主" if LanSession.is_host() else "局域网", ping, " · 同步中断" if stale else ""], 18 * s, color)
+	var details: = "状态发送 %.1f KB/s" % metrics.snapshot_kbps
+	if mv.render_buffer != null:
+		details = "接收 %.1f KB/s · 缺帧 %.0f%% · 缓冲 %d ms" % [metrics.snapshot_kbps, metrics.missing_percent, roundi(mv.render_buffer.delay * 1000)]
+	_txt(c, pos + Vector2(0, 39 * s), details, 16 * s, UiTheme.SUB)
 
 
 func _draw_minimap(c: Control, s: float) -> void:
@@ -592,7 +649,7 @@ func _draw_minimap(c: Control, s: float) -> void:
 		if st.kind == "base" and st.shielded and not st.dead:
 			c.draw_rect(Rect2(p - Vector2(sz, sz) * 0.5 - Vector2(3, 3) * s, Vector2(sz, sz) + Vector2(6, 6) * s), Color("#9fe8ff"), false, 1.5 * s)
 	for mm in w.minions:
-		if not mm.dead and mv.team_sees(mm):
+		if not mm.dead and mv.team_reveals(mm):
 			var p2: Vector2 = to.call(mm.x, mm.y)
 			c.draw_rect(Rect2(p2 - Vector2(2, 2) * s, Vector2(4, 4) * s), UiTheme.BLUE if mm.team == "blue" else UiTheme.RED)
 	for cr in w.crates:
@@ -665,6 +722,17 @@ func _draw_toasts(c: Control, s: float) -> void:
 	_txt(c, r.position + Vector2(0, 37 * s), String(t.text), 28 * s, col, HORIZONTAL_ALIGNMENT_CENTER, true, r.size.x)
 
 
+func _project_entity(e: SimEntity, height: float) -> Vector2:
+	var pos: = Vector2(e.x, e.y)
+	if mv.prediction != null and e == mv.local and mv.ham_views.has(e.id):
+		var node: Node3D = mv.ham_views[e.id]
+		return cam.unproject_position(node.global_position + Vector3(0, height - mv.local.z * 0.01, 0))
+	if mv.render_buffer != null:
+		var pose: = mv.render_buffer.sample(e.id)
+		pos = Vector2(float(pose.get("x", e.x)), float(pose.get("y", e.y)))
+	return cam.unproject_position(Vector3(pos.x * 0.01, height, pos.y * 0.01))
+
+
 func _draw_world_ui(c: Control, s: float) -> void:
 	var w := mv.world
 	var cam := cam
@@ -681,24 +749,24 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		if st.kind == "base" and st.shielded:
 			_txt(c, Vector2(p.x - 150 * s, p.y - 8 * s), "护盾中：先拆掉中路炮台" if w.mode == "slice" else "护盾中：先拆掉任意一座炮台", 15 * s, Color("#9fe8ff"), HORIZONTAL_ALIGNMENT_CENTER, false, 300 * s, 5)
 	for m in w.minions:
-		if m.dead or m.hp >= m.max_hp or not mv.team_sees(m):
+		if m.dead or m.hp >= m.max_hp or not mv.team_reveals(m):
 			continue
-		var p2: Vector2 = proj.call(m.x, m.y, 0.42)
+		var p2: = _project_entity(m, 0.42)
 		_bar(c, Rect2(p2.x - 16 * s, p2.y, 32 * s, 5 * s), m.hp / m.max_hp, UiTheme.BLUE if m.team == "blue" else UiTheme.RED, Color(0.05, 0.03, 0.08, 0.75))
 	for e in w.mobs:
-		if e.dead or e.kind == "boss" or e.hp >= e.max_hp or not mv.team_sees(e):
+		if e.dead or e.kind == "boss" or e.hp >= e.max_hp or not mv.team_reveals(e):
 			continue
-		var pm: Vector2 = proj.call(e.x, e.y, 0.5 if e.kind == "rat" else 0.3)
+		var pm: = _project_entity(e, 0.5 if e.kind == "rat" else 0.3)
 		_bar(c, Rect2(pm.x - 20 * s, pm.y, 40 * s, 5 * s), e.hp / e.max_hp, Color("#ffd166"), Color(0.05, 0.03, 0.08, 0.75))
-	if w.boss != null and not w.boss.dead and mv.team_sees(w.boss):
-		var pb: Vector2 = proj.call(w.boss.x, w.boss.y, 1.3)
+	if w.boss != null and not w.boss.dead and mv.team_reveals(w.boss):
+		var pb: = _project_entity(w.boss, 1.3)
 		_bar(c, Rect2(pb.x - 70 * s, pb.y, 140 * s, 10 * s), w.boss.hp / w.boss.max_hp, Color("#c77dff"), Color(0.05, 0.03, 0.08, 0.85))
 	for st2 in w.structs:
-		if st2.kind == "sentry" and not st2.dead and mv.team_sees(st2) and st2.hp < st2.max_hp:
+		if st2.kind == "sentry" and not st2.dead and mv.team_reveals(st2) and st2.hp < st2.max_hp:
 			var ps: Vector2 = proj.call(st2.x, st2.y, 0.42)
 			_bar(c, Rect2(ps.x - 18 * s, ps.y, 36 * s, 5 * s), st2.hp / st2.max_hp, UiTheme.BLUE if st2.team == "blue" else UiTheme.RED, Color(0.05, 0.03, 0.08, 0.75))
 	for d in w.decoys:
-		if d.dead or not mv.team_sees(d):
+		if d.dead or not mv.team_reveals(d):
 			continue
 		var pd: Vector2 = proj.call(d.x, d.y, 0.62)
 		if d.team == team:
@@ -714,6 +782,8 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		if e2.team == team or e2.mark_team != team or w.t >= e2.mark_until:
 			continue
 		var pk: Vector2 = proj.call(e2.x, e2.y, 0.9 if e2 is SimHamster else 0.6)
+		if not pk.is_finite() or not Rect2(Vector2.ZERO, root.size).grow(40.0).has_point(pk):
+			continue     # 画面外（或在镜头背后投影无效）的标记不画
 		var dsz := 7.0 * s
 		c.draw_colored_polygon(PackedVector2Array([pk + Vector2(0, -dsz), pk + Vector2(dsz * 0.7, 0), pk + Vector2(0, dsz), pk + Vector2(-dsz * 0.7, 0)]), Color("#ff4d5e"))
 	# 神枪手标记
@@ -735,7 +805,7 @@ func _draw_world_ui(c: Control, s: float) -> void:
 			continue
 		if h != me and not (h.team == team or w.vis[team].has(h.id)):
 			continue
-		var p4: Vector2 = proj.call(h.x, h.y, 0.62 + h.z * 0.01)
+		var p4: = _project_entity(h, 0.62 + h.z * 0.01)
 		var hk := h.hp / h.max_hp
 		var bw := 62.0 * s
 		var col := UiTheme.GREEN if h.team == team else Color("#ff6b5e")
@@ -750,14 +820,15 @@ func _draw_world_ui(c: Control, s: float) -> void:
 			_txt(c, Vector2(p4.x - 100 * s, p4.y - 30 * s), "♛", 20 * s, Color("#ffd166"), HORIZONTAL_ALIGNMENT_CENTER, false, 200 * s, 5)
 	# 本地玩家：射程圈、投掷落点圈
 	if me != null and me.alive and not mv.autoplay:
+		var shown: = mv.prediction.ham if mv.prediction != null and me == mv.local else me
 		var gid := String(me.gadget.id)
 		var land_r := 0.0
 		var land := Vector2.ZERO
 		if THROWN.has(gid) and float(me.gadget.cd) <= 0.0:
-			land = SimGadgets.target(w, me)
+			land = SimGadgets.target(w, shown)
 			land_r = float(THROWN[gid])
 		if me.weapon_id == "gl":
-			land = SimWeaponModes.lob_target(w, me, SimWeapons.range_of(me))
+			land = SimWeaponModes.lob_target(w, shown, SimWeapons.range_of(me))
 			land_r = float(me.weapon().aoe) * float(SimWeapons.params(me).aoe)
 		if land_r > 0.0:
 			var lp := PackedVector2Array()
@@ -770,7 +841,7 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		var pts := PackedVector2Array()
 		for i in 49:
 			var a := TAU * i / 48.0
-			pts.append(proj.call(me.x + cos(a) * rr, me.y + sin(a) * rr, 0.02))
+			pts.append(proj.call(shown.x + cos(a) * rr, shown.y + sin(a) * rr, 0.02))
 		for i in 48:
 			if i % 2 == 0:
 				c.draw_line(pts[i], pts[i + 1], Color(1, 0.95, 0.85, 0.14), 2 * s, true)
@@ -792,7 +863,7 @@ func _draw_hearing(c: Control, s: float) -> void:
 		if String(n.team) == team:
 			continue
 		var src: SimEntity = w.entities.get(int(n.src))
-		if src != null and (src.team == team or w.vis[team].has(src.id)):
+		if src != null and (src.team == team or w.seen[team].has(src.id)):     # 画面里看得见（含暗处）就不用边缘提示
 			continue
 		var d := Vector2(float(n.x) - me.x, float(n.y) - me.y).length()
 		var max_d := hear if n.type == "step" else 1600.0 * float(n.loud) * float(me.st.get("hearK", 1.0))
@@ -954,3 +1025,61 @@ func _is_word_char(ch: String) -> bool:
 
 func _no_line_start(tk: String) -> bool:
 	return tk in ["，", "。", "；", "：", "、", "！", "？", "）", "」", "”", ",", ".", ";", ":", "%", ")"]
+
+
+func _draw_board(c: Control, s: float) -> void:
+	## 比分板（按住 Tab）：两队每只仓鼠的等级、武器、击败 / 倒下、伤害、状态；队伍总击败和剩余炮台
+	var w := mv.world
+	var cols := [["", 0.0], ["名字", 0.0], ["等级", 0.36], ["武器", 0.46], ["击败", 0.66], ["倒下", 0.74], ["伤害", 0.82], ["状态", 0.92]]
+	var bw := minf(root.size.x - 40.0 * s, 980.0 * s)
+	var row := 34.0 * s
+	var per_team: Dictionary = {"blue": [], "red": []}
+	for hh in w.hams:
+		(per_team[hh.team] as Array).append(hh)
+	for team: String in per_team:
+		(per_team[team] as Array).sort_custom(func(a, b): return a.kills * 1000 + a.lvl > b.kills * 1000 + b.lvl)
+	var n := (per_team.blue as Array).size() + (per_team.red as Array).size()
+	var bh := row * (n + 4.2) + 70.0 * s
+	var r := Rect2((root.size.x - bw) * 0.5, maxf(90.0 * s, (root.size.y - bh) * 0.45), bw, bh)
+	_panel(c, r, 20 * s, 0.92)
+	var x0 := r.position.x + 28.0 * s
+	var iw := bw - 56.0 * s
+	var y := r.position.y + 18.0 * s
+	var mins := int(w.t) / 60
+	_txt(c, Vector2(r.position.x, y + 26 * s), "比分  ·  %d:%02d" % [mins, int(w.t) % 60], 28 * s, UiTheme.GOLD, HORIZONTAL_ALIGNMENT_CENTER, true, bw, 7)
+	y += 52.0 * s
+	for i in range(1, cols.size()):
+		_txt(c, Vector2(x0 + iw * float(cols[i][1]), y + 18 * s), String(cols[i][0]), 17 * s, UiTheme.SUB, HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
+	y += row * 0.9
+	for team: String in ["blue", "red"]:
+		var tc := UiTheme.BLUE if team == "blue" else UiTheme.RED
+		var tk := 0
+		for hh in per_team[team]:
+			tk += hh.kills
+		var towers := 0
+		for st in w.structs:
+			if st.team == team and st.kind == "turret" and not st.dead:
+				towers += 1
+		c.draw_rect(Rect2(x0 - 10 * s, y + 2 * s, iw + 20 * s, row * 0.86), Color(tc.r, tc.g, tc.b, 0.22))
+		_txt(c, Vector2(x0, y + 24 * s), "%s  ·  击败 %d  ·  炮台 %d" % ["蓝队" if team == "blue" else "红队", tk, towers], 20 * s, tc.lightened(0.25), HORIZONTAL_ALIGNMENT_LEFT, true, -1, 5)
+		y += row
+		for hh: SimHamster in per_team[team]:
+			var mine := hh == me
+			if mine:
+				c.draw_rect(Rect2(x0 - 10 * s, y + 2 * s, iw + 20 * s, row - 4 * s), Color(1, 0.82, 0.4, 0.14))
+			var skin_c := Color(String(Data.load_json("skins").get(hh.skin, {}).get("fur", "#f2a54a")))
+			c.draw_circle(Vector2(x0 + 8 * s, y + row * 0.5), 8 * s, skin_c)
+			c.draw_arc(Vector2(x0 + 8 * s, y + row * 0.5), 8 * s, 0, TAU, 16, tc, 2.5 * s, true)
+			var fc := UiTheme.GOLD if mine else (UiTheme.CREAM if hh.ctl == "player" else Color(0.86, 0.82, 0.9))
+			var nm := hh.name + ("（你）" if mine and hh.name != "你" else "")
+			var W: Dictionary = Data.weapons().get(hh.weapon_id, {})
+			var stat := "存活" if hh.alive else "%d 秒" % ceili(hh.respawn_t)
+			var vals := [nm, "Lv%d" % hh.lvl, String(W.get("name", hh.weapon_id)), str(hh.kills), str(hh.deaths), "%.1fk" % (hh.dmg_dealt / 1000.0) if hh.dmg_dealt >= 1000.0 else str(int(hh.dmg_dealt)), stat]
+			for i in vals.size():
+				var col := fc
+				if i == vals.size() - 1 and not hh.alive:
+					col = Color("#ff8a7a")
+				var cx := x0 + 26 * s if i == 0 else x0 + iw * float(cols[i + 1][1])
+				_txt(c, Vector2(cx, y + 23 * s), String(vals[i]), 19 * s, col, HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
+			y += row
+		y += row * 0.3

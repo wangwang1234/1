@@ -14,6 +14,10 @@ extends Node
 ##   b2world    批次 2：野区、鼠王、战术道具、宠物
 ##   visual     固定站位画面审阅（实际地图；HUD / 无 HUD / 角色近景）
 ##   materials  实际引擎材质审阅：四种皮肤 × 两队、组合装备、家具分件
+##   identity   画面个性化（2026-10-11）：光岛、画面外巨物投影、手机、彩灯、袜子脚印、光束灰尘（--spots a,b 只拍部分）
+##   skills     右键武器专属技能：开放的 10 把武器各放一次技能（--weapons a,b 只拍部分）
+##   fb3        导演反馈第三轮：拿手枪时的升级卡（换武器）、Tab 比分板、大瓜子和金瓜子、望远镜前后视野、满级宠物
+##   dim        暗处可见（2026-10-11）：同一画面里黑处 / 月光里 / 手电里的敌人对比，带 HUD 和无 HUD；再把手电转向黑处那只
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
@@ -83,6 +87,14 @@ func _run() -> void:
 			await _b3map()
 		"visual":
 			await _visual_review()
+		"identity":
+			await _identity()
+		"dim":
+			await _dim()
+		"fb3":
+			await _fb3()
+		"skills":
+			await _skills()
 		"lighting_walk":
 			await _lighting_walk()
 		"materials":
@@ -1142,3 +1154,274 @@ func _material_review() -> void:
 	await _sync_all(st, 0.12)
 	await shot("materials_furniture")
 	st.free()
+
+
+func _identity() -> void:
+	## 画面个性化审阅：每个光岛 / 尺度细节一张，手电朝开不挡住要看的东西；带 HUD 和无 HUD 只拍无 HUD（构图看得清）
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.inp.mx = 0.0
+	h.inp.my = 0.0
+	h.inp.fire = false
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	h.iframes = 9999.0
+	mv.hud.visible = false
+	# [名字, x, y, 朝向（弧度，0 = 东，PI/2 = 南）, 视宽米（0 = 默认）]
+	var spots := [["moon_window", 1880.0, 1560.0, PI, 0.0], ["street_blinds", 3150.0, 1560.0, 0.0, 0.0], ["kitchen_table", 4180.0, 1500.0, PI * 0.5, 0.0],
+		["fridge_wedge", 2250.0, 560.0, PI, 0.0], ["study_window", 700.0, 980.0, PI * 0.5, 0.0], ["phone", 1700.0, 2840.0, -0.9, 0.0],
+		["footprints", 2380.0, 2480.0, 2.08, 0.0], ["fairy_lights", 2520.0, 2250.0, -PI * 0.5, 0.0], ["beam_dust", 2050.0, 1650.0, 0.2, 3.6]]
+	var only := String(args.get("spots", ""))
+	for sp: Array in spots:
+		if only != "" and not only.split(",").has(String(sp[0])):
+			continue
+		var desired := Vector2(float(sp[1]), float(sp[2]))
+		var placed := false
+		for ring in 12:
+			for side in 16:
+				var p := desired + Vector2.RIGHT.rotated(float(side) * TAU / 16.0) * float(ring) * 25.0
+				if w.map.overlaps_solid(p.x, p.y, h.r + 8.0):
+					continue
+				h.x = p.x
+				h.y = p.y
+				placed = true
+				break
+			if placed:
+				break
+		h.px = h.x
+		h.py = h.y
+		h.inp.aim = float(sp[3])
+		h.aim = h.inp.aim
+		mv.cam.view_width = float(sp[4]) if float(sp[4]) > 0.0 else GameCamera.VIEW_WIDTH
+		if String(sp[0]) == "phone" and mv.map_view.islands != null:
+			mv.map_view.islands._t = 6.0     # 拍在屏幕亮起（来通知）的那几秒
+		await _steps(40)
+		mv.cam.snap(MapView.w(h.x, h.y))
+		await _frames(6)
+		await shot("identity_" + String(sp[0]))
+	mv.cam.view_width = GameCamera.VIEW_WIDTH
+
+
+func _free_near(w: SimWorld, p: Vector2, r: float) -> Vector2:
+	for ring in 16:
+		for side in 16:
+			var q := p + Vector2.RIGHT.rotated(float(side) * TAU / 16.0) * float(ring) * 20.0
+			if not w.map.overlaps_solid(q.x, q.y, r + 6.0):
+				return q
+	return p
+
+
+func _dim() -> void:
+	## 暗处可见审阅：玩家手电朝东；红队三只站在 ①手电里 ②手机屏幕光旁 ③完全黑的地方
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.inp.mx = 0.0
+	h.inp.my = 0.0
+	h.inp.fire = false
+	h.iframes = 9999.0
+	for e in w.mobs:
+		e.dead = true
+	for m in w.minions:
+		m.dead = true
+	var foes: Array = []
+	for o in w.hams:
+		if o == h:
+			continue
+		if o.team == "red" and foes.size() < 3:
+			foes.append(o)
+			o.ctl = "player"
+			o.ai = null
+			o.inp.mx = 0.0
+			o.inp.my = 0.0
+			o.inp.fire = false
+			o.iframes = 9999.0
+			o.alive = true
+		else:
+			o.alive = false
+			o.respawn_t = 9999.0
+	# 沙发底（附近没有玩法灯）：①手电里 ②掉落手机的屏幕光旁 ③完全黑的地方
+	var me := _free_near(w, Vector2(1850.0, 2700.0), h.r)
+	var spots := [Vector2(2150.0, 2690.0), Vector2(1590.0, 2820.0), Vector2(1900.0, 2470.0)]
+	for i in foes.size():
+		var f: SimHamster = foes[i]
+		var q := _free_near(w, spots[i], f.r)
+		f.x = q.x
+		f.y = q.y
+		f.px = q.x
+		f.py = q.y
+		f.aim = atan2(me.y - q.y, me.x - q.x)
+		f.inp.aim = f.aim
+	h.x = me.x
+	h.y = me.y
+	h.px = me.x
+	h.py = me.y
+	h.inp.aim = 0.0
+	h.aim = 0.0
+	mv.cam.view_width = GameCamera.VIEW_WIDTH
+	if mv.map_view.islands != null:
+		mv.map_view.islands._t = 6.0     # 手机正好亮屏
+	await _steps(30)
+	mv.cam.snap(MapView.w(h.x, h.y))
+	await _frames(10)
+	var info := []
+	for f: SimHamster in foes:
+		info.append({"pos": [f.x, f.y], "revealed": w.vis.blue.has(f.id), "seen": w.seen.blue.has(f.id)})
+	print("[capture] dim 站位：", JSON.stringify(info))
+	mv.hud.visible = true
+	await shot("dim_hud")
+	mv.hud.visible = false
+	await _frames(3)
+	await shot("dim")
+	# 手电转向黑处那一只：它被照亮，出现血条名字
+	if foes.size() >= 3:
+		var dark: SimHamster = foes[2]
+		h.inp.aim = atan2(dark.y - h.y, dark.x - h.x)
+		h.aim = h.inp.aim
+		await _steps(20)
+		mv.hud.visible = true
+		await _frames(6)
+		await shot("dim_lit_hud")
+
+
+func _fb3() -> void:
+	var mv := await _start(false, "pistol")
+	var w := mv.world
+	var h := mv.local
+	h.iframes = 9999.0
+	await _wait(1.0)
+	# 1) 拿手枪升级：第一张固定换武器，不出进化
+	SimHamsterLogic.give_xp(w, h, float(h.xp_next - h.xp) + 1.0)
+	await _wait(1.0)
+	await shot("fb3_cards_pistol")
+	h.choices = []
+	h.pending = 0
+	# 2) 打一会儿让比分板有数据，再按住 Tab
+	await _wait(120.0, true)
+	mv.hud.board_force = true
+	await _frames(6)
+	await shot("fb3_board")
+	mv.hud.board_force = false
+	# 3) 大瓜子、普通瓜子、金瓜子
+	var p := _free_near(w, Vector2(1300.0, 1548.0), h.r)
+	h.x = p.x
+	h.y = p.y
+	h.px = p.x
+	h.py = p.y
+	w.items.clear()
+	for i in 8:
+		w.drop_gem(p.x + 260.0 + (i % 4) * 40.0, p.y - 60.0 + (i / 4) * 120.0, 4.0)
+	for i in 2:
+		w.drop_gem(p.x + 200.0, p.y - 80.0 + i * 160.0, 9.0)
+	w.drop_gold_chance(p.x + 330.0, p.y, "boss")
+	h.aim = 0.0
+	h.inp.aim = 0.0
+	await _steps(30)
+	mv.hud.visible = false
+	await _frames(4)
+	await shot("fb3_seeds")
+	w.items.clear()
+	# 4) 望远镜：同一位置，前后对比
+	await _frames(4)
+	await shot("fb3_view_normal")
+	h.ab["binoc"] = 3
+	SimHamsterLogic.calc_stats(h)
+	await _steps(150)
+	await shot("fb3_view_binoc3")
+	# 5) 满级宠物（萤火虫连锁电击、小鸡、刺猬）
+	h.ab.erase("binoc")
+	SimHamsterLogic.calc_stats(h)
+	for t in ["firefly", "chick", "hedgehog"]:
+		var pet := SimMobs.make_pet(w, t, h)
+		pet.lvl = int(Data.rule("pets.maxLevel", 5))
+		h.pet_list.append(pet)
+	for i in 4:
+		var m := w.spawn_minion("red", w.map.lanes.keys()[0])
+		m.x = p.x + 220.0 + (i % 2) * 70.0
+		m.y = p.y - 50.0 + (i / 2) * 100.0
+		m.px = m.x
+		m.py = m.y
+		m.stun = 99.0
+		m.hp = 9999.0
+		m.max_hp = 9999.0
+	h.aim = 0.0
+	h.inp.aim = 0.0
+	await _steps(100)
+	mv.hud.visible = true
+	await _frames(4)
+	await shot("fb3_pets")
+
+
+func _skills() -> void:
+	## 右键技能审阅：玩家站在空地，前方几只定住的小兵当靶子，放技能后在效果最明显的时刻截图
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.iframes = 9999.0
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	for e in w.mobs:
+		e.dead = true
+	var p := _free_near(w, Vector2(2050.0, 1560.0), h.r)
+	# [武器, 放完后等几帧再拍, 拍的时候是否按住左键]
+	var plan := [["pistol", 7, false], ["smg", 30, true], ["ak47", 26, false], ["minigun", 30, true], ["shotgun", 5, false],
+		["sniper", 5, false], ["rocket", 9, false], ["katana", 8, false], ["flame", 24, false], ["laser", 20, false]]
+	var only := String(args.get("weapons", ""))
+	for it: Array in plan:
+		var wid := String(it[0])
+		if only != "" and not only.split(",").has(wid):
+			continue
+		for m in w.minions:
+			m.dead = true
+		w.fires.clear()
+		w.bullets.clear()
+		w.lobs.clear()
+		await _steps(80)     # 等上一个技能的名字飘字散掉，免得叠在一起
+		h.x = p.x
+		h.y = p.y
+		h.px = p.x
+		h.py = p.y
+		h.weapon_id = wid
+		h.evo = {"a": 0, "b": 0, "c": 0}
+		SimHamsterLogic.calc_stats(h)
+		h.ammo = SimWeapons.mag_size(h)
+		h.reload_t = 0.0
+		h.aim = 0.0
+		h.inp.aim = 0.0
+		h.inp.mx = 0.0
+		h.inp.my = 0.0
+		var near := wid in ["katana", "flame"]
+		for i in 3:
+			var m := w.spawn_minion("red", w.map.lanes.keys()[0])
+			m.x = p.x + (170.0 if near else 300.0) + (i % 2) * 50.0
+			m.y = p.y - 50.0 + i * 50.0
+			m.px = m.x
+			m.py = m.y
+			m.stun = 99.0
+			m.hp = 9999.0
+			m.max_hp = 9999.0
+		await _steps(20)
+		h.skill_cd = 0.0
+		h.inp.fire = bool(it[2])
+		SimSkills.use(w, h)
+		await _steps(int(it[1]))
+		h.inp.fire = false
+		await shot("skill_" + wid)
+		h.sk_od_t = 0.0
+		h.sk_free_t = 0.0
+		h.sk_rate_t = 0.0
+		h.sk_spin_t = 0.0

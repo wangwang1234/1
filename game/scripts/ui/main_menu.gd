@@ -25,6 +25,7 @@ var _t := 0.0
 var _mouse := Vector2(0.5, 0.5)
 var _settings: SettingsPanel
 var _lobby: Lobby
+var _lan_lobby: LanLobby
 var _foot: Array[Control] = []    # 底部暗带 + 操作说明：打开大厅 / 设置 / 图鉴时隐藏
 
 
@@ -48,7 +49,7 @@ func _build_stage() -> void:
 	e.background_mode = Environment.BG_COLOR
 	e.background_color = Color(0.05, 0.035, 0.08)
 	e.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
-	e.ambient_light_color = Color(0.40, 0.34, 0.62)
+	e.ambient_light_color = Color(0.4, 0.34, 0.62)
 	e.ambient_light_energy = 0.3
 	e.tonemap_mode = Environment.TONE_MAPPER_FILMIC
 	e.glow_enabled = true
@@ -236,6 +237,7 @@ func _build_ui() -> void:
 	left.add_child(buttons)
 	var b_start := _button("开始对战", _open_lobby)
 	b_start.custom_minimum_size = Vector2(360, 0)
+	_button("局域网联机", open_lan_lobby, true)
 	_button("观战：AI 自动对打", func() -> void: _start(true), true)
 	_button("设置", _open_settings, true)
 	_button("图鉴", _open_codex, true)
@@ -316,7 +318,7 @@ func _open_settings() -> void:
 		cc.queue_free()
 		_settings = null
 		_overlay(false)
-		(buttons.get_child(2) as Button).grab_focus())
+		(buttons.get_child(3) as Button).grab_focus())
 
 
 func _open_lobby() -> void:
@@ -345,6 +347,19 @@ func _title_box() -> Control:
 	return buttons.get_parent() as Control
 
 
+func open_lan_lobby() -> void :
+	if _lan_lobby != null:
+		return
+	_lan_lobby = LanLobby.new()
+	_lan_lobby.position = Vector2(110, 70)
+	root.add_child(_lan_lobby)
+	_overlay(true)
+	_lan_lobby.closed.connect( func() -> void :
+		_lan_lobby = null
+		_overlay(false)
+		(buttons.get_child(1) as Button).grab_focus())
+
+
 func _overlay(on: bool) -> void:
 	## 打开大厅 / 设置 / 图鉴时，藏起标题、按钮和底部说明，免得叠在面板后面
 	buttons.visible = not on
@@ -359,7 +374,7 @@ func _open_codex() -> void:
 	_overlay(true)
 	c.closed.connect(func() -> void:
 		_overlay(false)
-		(buttons.get_child(3) as Button).grab_focus())
+		(buttons.get_child(4) as Button).grab_focus())
 
 
 func _start(autoplay: bool) -> void:

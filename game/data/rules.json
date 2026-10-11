@@ -48,6 +48,7 @@
   "torch": {"lightK": 0.18},
   "wide": {"wideK": 1},
   "ears": {"hearK": 0.3},
+  "binoc": {"_doc": "望远镜：每级画面范围（镜头横向视宽）和暗处视野距离各 +viewK", "viewK": 0.15},
   "nvg": {"nvgBase": 60, "nvgPer": 60},
   "recon": {"recon": 1.5},
   "rage": {"dmg": 0.1},
@@ -98,6 +99,7 @@
   "coneMinDist": 24,
   "losMinDist": 30,
   "aiNearSee": 90,
+  "dim": {"_doc": "暗处可见（2026-10-11 导演改黑暗思路）：在本队任一仓鼠 range 以内、视线没被墙 / 掩体 / 烟雾挡住的敌人和怪物照常显示，只是不被照亮就只靠场景光（很暗），没有血条名字、不上小地图；辅助瞄准会吸附。隐身中的仓鼠和地雷不算。被照亮（world.vis）的仍然有血条、上小地图、队友能看到。", "range": 780},
   "boomTime": 0.4
  },
  "hearing": {
@@ -130,6 +132,7 @@
   "weights": {"minion": 1.0, "ham": 1.3, "other": 1.6},
   "xp": 7,
   "drop": {"_doc": "被仓鼠（或仓鼠的宠物、炮台、道具）打死时掉落：瓜子数量区间、每颗经验、奶酪概率", "gems": [1, 3], "gemXp": 4, "cheese": 0.07},
+  "dropOther": {"_doc": "被小兵 / 炮台 / 野怪打死时也掉一点（2026-10-11 导演：小兵也要掉经验），比仓鼠打死的少，免得兵线堆满", "gems": [1, 1], "gemXp": 4, "cheese": 0.0},
   "nearRadiusNonHam": 650,
   "nearShareNonHam": 0.5
  },
@@ -180,7 +183,7 @@
   "gemSpeedNear": 520,
   "gemLife": 50,
   "gemMax": 280,
-  "gemBigXp": 9,
+  "gemBigXp": 9, "gold": {"_doc": "金瓜子：一颗给 xp 经验（发光、闪烁、拾取有提示）；各来源掉一颗的概率，boss / bigCrate 是固定颗数", "xp": 45, "minion": 0.03, "roach": 0.05, "rat": 0.15, "crateSmall": 0.2, "crateBig": 2, "boss": 4},
   "pickupDelay": 0.4,
   "cheeseHeal": 35,
   "cheeseLife": 60,
@@ -288,6 +291,9 @@
   "gadgetRate": 0.9,
   "gadgetRange": [140, 480],
   "gadgetWant": {"_doc": "AI 什么时候用道具（原型 aiWantGadget）：hp 项是生命比例，其余是到目标的距离", "eshieldHp": 0.7, "medkitHp": 0.5, "beaconSetHp": 0.8, "beaconBackHp": 0.3, "mine": 220, "sentry": 460, "jetpack": [260, 480], "decoy": 520},
+  "_skillRateDoc": "skillRate：右键武器技能——目标进了技能距离（weapons.json 的 skill.aiRange）且冷却好时，每秒放技能的概率（再乘难度的 gadgetK）",
+  "dim": {"_doc": "AI 对暗处（在视线内但没被照亮）的敌人：只在 see 距离内察觉，换到这样的目标后反应时间 × reactK、瞄准误差 × aimK；难度里的 dimSee / dimReactK / dimAimK 会覆盖", "see": 340, "reactK": 1.7, "aimK": 1.6},
+  "skillRate": 1.2,
   "maxRange": 560,
   "keepRatio": 0.62,
   "buildingRatio": 0.85,
@@ -314,15 +320,15 @@
  },
  "cards": {
   "evoWeightPerLevel": 0.35,
-  "weaponSwap": {"freshLevel": 6, "fresh": 0.35, "early": 0.1, "earlyEvoTotal": 6, "late": 0.05},
+  "weaponSwap": {"_doc": "第三张卡是换武器的概率；noEvo = 拿着不升级的起手武器（手枪）时（第一张固定是换武器）", "freshLevel": 6, "fresh": 0.35, "early": 0.1, "earlyEvoTotal": 6, "late": 0.05, "noEvo": 0.5},
   "branches": {"gadget": 0.3, "pet": 0.15, "evo": 0.3},
   "gadgetUpgradeChance": 0.45,
-  "visionAbilities": ["torch", "wide", "ears", "nvg", "recon"]
+  "visionAbilities": ["torch", "wide", "ears", "nvg", "recon", "binoc"]
  },
  "scope": {
-  "_doc": "批次 2：卡池全部开放",
-  "weapons": ["pistol", "deagle", "ak47", "smg", "shotgun", "sniper", "lmg", "rocket", "katana", "flame", "minigun", "autoshot", "amr", "dual", "revolver", "gl", "rail", "laser"],
-  "abilities": ["strong", "armor", "regen", "vamp", "speed", "dash", "magnet", "torch", "wide", "ears", "nvg", "recon", "rage", "crit", "rate", "frost", "chain", "scholar", "scav", "gcd", "aura", "banner"],
+  "_doc": "卡池范围。weapons：2026-10-11 导演定的精简方案 A（10 把）；沙漠之鹰、左轮、双持、轻机枪、自动霰弹、反器材狙、电磁炮、榴弹发射器的代码和数据保留，加回来把 id 写回这个列表",
+  "weapons": ["pistol", "smg", "ak47", "minigun", "shotgun", "sniper", "rocket", "katana", "flame", "laser"],
+  "abilities": ["strong", "armor", "regen", "vamp", "speed", "dash", "magnet", "torch", "wide", "ears", "nvg", "recon", "rage", "crit", "rate", "frost", "chain", "scholar", "scav", "gcd", "aura", "banner", "binoc"],
   "gadgets": ["frag", "molotov", "flash", "mine", "sentry", "eshield", "smoke", "flare", "decoy", "jetpack", "medkit", "freeze", "beacon"],
   "talents": true,
   "pets": true,
@@ -436,32 +442,11 @@
   "gemXp": 10
  },
  "pets": {
-  "maxLevel": 3,
-  "firefly": {
-   "orbit": 46,
-   "spin": 2.2,
-   "h": 34,
-   "range": 210,
-   "cdBase": 0.85,
-   "cdPer": 0.12,
-   "cdMin": 0.35,
-   "dmg": 5,
-   "dmgPer": 3
-  },
-  "chick": {"range": 260, "leash": 330, "speed": 330, "follow": 320, "reach": 12, "cd": 0.55, "dmg": 6, "dmgPer": 4},
-  "hedgehog": {
-   "range": 380,
-   "cdBase": 1.3,
-   "cdPer": 0.15,
-   "cdMin": 0.6,
-   "dmg": 5,
-   "dmgPer": 3,
-   "spread": 0.18,
-   "spd": 600,
-   "bulletRange": 420,
-   "r": 4,
-   "kb": 40
-  }
+  "_doc": "宠物（2026-10-11 导演：宠物太弱）：最高 5 级；伤害 = (dmg + dmgPer × 等级) × 主人伤害倍率；萤火虫 chainFrom 级起电击会跳到 chainRange 内第二个敌人（chainK 倍伤害）",
+  "maxLevel": 5,
+  "firefly": {"orbit": 46, "spin": 2.2, "h": 34, "range": 240, "cdBase": 0.7, "cdPer": 0.08, "cdMin": 0.3, "dmg": 10, "dmgPer": 5, "chainFrom": 3, "chainRange": 180, "chainK": 0.6},
+  "chick": {"range": 300, "leash": 360, "speed": 390, "follow": 340, "reach": 14, "cd": 0.45, "dmg": 12, "dmgPer": 6},
+  "hedgehog": {"range": 420, "cdBase": 1.1, "cdPer": 0.12, "cdMin": 0.5, "dmg": 9, "dmgPer": 4, "spread": 0.16, "spd": 650, "bulletRange": 460, "r": 5, "kb": 50}
  },
  "talents": {
   "squad": {"every": 20, "n": 3},

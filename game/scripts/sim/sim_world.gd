@@ -48,6 +48,7 @@ var feed: Array = []             # 击杀播报 {text, color, t}
 var crate_spots: Array = []      # {x, y, big, resp, cur}
 var entities := {}               # id -> SimEntity
 var vis := {"blue": {}, "red": {}}
+var seen := {"blue": {}, "red": {}}     # 视线内（含暗处）的敌人，见 SimVision
 var vis_t := 0.0
 var spawn_q: Array = []
 var wave_next := 15.0
@@ -69,6 +70,7 @@ var _hash := {}
 
 func setup(cfg: Dictionary) -> void:
 	## cfg: {mode: "slice"/"full", seed: int, players: [{team, ctl, name, skin}], ai: {blue: n, red: n}, weapons: {name: id}}
+	dispose()
 	R = Data.rules()
 	seed_value = int(cfg.get("seed", 1))
 	rng.seed = seed_value
@@ -95,6 +97,7 @@ func setup(cfg: Dictionary) -> void:
 	boom = {"x": 0.0, "y": 0.0, "t": 0.0}
 	entities.clear()
 	vis = {"blue": {}, "red": {}}
+	seen = {"blue": {}, "red": {}}
 	spawn_q.clear()
 	wave_next = float(Data.progression().get("firstWave", 15))
 	over = false
@@ -241,12 +244,7 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 	h.xp_next = Data.xp_need(1)
 	h.gadget = {"id": "frag", "lvl": 1, "cd": 2.0}
 	if ctl == "ai":
-		h.ai = SimHamster.AiState.new()
-		var lanes := map.lanes.keys()
-		h.ai.lane = String(lanes[idx % lanes.size()]) if not lanes.is_empty() else "mid"
-		h.ai.dash_t = rand(1.0, 3.0)
-		h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
-		h.ai.prof = ai_profile(team)
+		_init_ai(h)
 	SimHamsterLogic.calc_stats(h)
 	h.hp = h.max_hp
 	h.ammo = SimWeapons.mag_size(h)
@@ -306,40 +304,7 @@ func dispose() -> void:
 	all.append_array(bullets); all.append_array(lobs); all.append_array(items); all.append_array(entities.values())
 	all.append_array(mobs); all.append_array(pets); all.append_array(decoys)
 	for e in all:
-		if e is SimEntity:
-			(e as SimEntity).burn_by = null
-		if e is SimHamster:
-			var h := e as SimHamster
-			if h.ai != null:
-				h.ai.target = null
-			h.dash_hit.clear()
-		elif e is SimMinion:
-			(e as SimMinion).target = null
-		elif e is SimStructure:
-			(e as SimStructure).target = null
-			(e as SimStructure).owner = null
-		elif e is SimProp:
-			(e as SimProp).solid = null
-		elif e is SimBullet:
-			(e as SimBullet).by = null
-			(e as SimBullet).owner = null
-			(e as SimBullet).in_solid = null
-		elif e is SimLob:
-			(e as SimLob).owner = null
-			(e as SimLob).att = null
-		elif e is SimMob:
-			(e as SimMob).target = null
-			(e as SimMob).camp = {}
-		elif e is SimPet:
-			(e as SimPet).owner = null
-			(e as SimPet).target = null
-		elif e is SimDecoy:
-			(e as SimDecoy).owner = null
-	for h in hams:
-		h.pet_list.clear()
-	for p in pets:
-		p.owner = null
-		p.target = null
+		SimLifecycle.release(e)
 	for m in mines:
 		m.owner = null
 	for z in zones:
@@ -446,6 +411,7 @@ func step(dt: float) -> void:
 		for m in minions:
 			if m.dead:
 				entities.erase(m.id)
+				SimLifecycle.release(m)
 			else:
 				keep.append(m)
 		minions = keep
@@ -454,7 +420,7 @@ func step(dt: float) -> void:
 		for e in mobs:
 			if e.dead:
 				entities.erase(e.id)
-				e.target = null
+				SimLifecycle.release(e)
 			else:
 				keep3.append(e)
 		mobs = keep3
@@ -464,14 +430,15 @@ func step(dt: float) -> void:
 			if not p.dead:
 				keep4.append(p)
 			else:
-				p.target = null
+				entities.erase(p.id)
+				SimLifecycle.release(p)
 		pets = keep4
 	if decoys.any(func(d): return d.dead):
 		var keep5: Array[SimDecoy] = []
 		for d in decoys:
 			if d.dead:
 				entities.erase(d.id)
-				d.owner = null
+				SimLifecycle.release(d)
 			else:
 				keep5.append(d)
 		decoys = keep5
@@ -480,8 +447,7 @@ func step(dt: float) -> void:
 		for q in structs:
 			if q.dead and q.kind == "sentry":
 				entities.erase(q.id)
-				q.owner = null
-				q.target = null
+				SimLifecycle.release(q)
 			else:
 				keep6.append(q)
 		structs = keep6
@@ -490,6 +456,7 @@ func step(dt: float) -> void:
 		for c in crates:
 			if c.dead:
 				entities.erase(c.id)
+				SimLifecycle.release(c)
 			else:
 				keep2.append(c)
 		crates = keep2
@@ -553,14 +520,14 @@ func hash_range(x: float, y: float, r: float) -> Array:
 	var x1 := floori((x + r) / HC)
 	var y0 := floori((y - r) / HC)
 	var y1 := floori((y + r) / HC)
-	var seen := {}
+	var dedup := {}
 	var out: Array = []
 	for cx in range(x0, x1 + 1):
 		for cy in range(y0, y1 + 1):
 			for e in _hash.get(cx * 4096 + cy, []):
-				if seen.has(e.id):
+				if dedup.has(e.id):
 					continue
-				seen[e.id] = true
+				dedup[e.id] = true
 				out.append(e)
 	return out
 
@@ -633,6 +600,30 @@ func rail_candidates() -> Array:
 
 func is_visible_to(team: String, e: SimEntity) -> bool:
 	return e.team == team or vis[team].has(e.id)
+
+
+func is_seen_by(team: String, e: SimEntity) -> bool:
+	## 在视线内（被照亮或在暗处）：表现层会画出来
+	return e.team == team or seen[team].has(e.id)
+
+
+func _init_ai(h: SimHamster) -> void:
+	h.ai = SimHamster.AiState.new()
+	var lanes := map.lanes.keys()
+	h.ai.lane = String(lanes[h.idx % lanes.size()]) if not lanes.is_empty() else "mid"
+	h.ai.dash_t = rand(1.0, 3.0)
+	h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
+	h.ai.prof = ai_profile(h.team)
+
+
+## 联机玩家掉线超时：这只仓鼠交给 AI 继续打（等级、装备都保留）。
+func hand_to_ai(h: SimHamster) -> void:
+	if h.ctl == "ai":
+		return
+	h.ctl = "ai"
+	h.inp = SimHamster.HamInput.new()
+	h.inp.aim = h.aim
+	_init_ai(h)
 
 
 func ham_by_id(id: int) -> SimHamster:
@@ -841,7 +832,9 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 			tg.dead = true
 			xp_near(o, tg, float(R.minion.xp))
 			if killer != null:
-				drop_loot(tg.x, tg.y, R.minion.drop)    # 仓鼠打死的小兵才掉瓜子 / 奶酪（小兵互殴不掉，免得兵线上堆满）
+				drop_loot(tg.x, tg.y, R.minion.drop, "minion")
+			else:
+				drop_loot(tg.x, tg.y, R.minion.dropOther)     # 被小兵 / 炮台打死也掉一点，比仓鼠打死的少
 			emit({"t": "kill", "id": tg.id, "kind": "minion", "x": tg.x, "y": tg.y, "team": tg.team, "killer": killer.id if killer != null else -1})
 		"turret":
 			tg.dead = true
@@ -878,6 +871,7 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 			var n := rand_int(int(g[0]), int(g[1]))
 			for i in n:
 				drop_gem(tg.x, tg.y, float(C.gemXp))
+			drop_gold_chance(tg.x, tg.y, "crateBig" if cr.big else "crateSmall")
 			if rnd() < float(C.cheese):
 				_add_item("cheese", tg.x, tg.y, 0.0)
 			emit({"t": "kill", "id": tg.id, "kind": "crate", "x": tg.x, "y": tg.y, "big": cr.big, "team": "neutral", "killer": killer.id if killer != null else -1})
@@ -1756,19 +1750,32 @@ func _make_crate(spot: Dictionary) -> SimCrate:
 	return c
 
 
-func drop_loot(x: float, y: float, D: Dictionary) -> void:
-	## 小怪掉落：D.gems = [最少, 最多] 颗瓜子，每颗 D.gemXp 经验；D.cheese = 掉一块加血奶酪的概率
+func drop_loot(x: float, y: float, D: Dictionary, gold_key: String = "") -> void:
+	## 小怪掉落：D.gems = [最少, 最多] 颗瓜子，每颗 D.gemXp 经验；D.cheese = 掉一块加血奶酪的概率；gold_key = 金瓜子概率键（items.gold）
 	var g: Array = D.get("gems", [0, 0])
 	for i in rand_int(int(g[0]), int(g[1])):
 		drop_gem(x, y, float(D.gemXp))
 	if rnd() < float(D.get("cheese", 0.0)):
 		_add_item("cheese", x, y, 0.0)
+	if gold_key != "":
+		drop_gold_chance(x, y, gold_key)
 
 
 func drop_gem(x: float, y: float, xp: float) -> void:
 	if items.size() > int(R.items.gemMax):
 		return
 	_add_item("gem", x, y, xp)
+
+
+func drop_gold_chance(x: float, y: float, key: String) -> void:
+	## 金瓜子：items.gold[key] < 1 是概率，>= 1 是固定颗数
+	var G: Dictionary = R.items.gold
+	var v := float(G.get(key, 0.0))
+	var n := int(v) if v >= 1.0 else (1 if rnd() < v else 0)
+	for i in n:
+		var it := _add_item("gem", x, y, float(G.xp))
+		it.gold = true
+		it.big = false
 
 
 func _add_item(type: String, x: float, y: float, xp: float) -> SimItem:
@@ -1839,7 +1846,7 @@ func _upd_items(dt: float) -> void:
 						removed = true
 						SimHamsterLogic.give_xp(self, best, g.xp)
 						best.munch_t = 0.25
-						emit({"t": "gem", "id": best.id, "big": g.big})
+						emit({"t": "gem", "id": best.id, "big": g.big, "gold": g.gold, "xp": g.xp, "x": best.x, "y": best.y})
 			if not removed and g.t > float(I.gemLife):
 				removed = true
 		else:

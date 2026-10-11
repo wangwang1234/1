@@ -10,6 +10,9 @@ var _t := 0.0
 var _title: Label
 
 
+var networked: = false
+
+
 func show_result(local_team: String, stats: Dictionary) -> void:
 	layer = 30
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -109,7 +112,10 @@ func show_result(local_team: String, stats: Dictionary) -> void:
 	hb.add_theme_constant_override("separation", 22)
 	v.add_child(hb)
 	var again := Button.new()
-	again.text = "再来一局"
+	again.text = "返回房间再来一局" if networked else "再来一局"
+	if networked and not LanSession.is_host():
+		again.text = "等待房主返回房间"
+		again.disabled = true
 	again.pressed.connect(func() -> void:
 		Audio.play2d("ui_click", -6.0)
 		again_requested.emit())

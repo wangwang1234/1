@@ -1,5 +1,5 @@
 {
- "_doc": "AI 难度（开局大厅选择，命令行 --difficulty easy|normal|hard|hell）。玩家对面的 AI 用所选这一档，和玩家同队的 AI 用该档的 ally 档；没有真人时（纯 AI 观战）两队都用所选档。字段：aimJitter 瞄准随机偏差（弧度）；leadK 预判移动目标的比例；react 发现新仓鼠目标后多久才开火（秒，区间）；engageK 开火距离 = 有效射程 × engageK；burst 对仓鼠连射多久、停多久（秒；null = 不停）；dmgMul 伤害倍率；dashK 受击 / 随机翻滚频率倍率；dodge 看到子弹飞来时侧移躲闪的概率（每 0.15 秒判定一次）；dodgeDash 躲闪时顺便翻滚的概率；gadgetK 用道具频率倍率；cardDelay 选卡要想多久（秒）；focus 优先打残血仓鼠的程度（0～1）；towerSafe 没有小兵掩护时不追进敌方炮台射程；pickup 不打架时去捡附近的瓜子 / 残血时去吃奶酪（搜索半径，0 = 不捡）；recallHp 不打架时血量低于这个比例就回家回血；outnumberHp 被围（看得见的敌方仓鼠比身边队友多 2 只以上）时血量低于这个比例就撤；help 队友在附近交火时过去支援（距离，0 = 不管）；memory 丢失仓鼠目标后去最后看到的位置找多久（秒）；reloadBack 换弹时往后退的距离",
+ "_doc": "AI 难度（开局大厅选择，命令行 --difficulty easy|normal|hard|hell）。玩家对面的 AI 用所选这一档，和玩家同队的 AI 用该档的 ally 档；没有真人时（纯 AI 观战）两队都用所选档。字段：aimJitter 瞄准随机偏差（弧度）；leadK 预判移动目标的比例；react 发现新仓鼠目标后多久才开火（秒，区间）；engageK 开火距离 = 有效射程 × engageK；burst 对仓鼠连射多久、停多久（秒；null = 不停）；dmgMul 伤害倍率；dashK 受击 / 随机翻滚频率倍率；dodge 看到子弹飞来时侧移躲闪的概率（每 0.15 秒判定一次）；dodgeDash 躲闪时顺便翻滚的概率；gadgetK 用道具频率倍率；cardDelay 选卡要想多久（秒）；focus 优先打残血仓鼠的程度（0～1）；towerSafe 没有小兵掩护时不追进敌方炮台射程；pickup 不打架时去捡附近的瓜子 / 残血时去吃奶酪（搜索半径，0 = 不捡）；recallHp 不打架时血量低于这个比例就回家回血；outnumberHp 被围（看得见的敌方仓鼠比身边队友多 2 只以上）时血量低于这个比例就撤；help 队友在附近交火时过去支援（距离，0 = 不管）；memory 丢失仓鼠目标后去最后看到的位置找多久（秒）；reloadBack 换弹时往后退的距离；dimSee 能察觉暗处（视线内没被照亮）敌人的距离；dimReactK / dimAimK 对暗处目标的反应时间 / 瞄准误差倍率",
  "default": "normal",
  "order": ["easy", "normal", "hard", "hell"],
  "levels": {
@@ -25,7 +25,10 @@
    "outnumberHp": 0.0,
    "help": 0,
    "memory": 0.0,
-   "reloadBack": 0
+   "reloadBack": 0,
+   "dimSee": 240,
+   "dimReactK": 2.0,
+   "dimAimK": 1.8
   },
   "normal": {
    "name": "普通",
@@ -49,7 +52,10 @@
    "outnumberHp": 0.0,
    "help": 0,
    "memory": 2.0,
-   "reloadBack": 60
+   "reloadBack": 60,
+   "dimSee": 320,
+   "dimReactK": 1.7,
+   "dimAimK": 1.6
   },
   "hard": {
    "name": "困难",
@@ -73,7 +79,10 @@
    "outnumberHp": 0.6,
    "help": 750,
    "memory": 3.5,
-   "reloadBack": 110
+   "reloadBack": 110,
+   "dimSee": 400,
+   "dimReactK": 1.45,
+   "dimAimK": 1.4
   },
   "hell": {
    "name": "地狱",
@@ -97,7 +106,10 @@
    "outnumberHp": 0.7,
    "help": 900,
    "memory": 5.0,
-   "reloadBack": 130
+   "reloadBack": 130,
+   "dimSee": 460,
+   "dimReactK": 1.3,
+   "dimAimK": 1.25
   }
  }
 }

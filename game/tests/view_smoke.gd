@@ -1,6 +1,6 @@
 extends Node
 ## 表现层冒烟（headless，带自动加载）：godot --headless --path game res://tests/view_smoke.tscn
-## 完整画面逻辑下，18 把武器 × 一条 9 级路线逐个开火，13 种道具逐个使用，野怪 / 鼠王 / 宠物都在场，最后切一次双人分屏。
+## 完整画面逻辑下，18 把武器 × 一条 9 级路线逐个开火并放右键技能，13 种道具逐个使用，野怪 / 鼠王 / 宠物都在场，最后切一次双人分屏。
 ## 运行时报错会出现在日志里（tools/test.sh 检查 SCRIPT ERROR）。
 
 
@@ -36,9 +36,13 @@ func _solo() -> void:
 		h.inp.fire = true
 		await _drive(mv, 40)
 		h.inp.fire = false
+		# 右键武器技能（开放的 10 把有）
+		h.skill_cd = 0.0
+		SimSkills.use(w, h)     # 直接放（输入轮询会覆盖 inp.skill）
+		await _drive(mv, 30)
 		await _drive(mv, 3)
 		i += 1
-	print("[view_smoke] 18 把武器开火完成")
+	print("[view_smoke] 18 把武器开火完成（含右键技能）")
 	for gid in Data.gadgets().keys():
 		h.gadget = {"id": gid, "lvl": 2, "cd": 0.0}
 		h.inp.gadget = true

@@ -108,6 +108,7 @@ static func on_kill(w: SimWorld, t: SimMob, src: Dictionary) -> void:
 			w.toast_all("%s击败鼠王，全队获得王冠加成！" % w.tname(killer.team), "#ffd166", 3.0)
 		for i in int(B.gems):
 			w.drop_gem(t.x, t.y, float(B.gemXp))
+		w.drop_gold_chance(t.x, t.y, "boss")
 		w.emit({"t": "kill", "id": t.id, "kind": "boss", "x": t.x, "y": t.y, "team": "neutral", "killer": killer.id if killer != null else -1})
 		w.emit({"t": "explode", "x": t.x, "y": t.y, "r": 200.0, "big": true})
 		return
@@ -117,7 +118,7 @@ static func on_kill(w: SimWorld, t: SimMob, src: Dictionary) -> void:
 		if int(t.camp.alive) <= 0:
 			t.camp.resp = w.t + float(D.resp)
 	w.xp_near(killer, t, float(D.xp))
-	w.drop_loot(t.x, t.y, D)
+	w.drop_loot(t.x, t.y, D, t.kind)
 	if t.kind == "rat":
 		w.emit({"t": "pop", "x": t.x, "y": t.y, "h": t.r * 2.8, "text": "吱！", "color": "#ffb3c1", "size": 18})
 	w.emit({"t": "kill", "id": t.id, "kind": t.kind, "x": t.x, "y": t.y, "team": "neutral", "killer": killer.id if killer != null else -1})
@@ -393,8 +394,23 @@ static func update_pet(w: SimWorld, p: SimPet, dt: float) -> void:
 				var e := w.nearest_foe(p.team, p.x, p.y, float(F.range))
 				if e != null:
 					p.cd = maxf(float(F.cdMin), float(F.cdBase) - float(F.cdPer) * p.lvl)
-					w.deal_dmg(e, (float(F.dmg) + float(F.dmgPer) * p.lvl) * float(o.st.dmg), {"team": p.team, "owner": o, "x": p.x, "y": p.y})
+					var fd := (float(F.dmg) + float(F.dmgPer) * p.lvl) * float(o.st.dmg)
+					w.deal_dmg(e, fd, {"team": p.team, "owner": o, "x": p.x, "y": p.y})
 					w.emit({"t": "zap", "x0": p.x, "y0": p.y, "h0": p.h, "x1": e.x, "y1": e.y, "h1": e.r, "pet": p.id})
+					if p.lvl >= int(F.get("chainFrom", 99)):
+						# 高等级萤火虫：电击跳到附近第二个敌人
+						var best: SimEntity = null
+						var bd := float(F.chainRange) * float(F.chainRange)
+						for c: SimEntity in w.hash_range(e.x, e.y, float(F.chainRange)):
+							if c == e or c.is_prop or c.kind == "crate" or not w.can_hit(p.team, c):
+								continue
+							var d2 := SimUtil.d2(c.x, c.y, e.x, e.y)
+							if d2 < bd:
+								bd = d2
+								best = c
+						if best != null:
+							w.deal_dmg(best, fd * float(F.chainK), {"team": p.team, "owner": o, "x": e.x, "y": e.y})
+							w.emit({"t": "zap", "x0": e.x, "y0": e.y, "h0": e.r, "x1": best.x, "y1": best.y, "h1": best.r, "pet": p.id})
 		"chick":
 			var C: Dictionary = PD.chick
 			if p.target != null and (p.target.dead or (p.target is SimHamster and not (p.target as SimHamster).alive) or Vector2(p.target.x - ax, p.target.y - ay).length() > float(C.leash)):

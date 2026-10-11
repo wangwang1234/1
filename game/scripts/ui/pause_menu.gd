@@ -12,6 +12,9 @@ var _settings: SettingsPanel
 var _t := 0.0
 
 
+var networked: = false
+
+
 func _ready() -> void:
 	layer = 30
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -32,12 +35,15 @@ func _ready() -> void:
 	box = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
 	panel.add_child(box)
-	var title := UiTheme.label("暂停", 64, UiTheme.GOLD, true, 10)
+	var title: = UiTheme.label("联机菜单" if networked else "暂停", 64, UiTheme.GOLD, true, 10)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(title)
 	var b := _btn("继续", func() -> void: resume_requested.emit())
 	_btn("设置", _open_settings, true)
-	_btn("重新开始", func() -> void: restart_requested.emit(), true)
+	var restart: = _btn("返回房间" if networked else "重新开始", func() -> void : restart_requested.emit(), true)
+	if networked:
+		restart.disabled = not LanSession.is_host()
+		box.add_child(UiTheme.label("对局继续进行；菜单打开时，你的角色停止操作。", 18, UiTheme.SUB))
 	_btn("返回主菜单", func() -> void: menu_requested.emit(), true)
 	var sep := HSeparator.new()
 	sep.add_theme_constant_override("separation", 18)

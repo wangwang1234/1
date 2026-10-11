@@ -1,6 +1,6 @@
 class_name SimItem
 extends RefCounted
-## 地上的可拾取物：经验瓜子（gem）、奶酪（cheese，回血）。
+## 地上的可拾取物：经验瓜子（gem，含金瓜子 gold）、奶酪（cheese，回血）。
 
 var type := "gem"
 var x := 0.0
@@ -12,5 +12,6 @@ var vz := 0.0
 var xp := 5.0
 var t := 0.0
 var big := false
+var gold := false     # 金瓜子（rules.json 的 items.gold）
 var dead := false
 var id := 0

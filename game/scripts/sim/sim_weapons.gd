@@ -17,6 +17,7 @@ const INT_KEYS := ["n", "pierce", "magAdd", "bounce", "wp"]
 
 static var _cache := {}
 static var _in_kill_blast := false
+static var _in_kill_chain := false
 
 
 static func clear_cache() -> void:
@@ -202,7 +203,7 @@ static func aim_assist(w: SimWorld, h: SimHamster, aim: float, k: float) -> floa
 	if k <= 0.0 or kind == "lob":
 		return aim
 	var rr := maxf(float(h.weapon().get("reach", 0.0)) * 1.4, range_of(h)) * float(A.rangeK)
-	var V: Dictionary = w.vis[h.team]
+	var V: Dictionary = w.seen[h.team]     # 暗处（视线内没被照亮）的敌人也吸附
 	var best_e := 0.0
 	var best_s := 1e9
 	for e: SimEntity in w.foe_candidates(true):
@@ -228,8 +229,8 @@ static func aim_assist(w: SimWorld, h: SimHamster, aim: float, k: float) -> floa
 
 
 static func auto_aim(w: SimWorld, h: SimHamster, rr: float) -> SimEntity:
-	## 手柄辅助瞄准（原型 autoAim）：看得见的敌方仓鼠 → 小兵 / 野怪（0.75 倍距离）→ 没有护盾的敌方建筑
-	var V: Dictionary = w.vis[h.team]
+	## 手柄辅助瞄准（原型 autoAim）：视线内的敌方仓鼠（含暗处）→ 小兵 / 野怪（0.75 倍距离）→ 没有护盾的敌方建筑
+	var V: Dictionary = w.seen[h.team]
 	var best: SimEntity = null
 	var bd := rr * rr
 	for e in w.hams:
@@ -279,6 +280,8 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 	var rate := base_rate * float(st.rate) * float(P.rate) * (1.3 if berserk else 1.0)
 	if h.haste_t > 0.0:
 		rate *= float(Data.rule("combat.hasteRate", 1.3))
+	if h.sk_rate_t > 0.0:
+		rate *= h.sk_rate_k     # 右键技能：扫射
 	if float(P.stormCap) > 0.0:
 		rate *= 1.0 + minf(float(P.stormCap), h.ramp * float(P.stormRamp))
 	if S.has("deployRate") and deployed:
@@ -289,7 +292,7 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 	if W.has("dual"):
 		h.dual_side = -h.dual_side
 	var pause := w.t - h.last_shot_t
-	var dmg := float(W.dmg) * float(st.dmg) * float(P.dmg) * (1.4 if berserk else 1.0)
+	var dmg := float(W.dmg) * float(st.dmg) * float(P.dmg) * (1.4 if berserk else 1.0) * h.sk_dmg_k
 	var crit_add := float(P.crit)
 	var force := false
 	var pierce := int(W.get("pierce", 0)) + int(P.pierce)
@@ -327,6 +330,8 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 		use = false
 	if use and S.has("stillFree") and Vector2(h.vx, h.vy).length() < float(S.stillFree):
 		use = false
+	if use and h.sk_free_t > 0.0:
+		use = false     # 右键技能期间不耗子弹
 	if use:
 		h.ammo -= 1
 	var a0 := h.aim
@@ -910,8 +915,10 @@ static func on_kill(w: SimWorld, tg: SimEntity, src: Dictionary) -> void:
 		K.dash_cd = 0.0
 	if S.has("killHaste"):
 		K.haste_t = maxf(K.haste_t, float(S.killHaste))
-	if S.has("killChain"):
+	if S.has("killChain") and not _in_kill_chain:
+		_in_kill_chain = true     # 被连锁闪电劈死的不再触发连锁（否则一群小兵会无限递归到栈溢出）
 		w.chain_lightning(tg, float(S.killChain) * float(K.st.dmg), K)
+		_in_kill_chain = false
 	if S.has("killHeal"):
 		K.hp = minf(K.max_hp, K.hp + K.max_hp * float(S.killHeal))
 	if S.has("killBlast") and not _in_kill_blast and not (tg.kind in ["base", "turret"]):

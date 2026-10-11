@@ -213,6 +213,7 @@ class PetView:
 		if not visible:
 			return
 		position = Vector3(lerpf(p.px, p.x, alpha) * 0.01, p.h * 0.01, lerpf(p.py, p.y, alpha) * 0.01)
+		scale = Vector3.ONE * (1.0 + 0.1 * (p.lvl - 1))     # 宠物每升一级大一圈
 		var moving := Vector2(p.x - p.px, p.y - p.py).length() > 0.3
 		match type:
 			"chick":

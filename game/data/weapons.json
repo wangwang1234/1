@@ -1,6 +1,8 @@
 {
  "pistol": {
   "name": "手枪",
+  "skill": {"type": "burst", "name": "四连速射", "desc": "瞬间连开 4 枪，不耗子弹", "cd": 5, "n": 4, "gap": 0.06, "aiRange": 420},
+  "noEvo": true,
   "rate": 4.2,
   "dmg": 15,
   "spd": 1150,
@@ -63,6 +65,7 @@
  },
  "ak47": {
   "name": "AK-47",
+  "skill": {"type": "nade", "name": "枪挂榴弹", "desc": "打出一颗榴弹，落地爆炸", "cd": 6, "dmg": 80, "aoe": 120, "range": 480, "spd": 520, "fuse": 0.45, "aiRange": 480},
   "rate": 9,
   "dmg": 9.5,
   "spd": 1300,
@@ -94,6 +97,7 @@
  },
  "smg": {
   "name": "冲锋枪",
+  "skill": {"type": "frenzy", "name": "扫射", "desc": "3 秒内射速 +80%", "cd": 9, "time": 3.0, "rateK": 1.8, "aiRange": 380},
   "rate": 14,
   "dmg": 7,
   "spd": 1150,
@@ -126,6 +130,7 @@
  },
  "shotgun": {
   "name": "霰弹枪",
+  "skill": {"type": "slug", "name": "独头弹", "desc": "一发远射程重弹，穿透 1 个敌人", "cd": 7, "dmg": 80, "spd": 1300, "range": 600, "pierce": 1, "kb": 260, "aiRange": 560},
   "rate": 1.3,
   "dmg": 13,
   "spd": 900,
@@ -157,6 +162,7 @@
  },
  "sniper": {
   "name": "狙击枪",
+  "skill": {"type": "mark", "name": "标记射击", "desc": "打出一发标记弹：伤害 +30%，打中的敌人全队可见 4 秒", "cd": 9, "dmgK": 1.3, "mark": 4.0, "aiRange": 760},
   "rate": 0.6,
   "dmg": 65,
   "spd": 2000,
@@ -215,6 +221,7 @@
  },
  "rocket": {
   "name": "火箭筒",
+  "skill": {"type": "salvo", "name": "三联火箭", "desc": "扇形打出 3 发小火箭", "cd": 13, "n": 3, "spread": 0.22, "dmgK": 0.35, "aiRange": 520},
   "rate": 1.2,
   "dmg": 24,
   "spd": 650,
@@ -242,6 +249,7 @@
  },
  "katana": {
   "name": "武士刀",
+  "skill": {"type": "slash", "name": "拔刀斩", "desc": "向前冲刺，砍中路上所有敌人", "cd": 10, "dashSpd": 1.9, "dmgK": 1.6, "aiRange": 300},
   "rate": 2.4,
   "dmg": 30,
   "kind": "melee",
@@ -260,6 +268,7 @@
  },
  "flame": {
   "name": "喷火器",
+  "skill": {"type": "firewall", "name": "火墙", "desc": "在前方留下一道燃烧带，持续 4 秒", "cd": 11, "n": 5, "from": 70, "gap": 55, "r": 46, "life": 4.0, "dps": 25, "aiRange": 300},
   "rate": 13,
   "dmg": 5,
   "spd": 380,
@@ -281,6 +290,7 @@
  },
  "minigun": {
   "name": "加特林",
+  "skill": {"type": "spin", "name": "满膛火力", "desc": "瞬间转满，3 秒内不耗子弹", "cd": 12, "time": 3.0, "aiRange": 420},
   "rate": 28,
   "dmg": 5,
   "spd": 1250,
@@ -488,6 +498,7 @@
  },
  "laser": {
   "name": "激光枪",
+  "skill": {"type": "overload", "name": "过载光束", "desc": "1.5 秒内光束伤害 +30% 并穿透，不耗电", "cd": 11, "time": 1.5, "dmgK": 1.3, "aiRange": 480},
   "rate": 10,
   "dmg": 6,
   "kind": "laser",

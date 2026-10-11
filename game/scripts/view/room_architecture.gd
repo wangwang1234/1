@@ -93,16 +93,21 @@ func flush(parent: Node3D) -> void:
 		var mesh := MeshInstance3D.new()
 		mesh.name = surface
 		mesh.mesh = (_groups[surface] as SurfaceTool).commit()
-		var mat := ShaderMaterial.new()
-		mat.shader = preload("res://shaders/architecture.gdshader")
-		var style: Dictionary = VisualStyle.section("architecture")[surface]
-		mat.set_shader_parameter("base_color", Color(String(style.color)))
-		mat.set_shader_parameter("roughness", float(style.roughness))
-		mat.set_shader_parameter("grain", float(style.get("grain", 0.0)))
-		mat.set_shader_parameter("emission", float(style.get("emission", 0.0)))
-		mat.set_shader_parameter("neutral_amount", 1.0 if ToonMaterials.review_neutral else 0.0)
-		mesh.material_override = mat
+		mesh.material_override = material(surface)
 		if surface == "glass":
 			mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		parent.add_child(mesh)
 	_groups.clear()
+
+
+static func material(surface: String) -> ShaderMaterial:
+	## visual_style.json 的 architecture 段里的一种表面（光岛的手机、电线、彩灯线也用）
+	var mat := ShaderMaterial.new()
+	mat.shader = preload("res://shaders/architecture.gdshader")
+	var style: Dictionary = VisualStyle.section("architecture")[surface]
+	mat.set_shader_parameter("base_color", Color(String(style.color)))
+	mat.set_shader_parameter("roughness", float(style.roughness))
+	mat.set_shader_parameter("grain", float(style.get("grain", 0.0)))
+	mat.set_shader_parameter("emission", float(style.get("emission", 0.0)))
+	mat.set_shader_parameter("neutral_amount", 1.0 if ToonMaterials.review_neutral else 0.0)
+	return mat

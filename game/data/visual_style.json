@@ -3,7 +3,7 @@
   "environment": {
     "ambientColor": "#9daecc",
     "ambientEnergy": 0.18,
-    "moonColor": "#a7bddf",
+    "moonColor": "#a9b3f0",
     "moonEnergy": 0.14,
     "moonRotation": [
       -48,
@@ -14,7 +14,7 @@
     "shadowDistance": 24.0,
     "shadowSoftness": 1.5,
     "exposure": 1.05,
-    "saturation": 0.92,
+    "saturation": 1.0,
     "contrast": 1.04,
     "glowIntensity": 0.18,
     "glowThreshold": 1.8,
@@ -22,14 +22,28 @@
     "aoIntensity": 1.2,
     "indirectIntensity": 0.58,
     "sky": {
-      "topColor": "#1b2d50",
-      "horizonColor": "#77849b",
-      "groundColor": "#151420",
+      "topColor": "#272456",
+      "horizonColor": "#6d6a9e",
+      "groundColor": "#17142a",
       "groundHorizonColor": "#6b5a48",
       "energy": 0.3
     },
     "aoLightAffect": 0.12,
     "indirectRadius": 1.15
+  },
+  "grade": {
+    "_doc": "全局分离色调（运行时生成 3D 查找表，所有画质档都开）：暗部往 shadowTint 偏 shadowAmount 并抬起 shadowLift（夜色是深靛紫不是死黑），亮部往 highlightTint 偏；saturationProtect 让高饱和颜色（队伍色、特效）少受影响；vibrance 给灰色加饱和",
+    "enabled": true,
+    "lutSize": 32,
+    "shadowTint": "#5249a6",
+    "shadowRange": 0.34,
+    "shadowAmount": 0.32,
+    "shadowLift": 0.03,
+    "highlightTint": "#ffd2a0",
+    "highlightStart": 0.5,
+    "highlightAmount": 0.2,
+    "saturationProtect": 0.75,
+    "vibrance": 0.25
   },
   "camera": {
     "pitchDegrees": 52.0,
@@ -60,7 +74,16 @@
     "portraitKeyColor": "#ffe7ca",
     "portraitAmbientColor": "#b6c4df",
     "flashlightAttenuation": 0.75,
-    "flashlightConeAttenuation": 1.2
+    "flashlightConeAttenuation": 1.2,
+    "beamMotes": {
+      "_doc": "手电光束里的灰尘颗粒（光束着色器里程序生成，没有粒子开销）：strength 亮度，density 每米格子数，size 颗粒半径占格子比例，fill 有颗粒的格子比例，otherScale 别人的手电按比例减弱",
+      "enabled": true,
+      "strength": 0.3,
+      "density": 13.0,
+      "size": 0.17,
+      "fill": 0.2,
+      "otherScale": 0.5
+    }
   },
   "materials": {
     "object": {
@@ -97,8 +120,8 @@
       "rim": 0.0,
       "outlineScale": 0.0,
       "roughness": 0.96,
-      "color": "#4b5360",
-      "colorBlend": 0.15,
+      "color": "#5a4c48",
+      "colorBlend": 0.45,
       "shading": "surface",
       "specular": 0.18
     },
@@ -640,33 +663,32 @@
       "color": "#203f63",
       "roughness": 0.28,
       "emission": 0.5
+    },
+    "phone_body": {
+      "color": "#24252d",
+      "roughness": 0.35
+    },
+    "phone_screen": {
+      "color": "#bcd6ff",
+      "roughness": 0.2,
+      "emission": 0.0
+    },
+    "phone_card": {
+      "color": "#f4f7ff",
+      "roughness": 0.2,
+      "emission": 0.0
+    },
+    "cable": {
+      "color": "#d9d6cf",
+      "roughness": 0.55
+    },
+    "fairy_wire": {
+      "color": "#2f3a2c",
+      "roughness": 0.6
     }
   },
   "roomLighting": {
     "lights": [
-      {
-        "name": "living_ceiling",
-        "type": "spot",
-        "position": [
-          20.0,
-          4.3,
-          14.2
-        ],
-        "target": [
-          22.3,
-          0.0,
-          16.5
-        ],
-        "color": "#c7cfdf",
-        "energy": 0.8,
-        "range": 13.0,
-        "angle": 57.0,
-        "attenuation": 0.8,
-        "coneAttenuation": 0.6,
-        "specular": 0.35,
-        "size": 0.85,
-        "shadow": true
-      },
       {
         "name": "kitchen_counter_bounce",
         "type": "omni",
@@ -717,6 +739,454 @@
       }
     ]
   },
+  "lightIslands": {
+    "_doc": "光岛（只在完整地图）：每个区域一个看得出来源的光，用投影贴图（tools/build_gobos.py）投出画面外巨大家具的影子来交代尺度。position / target 单位米（x, 高度, z）；minQuality 低于当前画质档就不建；带投影贴图的灯总是开阴影（Godot 4.7 里聚光灯的投影贴图要靠阴影矩阵，不开阴影就投不出形状），光锥窄，开销小。phone：沙发底掉落的手机（position 和 cable 是地图厘米坐标，屏幕定期亮起）；fairy：礼物区地上的彩灯串（points 厘米坐标，沿线均匀放 bulbs 个灯泡）。装饰光不提供视野，玩法里的灯仍然是最亮的暖色光。",
+    "lights": [
+      {
+        "name": "living_moon_window",
+        "type": "spot",
+        "position": [
+          17.2,
+          9.0,
+          9.6
+        ],
+        "target": [
+          20.5,
+          0.0,
+          14.6
+        ],
+        "color": "#c3c9ec",
+        "energy": 1.7,
+        "range": 17.0,
+        "angle": 13.0,
+        "attenuation": 0.3,
+        "coneAttenuation": 0.2,
+        "specular": 0.3,
+        "size": 0.4,
+        "projector": "res://assets/textures/gobo_window_plant.png",
+        "minQuality": "low"
+      },
+      {
+        "name": "living_street_blinds",
+        "type": "spot",
+        "position": [
+          33.8,
+          8.6,
+          10.8
+        ],
+        "target": [
+          29.9,
+          0.0,
+          15.6
+        ],
+        "color": "#ffbe80",
+        "energy": 1.5,
+        "range": 17.0,
+        "angle": 12.5,
+        "attenuation": 0.3,
+        "coneAttenuation": 0.2,
+        "specular": 0.3,
+        "size": 0.3,
+        "projector": "res://assets/textures/gobo_blinds.png",
+        "minQuality": "low"
+      },
+      {
+        "name": "kitchen_moon_table",
+        "type": "spot",
+        "position": [
+          47.5,
+          8.4,
+          16.5
+        ],
+        "target": [
+          42.6,
+          0.0,
+          12.6
+        ],
+        "color": "#c3c9ec",
+        "energy": 1.15,
+        "range": 17.0,
+        "angle": 12.5,
+        "attenuation": 0.3,
+        "coneAttenuation": 0.2,
+        "specular": 0.3,
+        "size": 0.4,
+        "projector": "res://assets/textures/gobo_table_chairs.png",
+        "minQuality": "low"
+      },
+      {
+        "name": "fridge_door_crack",
+        "type": "spot",
+        "position": [
+          25.2,
+          2.2,
+          0.8
+        ],
+        "target": [
+          25.6,
+          0.0,
+          7.0
+        ],
+        "color": "#d6f1ff",
+        "energy": 3.2,
+        "range": 10.0,
+        "angle": 36.0,
+        "attenuation": 0.7,
+        "coneAttenuation": 0.3,
+        "specular": 0.4,
+        "size": 0.2,
+        "projector": "res://assets/textures/gobo_fridge_wedge.png",
+        "minQuality": "low"
+      }
+    ],
+    "phone": {
+      "position": [
+        1500,
+        2900
+      ],
+      "angleDeg": -18,
+      "color": "#cfe2ff",
+      "lightEnergy": 0.9,
+      "lightRange": 2.6,
+      "lightHeight": 0.35,
+      "period": 13.0,
+      "onSeconds": 5.0,
+      "screenEmission": 2.2,
+      "cable": [
+        [
+          1533,
+          2905
+        ],
+        [
+          1700,
+          2960
+        ],
+        [
+          1880,
+          2990
+        ],
+        [
+          2000,
+          3040
+        ],
+        [
+          2060,
+          3110
+        ]
+      ],
+      "cableRadiusCm": 1.6
+    },
+    "fairy": {
+      "strands": [
+        [
+          [
+            2372,
+            2352
+          ],
+          [
+            2450,
+            2440
+          ],
+          [
+            2520,
+            2462
+          ],
+          [
+            2590,
+            2440
+          ],
+          [
+            2668,
+            2352
+          ]
+        ],
+        [
+          [
+            2372,
+            1975
+          ],
+          [
+            2450,
+            1915
+          ],
+          [
+            2520,
+            1898
+          ],
+          [
+            2590,
+            1915
+          ],
+          [
+            2668,
+            1975
+          ]
+        ]
+      ],
+      "bulbsPerStrand": 13,
+      "bulbRadiusCm": 2.8,
+      "colors": [
+        "#ffd27a",
+        "#fff0cf",
+        "#a8f0cf",
+        "#e2bcff"
+      ],
+      "emission": 1.5,
+      "lights": {
+        "energy": 0.35,
+        "range": 2.4,
+        "color": "#ffe2b0",
+        "minQuality": "medium"
+      },
+      "wireColor": "#2f3a2c"
+    }
+  },
+  "floorDecals": {
+    "_doc": "地面贴花（tools/build_decals.py 生成 4×4 图集）：格子 0 咖啡杯印 1 果汁渍 2 灰尘里的袜子脚印 3 水杯印 4 擦痕 5 墨水渍 6 汽水黏渍 7 蜡笔涂鸦 8 灰尘团 9 饼干碎屑 10 鞋底泥印 11 茶包水渍 12 左脚袜子脚印。sizesCm 直径范围（真实尺寸 × 4.5 的仓鼠尺度）；zones 每区数量和 [格子, 权重]；fixed 固定摆放的“镜头”；roughness 液体类更光滑，手电扫过会反光",
+    "enabled": true,
+    "grid": 4,
+    "opacity": 0.8,
+    "heightM": 0.009,
+    "baseClearCm": 360,
+    "sizesCm": {
+      "0": [
+        36,
+        44
+      ],
+      "1": [
+        70,
+        120
+      ],
+      "2": [
+        160,
+        180
+      ],
+      "3": [
+        30,
+        38
+      ],
+      "4": [
+        90,
+        140
+      ],
+      "5": [
+        40,
+        70
+      ],
+      "6": [
+        80,
+        130
+      ],
+      "7": [
+        80,
+        120
+      ],
+      "8": [
+        90,
+        150
+      ],
+      "9": [
+        50,
+        80
+      ],
+      "10": [
+        90,
+        130
+      ],
+      "11": [
+        45,
+        70
+      ],
+      "12": [
+        160,
+        180
+      ]
+    },
+    "zones": {
+      "study": {
+        "count": 9,
+        "kinds": [
+          [
+            0,
+            3
+          ],
+          [
+            5,
+            2
+          ],
+          [
+            4,
+            2
+          ],
+          [
+            3,
+            1
+          ],
+          [
+            8,
+            1
+          ]
+        ]
+      },
+      "kitchen": {
+        "count": 10,
+        "kinds": [
+          [
+            1,
+            2
+          ],
+          [
+            6,
+            3
+          ],
+          [
+            11,
+            2
+          ],
+          [
+            9,
+            2
+          ],
+          [
+            10,
+            1
+          ],
+          [
+            3,
+            1
+          ]
+        ]
+      },
+      "living": {
+        "count": 8,
+        "kinds": [
+          [
+            7,
+            2
+          ],
+          [
+            1,
+            1
+          ],
+          [
+            9,
+            2
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            10,
+            1
+          ],
+          [
+            3,
+            1
+          ]
+        ]
+      },
+      "shelf": {
+        "count": 6,
+        "kinds": [
+          [
+            8,
+            3
+          ],
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            1
+          ],
+          [
+            5,
+            1
+          ]
+        ]
+      },
+      "sofa": {
+        "count": 7,
+        "kinds": [
+          [
+            8,
+            3
+          ],
+          [
+            9,
+            2
+          ],
+          [
+            4,
+            1
+          ],
+          [
+            0,
+            1
+          ]
+        ]
+      },
+      "fridge": {
+        "count": 4,
+        "kinds": [
+          [
+            3,
+            3
+          ],
+          [
+            6,
+            2
+          ],
+          [
+            1,
+            1
+          ]
+        ]
+      },
+      "gift": {
+        "count": 2,
+        "kinds": [
+          [
+            1,
+            1
+          ],
+          [
+            9,
+            1
+          ]
+        ]
+      }
+    },
+    "fixed": [
+      {
+        "cell": 12,
+        "position": [
+          2280,
+          2660
+        ],
+        "angleDeg": -8,
+        "sizeCm": 175
+      },
+      {
+        "cell": 2,
+        "position": [
+          2470,
+          2890
+        ],
+        "angleDeg": -20,
+        "sizeCm": 175
+      }
+    ],
+    "roughness": {
+      "1": 0.35,
+      "3": 0.22,
+      "6": 0.28,
+      "11": 0.4,
+      "5": 0.45
+    }
+  },
   "quality": {
     "_doc": "画质档位（设置 → 画面 → 画质；手机默认 low，电脑默认 high）。ssao/ssil 屏幕空间环境光遮蔽 / 间接光；ssaoHalf 半分辨率；dof 景深；motionBlur 动态模糊；shadowSplits 月光阴影分级数（1/2/4）；softShadow 软阴影质量 0～5；roomShadows 房间补光是否投影；reflections 静态反射探针；msaa 0/2/4",
     "low": {
@@ -755,5 +1225,16 @@
       "reflections": true,
       "msaa": 4
     }
+  },
+  "pickups": {
+    "_doc": "地上拾取物的显示（2026-10-11 导演：瓜子要变大）：gemScale / bigScale 普通 / 大瓜子的显示倍数；金瓜子 goldScale、goldTint 颜色、goldGlow 自发光、goldRim 边缘光；gemGlow / gemRim 普通瓜子的自发光和边缘光（黑暗里也找得到）",
+    "gemScale": 1.7,
+    "bigScale": 1.5,
+    "goldScale": 1.9,
+    "goldTint": "#ffcf3a",
+    "goldGlow": 0.9,
+    "goldRim": 0.4,
+    "gemGlow": 0.3,
+    "gemRim": 0.25
   }
 }

@@ -34,4 +34,6 @@ func test_scope_abilities_exist() -> void:
 
 func test_xp_curve_matches_formula() -> void:
 	for L in range(1, 31):
-		eq(Data.xp_need(L), int(round(24.0 + 15.0 * L + 2.4 * L * L)), "Lv%d 升级经验" % L)
+		# 2026-10-11：前 9 级打折 min(1, 0.45 + 0.055L)，第 10 级起和原公式一致
+		var base := 24.0 + 15.0 * L + 2.4 * L * L
+		eq(Data.xp_need(L), int(round(round(base) * minf(1.0, 0.45 + 0.055 * L))), "Lv%d 升级经验" % L)

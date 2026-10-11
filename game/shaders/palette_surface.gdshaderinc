@@ -22,6 +22,7 @@ uniform vec3 surface_color : source_color = vec3(1.0);
 uniform float surface_color_blend = 0.0;
 uniform float surface_saturation = 1.0;
 uniform float vertex_tint_strength = 0.0;
+uniform float detail_strength_carpet = 1.0;
 varying vec3 world_position;
 varying vec3 local_position;
 
@@ -39,6 +40,8 @@ instance uniform float rim_boost : instance_index(5) = 0.0;
 instance uniform vec4 tint : instance_index(6) = vec4(1.0, 1.0, 1.0, 1.0);
 instance uniform float dissolve : instance_index(7) = 0.0;
 instance uniform vec4 rim_tint : instance_index(8) = vec4(0.0, 0.0, 0.0, 0.0);
+// 1 = 被照亮 / 自己人（边缘光、自身亮度照常）；0 = 暗处的敌人（只靠场景光）。index 10 和描边着色器共用
+instance uniform float lit_k : instance_index(10) = 1.0;
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -87,7 +90,15 @@ void fragment() {
 		float inside = 1.0 - smoothstep(0.13, 0.13 + aa, diamond);
 		float thread = sin(world_position.x * 160.0) * sin(world_position.z * 160.0);
 		float visible = 1.0 - smoothstep(0.25, 1.0, length(fwidth(world_position.xz * 160.0)));
-		col *= 1.0 + border * 0.16 + inside * 0.04 + thread * 0.016 * visible;
+		// 仓鼠尺度的绒毛：真实 1 cm 的毛圈放大成约 4.5 cm 一簇，簇之间有暗缝；再叠一层大尺度的踩旧痕迹
+		vec2 tp = world_position.xz / 0.045;
+		vec2 tc = floor(tp);
+		vec2 tf = fract(tp) - 0.5 + (vec2(hash(tc), hash(tc + 7.3)) - 0.5) * 0.35;
+		float tuft = 1.0 - smoothstep(0.18, 0.5, length(tf));
+		float tuft_visible = 1.0 - smoothstep(0.3, 0.9, length(fwidth(tp)));
+		float pile = (tuft - 0.55) * 0.22 + (hash(tc + 3.1) - 0.5) * 0.08;
+		float wear = sin(world_position.x * 0.9 + sin(world_position.z * 0.7) * 1.3) * sin(world_position.z * 0.55 + 1.7);
+		col *= 1.0 + border * 0.11 + inside * 0.04 + thread * 0.016 * visible + pile * tuft_visible * detail_strength_carpet + wear * 0.05;
 	}
 	vec3 emi = texture(palette, uv + vec2(0.0, 0.5)).rgb;
 	if (dissolve > 0.0) {
@@ -102,12 +113,12 @@ void fragment() {
 	else if (kind == 4 || kind == 6) { e *= 0.9; }
 	else if (kind == 8) { e *= glow * 3.0; }
 	else { e *= 0.8; }
-	vec3 em = emi * e + col * glow * (kind == 8 ? 0.0 : 0.6);
+	vec3 em = emi * e + col * glow * (kind == 8 ? 0.0 : 0.6) * lit_k;
 	// 边缘光：保证黑暗里也能看清轮廓
 	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), rim_power);
 	float rim = smoothstep(0.12, 0.85, fres);
 	vec3 rc = mix(rim_color, rim_tint.rgb, rim_tint.a);
-	em += rc * rim * (rim_strength + rim_boost) * (0.35 + 0.65 * base);
+	em += rc * rim * (rim_strength + rim_boost) * (0.35 + 0.65 * base) * lit_k;
 	em += vec3(1.0) * flash * 0.6;
 	EMISSION = em;
 	// Fine grain affects orientation and roughness as well as albedo.

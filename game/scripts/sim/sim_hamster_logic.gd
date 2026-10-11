@@ -37,6 +37,7 @@ static func calc_stats(h: SimHamster) -> void:
 	st.lightK = 1.0 + float(A.torch.lightK) * lv.call("torch")
 	st.wideK = lv.call("wide")
 	st.hearK = 1.0 + float(A.ears.hearK) * lv.call("ears")
+	st.viewK = 1.0 + float(A.binoc.viewK) * lv.call("binoc")     # 望远镜：画面范围和暗处视野
 	st.nvg = (float(A.nvg.nvgBase) + float(A.nvg.nvgPer) * lv.call("nvg")) if lv.call("nvg") > 0.0 else 0.0
 	st.recon = float(A.recon.recon) * lv.call("recon")
 	st.banner = float(A.banner.banner) * lv.call("banner")
@@ -146,18 +147,7 @@ static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void:
 
 static func start_dash(w: SimWorld, h: SimHamster) -> void:
 	var HR: Dictionary = w.R.hamster
-	var dx := h.inp.mx
-	var dy := h.inp.my
-	if Vector2(dx, dy).length() < 0.2:
-		dx = cos(h.aim)
-		dy = sin(h.aim)
-	var l := maxf(0.0001, Vector2(dx, dy).length())
-	h.rdx = dx / l
-	h.rdy = dy / l
-	h.roll_t = float(HR.rollTime)
-	var P := SimWeapons.params(h)
-	h.dash_cd = float(h.st.dashCd) * float(P.dashCdMul)
-	h.dash_spd = float(P.special.get("dashSpd", 1.0))
+	SimMotion.start_roll(h, HR)
 	h.iframes = maxf(h.iframes, float(HR.rollIframes))
 	h.dash_hit = {}
 	h.iaido_hit = {}
@@ -190,7 +180,7 @@ static func spawn_squad(w: SimWorld, h: SimHamster) -> void:
 	## 天赋“小队”：在最近的兵线上召唤 3 个小兵
 	var best_lane := ""
 	var best_i := 0
-	var bd := 1e18
+	var bd: = 1e+18
 	for lane in w.map.lanes.keys():
 		var path := w.lane_path(h.team, lane)
 		for i in path.size():
@@ -261,6 +251,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 		h.stun_t -= dt
 		inp.fire = false
 		inp.dash = false
+		inp.dash_direction = Vector2.ZERO
 		h.vx *= 0.85
 		h.vy *= 0.85
 		h.x += h.vx * dt
@@ -319,13 +310,10 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 		if h.dash_cd <= 0.0 and h.roll_t <= 0.0:
 			start_dash(w, h)
 		inp.dash = false
-	var spd := float(st.speed) * (float(HR.slowMul) if h.slow_t > 0.0 else 1.0) * SimWeapons.move_mul(h)
-	if h.roll_t > 0.0:
-		h.roll_t -= dt
-		var k := maxf(0.0, h.roll_t / float(HR.rollTime))
-		var rs := float(HR.rollSpeed) * h.dash_spd * (0.5 + 0.5 * k)
-		h.vx = h.rdx * rs
-		h.vy = h.rdy * rs
+		inp.dash_direction = Vector2.ZERO
+	var rolling: = h.roll_t > 0.0
+	SimMotion.velocity(h, HR, dt)
+	if rolling:
 		if float(st.dashDmg) > 0.0:
 			for e: SimEntity in w.hash_range(h.x, h.y, h.r + 30.0):
 				if h.dash_hit.has(e.id) or not w.can_hit(h.team, e) or e.kind == "base" or e.kind == "turret":
@@ -334,18 +322,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 					h.dash_hit[e.id] = true
 					w.deal_dmg(e, float(st.dashDmg) * float(st.dmg), {"team": h.team, "owner": h, "x": h.x, "y": h.y})
 					w.knock(e, e.x - h.x, e.y - h.y, 220.0)
-	else:
-		var acc := float(HR.accelInput) if inp.ml > 0.05 else float(HR.accelIdle)
-		h.vx = SimUtil.damp(h.vx, inp.mx * spd, acc, dt)
-		h.vy = SimUtil.damp(h.vy, inp.my * spd, acc, dt)
-	var ox := h.x
-	var oy := h.y
-	h.x += h.vx * dt
-	h.y += h.vy * dt
-	w.map.resolve_circle(h, h.r)
-	var moved := Vector2(h.x - ox, h.y - oy).length()
-	h.moving = moved > 0.35
-	h.walk += moved * 0.17
+	SimMotion.integrate(w.map, h, dt)
 	# 脚步声（看不见的敌人在附近移动时能听到）
 	if h.moving and h.roll_t <= 0.0:
 		h.step_t -= dt
@@ -381,5 +358,6 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 			var ks: Variant = SimWeapons.special(h, "keepSpin")
 			if not (ks != null and w.t - h.last_shot_t < float(ks)):
 				h.spin = maxf(0.0, h.spin - dt / float(W.get("spinDown", 0.9)))
+	SimSkills.tick(w, h, dt)
 	SimWeaponModes.update_weapon(w, h, dt, can_shoot)
 	h.bloom = maxf(0.0, h.bloom - dt * (float(HR.bloomDecayFiring) if inp.fire else float(HR.bloomDecayIdle)))

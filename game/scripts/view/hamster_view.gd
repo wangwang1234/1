@@ -16,7 +16,7 @@ const ACC := {
 	"armor": [["acc_vest", "spine"]], "scholar": [["acc_glasses", "head"]], "nvg": [["acc_nvg", "head"]], "recon": [["acc_antenna", "head"]],
 	"rage": [["acc_headband", "head"]], "crit": [["acc_clover", "head"]], "vamp": [["acc_fangs", "head"]], "scav": [["acc_bando", "spine"]],
 	"gcd": [["acc_belt", "pelvis"]], "magnet": [["acc_magnet", "spine"]], "chain": [["acc_coilpack", "spine"]], "banner": [["acc_banner", "spine"]],
-	"speed": [["acc_shoe_L", "shin_L"], ["acc_shoe_R", "shin_R"]],
+	"speed": [["acc_shoe_L", "shin_L"], ["acc_shoe_R", "shin_R"]], "binoc": [["acc_spyglass", "head"]],
 }
 ## 换弹音效：新姿势类别沿用三种基础换弹声
 const RELOAD_SND := {"pistol": "pistol", "dual": "pistol", "rifle": "rifle", "heavy": "rifle", "flame": "rifle", "beam": "rifle", "shotgun": "shotgun", "launcher": "shotgun", "melee": "pistol"}
@@ -241,6 +241,12 @@ func _setup_light() -> void:
 	var m := ShaderMaterial.new()
 	m.shader = preload("res://shaders/light_beam.gdshader")
 	m.set_shader_parameter("strength", float(style.beamStrength))
+	var motes: Dictionary = style.get("beamMotes", {})
+	if bool(motes.get("enabled", false)):
+		m.set_shader_parameter("mote_strength", float(motes.strength) * (1.0 if is_local else float(motes.get("otherScale", 0.5))))
+		m.set_shader_parameter("mote_density", float(motes.density))
+		m.set_shader_parameter("mote_size", float(motes.size))
+		m.set_shader_parameter("mote_fill", float(motes.fill))
 	beam.material_override = m
 	beam.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	beam.top_level = true
@@ -368,7 +374,7 @@ static func yaw_for(a: float) -> float:
 var frozen := false
 
 
-func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> void:
+func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool, pose: Dictionary = {}) -> void :
 	# 迷雾：看不见的敌人直接隐藏
 	var want := visible_to_local and (h.alive or _dead)
 	_vis = move_toward(_vis, 1.0 if want else 0.0, delta * 8.0)
@@ -381,12 +387,13 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 	_sync_accessories(h)
 	var x := lerpf(h.px, h.x, alpha) * 0.01
 	var z := lerpf(h.py, h.y, alpha) * 0.01
-	position = Vector3(x, h.z * 0.01, z)
-	var face := h.aim
+	position = Vector3(x, float(pose.get("z", h.z)) * 0.01, z)
+	var aim: = float(pose.get("aim", h.aim))
+	var face: = aim
 	if h.roll_t > 0.0:
 		face = atan2(h.rdy, h.rdx)
 	rotation.y = lerp_angle(rotation.y, yaw_for(face), 1.0 - exp(-30.0 * delta))
-	var vel := Vector3(h.vx, 0, h.vy) * 0.01
+	var vel: = Vector3(float(pose.get("vx", h.vx)), 0, float(pose.get("vy", h.vy))) * 0.01
 	var local_v := vel.rotated(Vector3.UP, -rotation.y)
 	var speed := vel.length()
 	var run := clampf(speed / 2.3, 0.0, 1.2)
@@ -416,12 +423,12 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 	if rig:
 		var acc := (vel - _prev_vel) / maxf(delta, 0.001)
 		rig.accel = acc.rotated(Vector3.UP, -rotation.y)
-		rig.turn_rate = SimUtil.ang_diff(_prev_aim, h.aim) / maxf(delta, 0.001)
+		rig.turn_rate = SimUtil.ang_diff(_prev_aim, aim) / maxf(delta, 0.001)
 		rig.puff = h.puff
 		rig.munch = h.munch_t
 		rig.ear_scale = 1.0 + 0.14 * float(h.ab.get("ears", 0))
 	_prev_vel = vel
-	_prev_aim = h.aim
+	_prev_aim = aim
 	# 状态：死亡 / 胜利
 	if tree:
 		var state := "alive"
@@ -482,12 +489,12 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool) -> 
 	flashlight.visible = h.alive
 	flashlight.spot_range = lr * 1.05
 	flashlight.spot_angle = ang
-	flashlight.global_transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-9.0), yaw_for(h.aim), 0)), global_position + Vector3(0, 0.55, 0))
+	flashlight.global_transform = Transform3D(Basis.from_euler(Vector3(deg_to_rad(-9.0), yaw_for(aim), 0)), global_position + Vector3(0, 0.55, 0))
 	beam.visible = h.alive
 	var bl := lr * 0.62
 	var br := tan(deg_to_rad(ang)) * bl * 0.55
-	var dir := Vector3(cos(h.aim), 0, sin(h.aim))
-	beam.global_transform = Transform3D(Basis(Vector3.UP, yaw_for(h.aim)) * Basis(Vector3.RIGHT, deg_to_rad(90.0)) * Basis.from_scale(Vector3(br, bl, br)), global_position + Vector3(0, 0.36, 0) + dir * bl * 0.5)
+	var dir: = Vector3(cos(aim), 0, sin(aim))
+	beam.global_transform = Transform3D(Basis(Vector3.UP, yaw_for(aim)) * Basis(Vector3.RIGHT, deg_to_rad(90.0)) * Basis.from_scale(Vector3(br, bl, br)), global_position + Vector3(0, 0.36, 0) + dir * bl * 0.5)
 
 
 func on_event(ev: Dictionary) -> void:

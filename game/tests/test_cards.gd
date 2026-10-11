@@ -1,10 +1,12 @@
 extends "res://tests/test_case.gd"
 ## 升级卡规则：三张不重复、第一张是进化、不出满级路线、换武器清零进化、范围限制、换武器概率。
+## 起手手枪（weapons.json 的 noEvo）不出进化卡，第一张固定是换武器（2026-10-11 导演）；其余规则用 AK 测。
 
 
 func test_roll_basic() -> void:
 	var w := make_world("slice", 11, 1, 0)
 	var h := w.hams[0]
+	h.weapon_id = "ak47"
 	for i in 200:
 		h.choices = []
 		SimCards.roll(w, h)
@@ -53,6 +55,7 @@ func test_weapon_swap_resets_evo() -> void:
 func test_swap_probability() -> void:
 	var w := make_world("slice", 14, 1, 0)
 	var h := w.hams[0]
+	h.weapon_id = "ak47"
 	var n := 3000
 	var swaps := 0
 	h.lvl = 2
@@ -89,3 +92,25 @@ func test_label_hides_level_numbers() -> void:
 		h.evo[k] = 0
 	var L2 := SimCards.label(h, {"t": "abil", "id": "strong"})
 	eq(String(L2.badge), "新", "新强化标“新”")
+
+
+func test_pistol_never_offers_evolutions_and_leads_with_weapons() -> void:
+	var w := make_world("slice", 16, 1, 0)
+	var h := w.hams[0]
+	eq(h.weapon_id, "pistol", "前提：起手手枪")
+	var two := 0
+	for i in 500:
+		h.choices = []
+		SimCards.roll(w, h)
+		eq(String(h.choices[0].t), "weap", "拿手枪时第一张固定是换武器")
+		var nweap := 0
+		for c in h.choices:
+			check(c.t != "evo", "手枪不出进化卡")
+			if c.t == "weap":
+				nweap += 1
+				check(c.id != "pistol", "不会换成手枪")
+		if nweap >= 2:
+			two += 1
+		if not failures.is_empty():
+			return
+	check(two > 150, "拿手枪时经常同时给两把枪选（实际 %d / 500）" % two)

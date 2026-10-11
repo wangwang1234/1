@@ -38,6 +38,12 @@ static func difficulty() -> Dictionary: return load_json("difficulty")
 static func rules() -> Dictionary: return load_json("rules")
 
 
+static func active_weapons() -> Array:
+	## 当前开放的武器（rules.json 的 scope.weapons；2026-10-11 精简到 10 把，其余代码和数据保留，加回来改这个列表就行）
+	var all := weapons().keys()
+	return (rule("scope.weapons", all) as Array).filter(func(id): return all.has(id))
+
+
 static func weapon(id: String) -> Dictionary:
 	return weapons().get(id, {})
 

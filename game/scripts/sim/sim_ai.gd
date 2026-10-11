@@ -1,7 +1,8 @@
 class_name SimAI
 extends RefCounted
 ## AI 仓鼠。对应原型 n2.js 的 aiThink / aiTarget / aimAt 与 n2c.js 的 aiWantGadget。
-## AI 遵守同样的视野规则：只在本队可见集合里选目标（贴脸 90 内除外）。
+## AI 遵守同样的视野规则：在本队被照亮的集合里选目标（贴脸 90 内除外）；暗处（视线内但没被照亮，world.seen）的敌人
+## 只在难度的 dimSee 距离内察觉，换到这样的目标后反应更慢（dimReactK）、瞄得更飘（dimAimK）。
 ## 难度（difficulty.json）决定枪法、反应、点射节奏，以及会不会用这些战术：躲子弹、集火残血、不越塔、回家补血、
 ## 捡瓜子 / 奶酪、被围就撤、支援队友、丢失目标后去最后看到的位置找、换弹时后撤。
 
@@ -18,8 +19,14 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 	var RG: Dictionary = A.ranges
 	var near := float(w.R.vision.aiNearSee)
 	var VV: Dictionary = w.vis[h.team]
+	var SS: Dictionary = w.seen[h.team]
+	var dim_see := dim_see_range(w, h)
 	var acc := {"best": null, "bs": 1e9}   # lambda 按值捕获局部变量，用字典承载结果
-	var sees := func(e: SimEntity) -> bool: return VV.has(e.id) or Vector2(e.x - h.x, e.y - h.y).length() < near
+	var sees := func(e: SimEntity) -> bool:
+		if VV.has(e.id):
+			return true
+		var dd := Vector2(e.x - h.x, e.y - h.y).length()
+		return dd < near or (SS.has(e.id) and dd < dim_see + e.r)
 	var consider := func(e: SimEntity, wgt: float, max_d: float) -> void:
 		var d := Vector2(e.x - h.x, e.y - h.y).length() - e.r
 		if d > max_d:
@@ -73,6 +80,17 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 	return best
 
 
+static func dim_see_range(w: SimWorld, h: SimHamster) -> float:
+	return float(prof(w, h).get("dimSee", w.R.ai.dim.see))
+
+
+static func is_dim_target(w: SimWorld, h: SimHamster, tg: SimEntity) -> bool:
+	## 目标是暗处的敌方单位（在视线内但没被照亮）；建筑和宝箱一直算看得见
+	if tg == null or tg is SimStructure and (tg as SimStructure).kind != "sentry" or tg.kind == "crate":
+		return false
+	return tg.team != h.team and not w.vis[h.team].has(tg.id)
+
+
 static func _aim_at(w: SimWorld, h: SimHamster, tg: SimEntity) -> void:
 	var P := prof(w, h)
 	var tx := tg.x
@@ -88,6 +106,8 @@ static func _aim_at(w: SimWorld, h: SimHamster, tg: SimEntity) -> void:
 		ty += tg.vy * tt * lk
 	# 瞄准误差 = 缓慢摆动（像手在晃）+ 每帧抖动，枪法差的 AI 是“晃着打”，不是白噪声
 	var j := float(P.get("aimJitter", w.R.ai.aimJitter))
+	if is_dim_target(w, h, tg):
+		j *= float(P.get("dimAimK", w.R.ai.dim.aimK))     # 暗处看不清，瞄得更飘
 	var sway := sin(w.t * 2.3 + h.id * 1.7) * 0.6 + sin(w.t * 5.1 + h.id) * 0.25
 	h.inp.aim = atan2(ty - h.y, tx - h.x) + j * sway + w.rand(-j, j) * 0.4
 
@@ -104,6 +124,7 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 	inp.dash = false
 	inp.reload = false
 	inp.gadget = false
+	inp.skill = false
 	inp.card = -1
 	inp.mx = 0.0
 	inp.my = 0.0
@@ -135,6 +156,8 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 		ai.last_tid = tg.id
 		var rc: Array = P.get("react", [0.0, 0.0])
 		ai.react_t = w.rand(float(rc[0]), float(rc[1])) * (1.0 if tg is SimHamster else 0.4)
+		if is_dim_target(w, h, tg):
+			ai.react_t *= float(P.get("dimReactK", A.dim.reactK))     # 暗处的目标要多看一会儿才确认
 	ai.react_t -= dt
 	# 记忆：丢失仓鼠目标（躲到墙后 / 走出视野）后去最后看到的位置找
 	if tg is SimHamster:
@@ -180,6 +203,9 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 		_aim_at(w, h, tg)
 		if d < rng_ + tg.r and ai.react_t <= 0.0 and _burst_ok(ai, P, tg, dt):
 			inp.fire = true
+		# 右键武器技能：目标进了技能距离、冷却好了，按难度的道具频率随机放
+		if ai.react_t <= 0.0 and SimSkills.ai_want(w, h, tg, d) and w.rnd() < dt * float(A.get("skillRate", 1.2)) * float(P.get("gadgetK", 1.0)):
+			inp.skill = true
 		if ai.state == "retreat":
 			var b: Vector2 = w.map.base_pos[h.team]
 			gx = b.x
