@@ -1,0 +1,31 @@
+{
+  "manzai_0.3.7_win64.zip": {
+    "bytes": 72271443,
+    "sha256": "99416f87127dd4b42b4f1a3ac5bcdfe77016ff91adcd145f8ea3f391b2789d5c",
+    "zip_crc": "passed",
+    "single_top_folder": "满载而鼠_0.3.7",
+    "entries": 6
+  },
+  "mac_bundle": {
+    "plist_version": "0.3.7",
+    "architectures": [
+      {
+        "architecture": "x86_64",
+        "ad_hoc_signature": true
+      },
+      {
+        "architecture": "arm64",
+        "ad_hoc_signature": true
+      }
+    ],
+    "local_network_usage_description": true,
+    "notarized": false
+  },
+  "manzai_0.3.7_mac.zip": {
+    "bytes": 94895841,
+    "sha256": "6769cb183e3a5979206ab112b23ee065c9c7c25ad72b57dd61293d70493dda04",
+    "zip_crc": "passed",
+    "single_top_folder": "满载而鼠_0.3.7",
+    "entries": 17
+  }
+}
