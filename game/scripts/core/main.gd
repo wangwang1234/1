@@ -22,6 +22,8 @@ var _fade: ColorRect
 var _fps: Label
 var _busy: = false
 var _network_transition: = false
+var _focus_paused := false
+var _window_focused := true
 
 
 func _ready() -> void :
@@ -93,6 +95,7 @@ static func parse_args(list: PackedStringArray) -> Dictionary:
 
 
 func _clear() -> void :
+	_focus_paused = false
 	get_tree().paused = false
 	Audio.set_music_duck(false)
 	for n in [menu, match_view, pause_menu, result]:
@@ -228,6 +231,7 @@ func _on_pause() -> void :
 
 
 func _resume() -> void :
+	_focus_paused = false
 	if pause_menu != null:
 		pause_menu.queue_free()
 		pause_menu = null
@@ -267,5 +271,31 @@ func _process(_delta: float) -> void :
 
 func _notification(what: int) -> void :
 
-	if what == NOTIFICATION_APPLICATION_FOCUS_OUT and match_view != null and not match_view.autoplay and result == null and not args.has("capture") and not args.has("lan-auto"):
+	if what == NOTIFICATION_APPLICATION_FOCUS_OUT:
+		_window_focused = false
+		# The OS may never deliver releases for keys held while switching windows.
+		InputBindings.release_controls()
+		PlayerInput.right_shift_down = false
+		if match_view != null and not match_view.autoplay and result == null and not args.has("capture") and not args.has("lan-auto"):
+			if pause_menu == null:
+				_focus_paused = true
+				match_view.set_paused(true)
+				get_tree().paused = not match_view.networked
+				# Focus notifications traverse the tree with children locked.
+				call_deferred("_pause_after_focus_loss")
+	elif what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		_window_focused = true
+		if not _focus_paused:
+			return
+		# Defer until the click which focused the window has reached Input.
+		call_deferred("_resume_after_focus")
+
+
+func _pause_after_focus_loss() -> void:
+	if _focus_paused and not _window_focused and match_view != null:
 		_on_pause()
+
+
+func _resume_after_focus() -> void:
+	if _focus_paused and _window_focused:
+		_resume()

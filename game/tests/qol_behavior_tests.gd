@@ -32,7 +32,7 @@ func test_action_map_is_idempotent_and_esc_fallback() -> void:
 
 func test_resume_suppresses_held_commands_until_release() -> void:
 	var pin := PlayerInput.new()
-	pin.block_held()
+	pin._blocked = {"fire": true, "pad_dash": true}
 	check(not pin._gate("fire", true), "恢复后按住射击不发射")
 	check(not pin._gate("fire", true), "持续按住仍抑制")
 	check(not pin._gate("fire", false), "松开解除屏蔽")

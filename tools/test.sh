@@ -25,5 +25,8 @@ if check_log "$LOG"; then echo "主菜单冒烟：通过"; else echo "主菜单�
 echo "== 操作设置 / 观战运行时回归 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 res://tests/qol_ui_smoke.tscn >"$LOG" 2>&1 || true
 if check_log "$LOG" && grep -q 'QOL_UI_RECEIPT.*"ok":true' "$LOG"; then echo "设置 / 观战回归：通过"; else echo "设置 / 观战回归：失败"; cat "$LOG"; exit 1; fi
+echo "== 切屏输入恢复 / 武器持握 / 王冠挂载回归 =="
+"$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 res://tests/bugfix_smoke.tscn >"$LOG" 2>&1 || true
+if check_log "$LOG" && grep -q 'BUGFIX_RECEIPT.*"ok":true' "$LOG"; then echo "输入 / 挂载回归：通过"; else cat "$LOG"; exit 1; fi
 rm -f "$LOG"
 echo "全部通过"

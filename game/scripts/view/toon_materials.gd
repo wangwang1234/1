@@ -154,3 +154,15 @@ static func merged_mesh(path: String, outline_px: float = 1.5) -> ArrayMesh:
 	root.free()
 	_mesh_cache[key] = out
 	return out
+
+
+static func find_part(model: Node, part: String) -> Node3D:
+	var exact := model.find_child(part, true, false)
+	if exact != null:
+		return exact as Node3D
+	# Blender adds .001 suffixes when a kit generates multiple assets together.
+	for child in model.find_children(part + "*", "Node3D", true, false):
+		var suffix := String(child.name).trim_prefix(part)
+		if (suffix.begins_with("_") or suffix.begins_with(".")) and suffix.substr(1).is_valid_int():
+			return child as Node3D
+	return null

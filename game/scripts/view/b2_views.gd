@@ -30,6 +30,8 @@ class MobView:
 	var gun: Node3D
 	var crown: Node3D
 	var cape: Node3D
+	var _gun_rest := Vector3.ZERO
+	var _crown_rest := Vector3.ZERO
 	var laser: MeshInstance3D
 	var _vis := 0.0
 	var _t := 0.0
@@ -42,15 +44,21 @@ class MobView:
 		kind = e.kind
 		model = ToonMaterials.instance("res://assets/models/units/mob_%s.glb" % e.kind, 2.6 if e.kind == "boss" else 1.8)
 		add_child(model)
-		body = model.find_child("body", true, false)
-		legs_a = model.find_child("legsA", true, false)
-		legs_b = model.find_child("legsB", true, false)
-		antennae = model.find_child("antennae", true, false)
-		head = model.find_child("head", true, false)
-		tail = model.find_child("tail", true, false)
-		gun = model.find_child("gun", true, false)
-		crown = model.find_child("crown", true, false)
-		cape = model.find_child("cape", true, false)
+		body = ToonMaterials.find_part(model, "body")
+		legs_a = ToonMaterials.find_part(model, "legsA")
+		legs_b = ToonMaterials.find_part(model, "legsB")
+		antennae = ToonMaterials.find_part(model, "antennae")
+		head = ToonMaterials.find_part(model, "head")
+		tail = ToonMaterials.find_part(model, "tail")
+		gun = ToonMaterials.find_part(model, "gun")
+		crown = ToonMaterials.find_part(model, "crown")
+		cape = ToonMaterials.find_part(model, "cape")
+		if gun:
+			_gun_rest = gun.position
+		if crown and head:
+			# Keep the authored placement, then inherit the head's aim motion.
+			crown.reparent(head, true)
+			_crown_rest = crown.position
 		ToonMaterials.set_param(model, "glow", 0.12)
 		if e.kind == "boss":
 			_intro = 0.0
@@ -121,11 +129,11 @@ class MobView:
 				if tail:
 					tail.rotation.y = sin(_t * 3.0 + e.ph) * 0.4
 				if gun:
-					gun.position.z = e.recoil * 0.025 * k
+					gun.position = _gun_rest + Vector3(0, 0, e.recoil * 0.025 * k)
 				if head:
 					head.rotation.x = -0.25 if e.tele > 0.0 else 0.0
 				if crown:
-					crown.position.y = sin(_t * 2.0) * 0.01
+					crown.position = _crown_rest
 				if cape:
 					# 披风：走动时往后飘，站着时随呼吸轻摆
 					cape.rotation.x = lerpf(cape.rotation.x, 0.28 * sp + sin(_t * 2.2 + e.ph) * 0.04, 1.0 - exp(-6.0 * delta))
@@ -193,7 +201,7 @@ class PetView:
 		type = p.type
 		model = ToonMaterials.instance("res://assets/models/units/pet_%s.glb" % p.type, 1.6)
 		add_child(model)
-		wings = model.find_child("wings", true, false)
+		wings = ToonMaterials.find_part(model, "wings")
 		if p.owner != null:
 			ToonMaterials.set_param(model, "team_index", 0 if p.owner.team == "blue" else 1)
 		if p.type == "firefly":
@@ -280,7 +288,7 @@ class SentryView:
 		model = ToonMaterials.instance("res://assets/models/props/gad_sentry.glb", 1.6)
 		add_child(model)
 		ToonMaterials.set_param(model, "team_index", 0 if s.team == "blue" else 1)
-		head = model.find_child("head", true, false)
+		head = ToonMaterials.find_part(model, "head")
 		position = Vector3(s.x * 0.01, 0, s.y * 0.01)
 		light = OmniLight3D.new()
 		light.light_color = B2Views.TEAM_COL[s.team]

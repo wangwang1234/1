@@ -11,6 +11,9 @@ class MinionView:
 	var gun: Node3D
 	var leg_l: Node3D
 	var leg_r: Node3D
+	var _gun_rest := Vector3.ZERO
+	var _leg_l_rest := Vector3.ZERO
+	var _leg_r_rest := Vector3.ZERO
 	var _kick := 0.0
 	var _vis := 0.0
 	var _dying := 0.0
@@ -22,10 +25,16 @@ class MinionView:
 		ToonMaterials.set_param(model, "team_index", 0 if m.team == "blue" else 1)
 		var tc := Color("#4fa3ff") if m.team == "blue" else Color("#ff5b5b")
 		ToonMaterials.set_param(model, "rim_tint", Color(tc.r, tc.g, tc.b, 0.5))
-		body = model.find_child("body", true, false)
-		gun = model.find_child("gun", true, false)
-		leg_l = model.find_child("leg_L", true, false)
-		leg_r = model.find_child("leg_R", true, false)
+		body = ToonMaterials.find_part(model, "body")
+		gun = ToonMaterials.find_part(model, "gun")
+		if gun:
+			_gun_rest = gun.position
+		leg_l = ToonMaterials.find_part(model, "leg_L")
+		leg_r = ToonMaterials.find_part(model, "leg_R")
+		if leg_l:
+			_leg_l_rest = leg_l.position
+		if leg_r:
+			_leg_r_rest = leg_r.position
 
 	func sync(m: SimMinion, alpha: float, delta: float, seen: bool) -> void:
 		_vis = move_toward(_vis, 1.0 if seen else 0.0, delta * 8.0)
@@ -41,14 +50,12 @@ class MinionView:
 			body.rotation.x = -0.12 * sp
 			body.rotation.z = sin(ph) * 0.06 * sp
 		if leg_l:
-			leg_l.position.z = sin(ph) * 0.03 * sp
-			leg_l.position.y = maxf(0.0, cos(ph)) * 0.015 * sp
+			leg_l.position = _leg_l_rest + Vector3(0, maxf(0.0, cos(ph)) * 0.015 * sp, sin(ph) * 0.03 * sp)
 		if leg_r:
-			leg_r.position.z = -sin(ph) * 0.03 * sp
-			leg_r.position.y = maxf(0.0, -cos(ph)) * 0.015 * sp
+			leg_r.position = _leg_r_rest + Vector3(0, maxf(0.0, -cos(ph)) * 0.015 * sp, -sin(ph) * 0.03 * sp)
 		_kick = move_toward(_kick, 0.0, delta * 0.2)
 		if gun:
-			gun.position.z = _kick
+			gun.position = _gun_rest + Vector3(0, 0, _kick)
 		ToonMaterials.set_param(model, "flash", clampf(m.flash / 0.09, 0.0, 1.0) * 0.8)
 
 	func on_fire() -> void:
@@ -86,18 +93,18 @@ class StructureView:
 		model = ToonMaterials.instance(path, 2.5 if s.kind == "base" else 2.0)
 		add_child(model)
 		ToonMaterials.set_param(model, "team_index", 0 if s.team == "blue" else 1)
-		head = model.find_child("head", true, false)
-		flag = model.find_child("flag", true, false)
+		head = ToonMaterials.find_part(model, "head")
+		flag = ToonMaterials.find_part(model, "flag")
 		position = Vector3(s.x * 0.01, 0, s.y * 0.01)
 		_thr = Data.rule("view.structDamage", [0.66, 0.33])
 		_smoke_every = float(Data.rule("view.structSmokeEvery", 0.18))
 		for nm: String in ["dmg1", "dmg2"]:
-			_dmg.append(model.find_child(nm, true, false))
+			_dmg.append(ToonMaterials.find_part(model, nm))
 		for nm: String in ["hdmg1", "hdmg2"]:
-			_hdmg.append(model.find_child(nm, true, false))
-		_wreck = model.find_child("wreck", true, false)
+			_hdmg.append(ToonMaterials.find_part(model, nm))
+		_wreck = ToonMaterials.find_part(model, "wreck")
 		for nm: String in ["house", "base", "head", "pole", "flag"]:
-			var n := model.find_child(nm, true, false)
+			var n := ToonMaterials.find_part(model, nm)
 			if n:
 				_intact.append(n)
 		_set_stage(0)

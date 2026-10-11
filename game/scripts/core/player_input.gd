@@ -27,12 +27,33 @@ func profile() -> String:
 	return "p2" if scheme == "keys2" else "p1"
 
 func block_held() -> void:
-	# Resuming never turns menu clicks/held keys into combat commands.
+	# Only held controls need a release. Never swallow the first fresh press.
+	_blocked.clear()
 	for a in InputBindings.DEFAULTS[profile()]:
-		_blocked[a] = true
+		if InputBindings.down(profile(), a):
+			_blocked[a] = true
 	for a in ["pad_fire", "pad_dash", "pad_reload", "pad_gadget", "pad_card0", "pad_card1", "pad_card2", "pad_move"]:
-		_blocked[a] = true
+		if _pad_down(a):
+			_blocked[a] = true
 	_edge.clear()
+
+func _pad_down(a: String) -> bool:
+	match a:
+		"pad_fire":
+			return Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4 or Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER)
+		"pad_dash":
+			return Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A)
+		"pad_reload", "pad_card0":
+			return Input.is_joy_button_pressed(pad_index, JOY_BUTTON_X)
+		"pad_gadget":
+			return Input.is_joy_button_pressed(pad_index, JOY_BUTTON_LEFT_SHOULDER)
+		"pad_card1":
+			return Input.is_joy_button_pressed(pad_index, JOY_BUTTON_Y)
+		"pad_card2":
+			return Input.is_joy_button_pressed(pad_index, JOY_BUTTON_B)
+		"pad_move":
+			return Vector2(Input.get_joy_axis(pad_index, JOY_AXIS_LEFT_X), Input.get_joy_axis(pad_index, JOY_AXIS_LEFT_Y)).length() > 0.2
+	return false
 
 func _gate(a: String, down: bool) -> bool:
 	if _blocked.has(a):

@@ -112,3 +112,30 @@ static func event_matches(profile: String, action: String, ev: InputEvent) -> bo
 
 static func help(profile: String = "p1") -> String:
 	return "%s/%s/%s/%s 移动 · %s 射击 · %s 翻滚 · %s 换弹 · %s 道具 · %s/%s/%s 选升级" % [caption(profile, "move_up"), caption(profile, "move_left"), caption(profile, "move_down"), caption(profile, "move_right"), caption(profile, "fire"), caption(profile, "dash"), caption(profile, "reload"), caption(profile, "gadget"), caption(profile, "card_1"), caption(profile, "card_2"), caption(profile, "card_3")]
+
+
+static func release_controls() -> void:
+	# Synthesize missing OS releases when a window loses keyboard focus.
+	var released := {}
+	for p in DEFAULTS:
+		for a in DEFAULTS[p]:
+			var k := code(p, a)
+			if released.has(k):
+				continue
+			released[k] = true
+			if k < 0:
+				if not Input.is_mouse_button_pressed(-k):
+					continue
+				var mb := InputEventMouseButton.new()
+				mb.button_index = -k
+				mb.position = Vector2.ZERO
+				Input.parse_input_event(mb)
+			else:
+				if not Input.is_physical_key_pressed(k):
+					continue
+				var key := InputEventKey.new()
+				key.physical_keycode = k
+				key.keycode = k
+				Input.parse_input_event(key)
+	Input.flush_buffered_events()
+	PlayerInput.right_shift_down = false

@@ -22,7 +22,7 @@ func _ready() -> void:
 
 func _bone(sk: Skeleton3D, n: String) -> int:
 	if not _ids.has(n):
-		_ids[n] = sk.find_bone(n)
+		_ids[n] = sk.find_bone(HamsterView.bone_name(sk, n))
 	return _ids[n]
 
 

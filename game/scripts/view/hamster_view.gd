@@ -213,7 +213,18 @@ func _a(nm: String) -> AnimationNodeAnimation:
 func _filter(node: AnimationNode, prefix: String, bones: Array) -> void :
 	node.filter_enabled = true
 	for b in bones:
-		node.set_filter_path(NodePath(prefix + String(b)), true)
+		node.set_filter_path(NodePath(prefix + bone_name(skel, String(b))), true)
+
+
+static func bone_name(sk: Skeleton3D, original: String) -> String:
+	# glTF disambiguates mesh/bone collisions (arm_R -> arm_R_2, etc.).
+	if sk == null or sk.find_bone(original) >= 0:
+		return original
+	for i in sk.get_bone_count():
+		var candidate := sk.get_bone_name(i)
+		if candidate.begins_with(original + "_") and candidate.trim_prefix(original + "_").is_valid_int():
+			return candidate
+	return original
 
 
 func _setup_light() -> void :
