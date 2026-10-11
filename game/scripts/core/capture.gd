@@ -15,6 +15,7 @@ extends Node
 ##   visual     固定站位画面审阅（实际地图；HUD / 无 HUD / 角色近景）
 ##   materials  实际引擎材质审阅：四种皮肤 × 两队、组合装备、家具分件
 ##   identity   画面个性化（2026-10-11）：光岛、画面外巨物投影、手机、彩灯、袜子脚印、光束灰尘（--spots a,b 只拍部分）
+##   fb3        导演反馈第三轮：拿手枪时的升级卡（换武器）、Tab 比分板、大瓜子和金瓜子、望远镜前后视野、满级宠物
 ##   dim        暗处可见（2026-10-11）：同一画面里黑处 / 月光里 / 手电里的敌人对比，带 HUD 和无 HUD；再把手电转向黑处那只
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
@@ -89,6 +90,8 @@ func _run() -> void:
 			await _identity()
 		"dim":
 			await _dim()
+		"fb3":
+			await _fb3()
 		"lighting_walk":
 			await _lighting_walk()
 		"materials":
@@ -1285,3 +1288,71 @@ func _dim() -> void:
 		mv.hud.visible = true
 		await _frames(6)
 		await shot("dim_lit_hud")
+
+
+func _fb3() -> void:
+	var mv := await _start(false, "pistol")
+	var w := mv.world
+	var h := mv.local
+	h.iframes = 9999.0
+	await _wait(1.0)
+	# 1) 拿手枪升级：第一张固定换武器，不出进化
+	SimHamsterLogic.give_xp(w, h, float(h.xp_next - h.xp) + 1.0)
+	await _wait(1.0)
+	await shot("fb3_cards_pistol")
+	h.choices = []
+	h.pending = 0
+	# 2) 打一会儿让比分板有数据，再按住 Tab
+	await _wait(120.0, true)
+	mv.hud.board_force = true
+	await _frames(6)
+	await shot("fb3_board")
+	mv.hud.board_force = false
+	# 3) 大瓜子、普通瓜子、金瓜子
+	var p := _free_near(w, Vector2(1300.0, 1548.0), h.r)
+	h.x = p.x
+	h.y = p.y
+	h.px = p.x
+	h.py = p.y
+	w.items.clear()
+	for i in 8:
+		w.drop_gem(p.x + 260.0 + (i % 4) * 40.0, p.y - 60.0 + (i / 4) * 120.0, 4.0)
+	for i in 2:
+		w.drop_gem(p.x + 200.0, p.y - 80.0 + i * 160.0, 9.0)
+	w.drop_gold_chance(p.x + 330.0, p.y, "boss")
+	h.aim = 0.0
+	h.inp.aim = 0.0
+	await _steps(30)
+	mv.hud.visible = false
+	await _frames(4)
+	await shot("fb3_seeds")
+	w.items.clear()
+	# 4) 望远镜：同一位置，前后对比
+	await _frames(4)
+	await shot("fb3_view_normal")
+	h.ab["binoc"] = 3
+	SimHamsterLogic.calc_stats(h)
+	await _steps(150)
+	await shot("fb3_view_binoc3")
+	# 5) 满级宠物（萤火虫连锁电击、小鸡、刺猬）
+	h.ab.erase("binoc")
+	SimHamsterLogic.calc_stats(h)
+	for t in ["firefly", "chick", "hedgehog"]:
+		var pet := SimMobs.make_pet(w, t, h)
+		pet.lvl = int(Data.rule("pets.maxLevel", 5))
+		h.pet_list.append(pet)
+	for i in 4:
+		var m := w.spawn_minion("red", w.map.lanes.keys()[0])
+		m.x = p.x + 220.0 + (i % 2) * 70.0
+		m.y = p.y - 50.0 + (i / 2) * 100.0
+		m.px = m.x
+		m.py = m.y
+		m.stun = 99.0
+		m.hp = 9999.0
+		m.max_hp = 9999.0
+	h.aim = 0.0
+	h.inp.aim = 0.0
+	await _steps(100)
+	mv.hud.visible = true
+	await _frames(4)
+	await shot("fb3_pets")

@@ -66,7 +66,9 @@ func test_minion_and_mob_drops() -> void:
 	check(g1 - g0 >= 1, "仓鼠打死的小兵掉瓜子（掉了 %d 颗）" % (g1 - g0))
 	var m2 := w.spawn_minion("red", "mid")
 	w.deal_dmg(m2, 9999.0, {"team": "blue", "x": m2.x, "y": m2.y})
-	eq(gems.call(), g1, "小兵互殴（没有仓鼠参与）不掉瓜子")
+	var g2: int = gems.call()
+	var DO: Array = Data.rule("minion.dropOther.gems", [1, 1])
+	check(g2 - g1 >= int(DO[0]) and g2 - g1 <= int(DO[1]), "小兵互殴（没有仓鼠参与）也掉少量瓜子（2026-10-11 导演）：掉了 %d 颗" % (g2 - g1))
 	# 多打几只，奶酪也会掉
 	var cheese := 0
 	for i in 80:

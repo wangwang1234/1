@@ -1225,5 +1225,16 @@
       "reflections": true,
       "msaa": 4
     }
+  },
+  "pickups": {
+    "_doc": "地上拾取物的显示（2026-10-11 导演：瓜子要变大）：gemScale / bigScale 普通 / 大瓜子的显示倍数；金瓜子 goldScale、goldTint 颜色、goldGlow 自发光、goldRim 边缘光；gemGlow / gemRim 普通瓜子的自发光和边缘光（黑暗里也找得到）",
+    "gemScale": 1.7,
+    "bigScale": 1.5,
+    "goldScale": 1.9,
+    "goldTint": "#ffcf3a",
+    "goldGlow": 0.9,
+    "goldRim": 0.4,
+    "gemGlow": 0.3,
+    "gemRim": 0.25
   }
 }

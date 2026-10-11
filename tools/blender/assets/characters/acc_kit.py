@@ -3,7 +3,7 @@
   acc_vest 护甲背心（spine）  acc_glasses 学者眼镜（head）  acc_nvg 夜视镜（head）  acc_antenna 侦察天线（head）
   acc_headband 狂暴头带（head）  acc_clover 幸运草（head）  acc_fangs 吸血尖牙（head）  acc_bando 子弹带（spine）
   acc_belt 道具腰带（pelvis）  acc_magnet 磁铁（spine）  acc_coilpack 电弧背包（spine）  acc_banner 队旗（spine）
-  acc_shoe_L / acc_shoe_R 跑鞋（shin_L / shin_R）
+  acc_shoe_L / acc_shoe_R 跑鞋（shin_L / shin_R）  acc_spyglass 望远镜（head，帽子左侧，2026-10-11）
 坐标：+Y 朝前，+Z 向上（和 chr_hamster 一致）。预览时临时摆一个仓鼠替身（头、身体、帽子、脚）方便检查位置。
 """
 import math
@@ -216,6 +216,27 @@ def shoe(side):
     return _root("acc_shoe_" + side, [shapes.join(P, "shoe_" + side)])
 
 
+def spyglass():
+    """望远镜强化：黄铜单筒望远镜别在帽子左侧，镜筒朝前上方（右侧有四叶草和天线，左侧空着）"""
+    a = Vector((-0.104, -0.05, 0.288))
+    b = Vector((-0.1, 0.085, 0.322))
+    d = (b - a).normalized()
+    L = (b - a).length
+    P = []
+    secs = [(0.0, 0.42, 0.0165, "brass"), (0.4, 0.72, 0.0138, "brass"), (0.7, 1.0, 0.0115, "brass")]
+    for i, (t0, t1, r, col) in enumerate(secs):
+        p0 = a + d * (L * t0)
+        p1 = a + d * (L * t1)
+        P.append(shapes.capsule(f"tube{i}", p0, p1, r, 14, 2, col, style.MAT_METAL))
+        P.append(shapes.capsule(f"ring{i}", p1 - d * 0.004, p1, r + 0.0025, 14, 1, "gun_darker", style.MAT_METAL))
+    P.append(shapes.capsule("eye", a - d * 0.01, a + d * 0.004, 0.012, 12, 1, "gun_darker", style.MAT_METAL))
+    lens = shapes.uv_sphere("lens", b + d * 0.002, (0.0095, 0.0095, 0.0095), 12, 6, "lens", style.MAT_GLASS)
+    P.append(lens)
+    # 一圈系带把它绑在帽子上
+    P.append(shapes.capsule("strap", a + d * (L * 0.3) + Vector((0.006, 0, -0.012)), a + d * (L * 0.3) + Vector((0.016, 0, 0.018)), 0.0045, 8, 2, "wood_dark", style.MAT_TOON))
+    return _root("acc_spyglass", [shapes.join(P, "spyglass")])
+
+
 def _proxy(parent):
     """预览用仓鼠替身（不导出）"""
     import importlib.util, os
@@ -237,7 +258,7 @@ def _proxy(parent):
 
 
 def build(ctx):
-    items = [vest(), glasses(), nvg(), antenna(), headband(), clover(), fangs(), bando(), belt(), magnet(), coilpack(), banner(), shoe("L"), shoe("R")]
+    items = [vest(), glasses(), nvg(), antenna(), headband(), clover(), fangs(), bando(), belt(), magnet(), coilpack(), banner(), shoe("L"), shoe("R"), spyglass()]
     extras = [(r.name, [r]) for r in items]
     holder = {}
 

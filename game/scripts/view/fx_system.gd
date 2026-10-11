@@ -44,6 +44,8 @@ var _mm_shell_red: MultiMesh
 var _mm_tracer: MultiMesh
 var _mm_gem: MultiMesh
 var _mm_gem_big: MultiMesh
+var _mm_gem_gold: MultiMesh
+var _pick: Dictionary = {}       # visual_style.json 的 pickups（瓜子显示大小、金瓜子颜色）
 var _lob_nodes := {}
 var _cheese_nodes := {}
 var _decals: Array = []
@@ -62,6 +64,19 @@ func _ready() -> void:
 	_mm_shell_red = _make_toon_mm(_palette_box("shell_red", Vector3(0.018, 0.018, 0.04)), 60)
 	_mm_gem = _make_toon_mm(ToonMaterials.merged_mesh("res://assets/models/props/prop_seed.glb", 1.0), MAX_GEM)
 	_mm_gem_big = _make_toon_mm(ToonMaterials.merged_mesh("res://assets/models/props/prop_seed_big.glb", 1.0), 80)
+	_pick = VisualStyle.section("pickups")
+	# 普通瓜子也带一点自发光和边缘光：黑暗里也找得到（拾取物是玩法信息）
+	for mmn in [_mm_gem, _mm_gem_big]:
+		for c in get_children():
+			if c is MultiMeshInstance3D and (c as MultiMeshInstance3D).multimesh == mmn:
+				(c as MultiMeshInstance3D).set_instance_shader_parameter("glow", float(_pick.get("gemGlow", 0.3)))
+				(c as MultiMeshInstance3D).set_instance_shader_parameter("rim_boost", float(_pick.get("gemRim", 0.25)))
+	_mm_gem_gold = _make_toon_mm(ToonMaterials.merged_mesh("res://assets/models/props/prop_seed_big.glb", 1.0), 40)
+	# 金瓜子：同一个大瓜子模型，整批染金色并自发光（实例参数作用于整个 MultiMeshInstance）
+	var gold_node := _mm_gem_gold_node()
+	gold_node.set_instance_shader_parameter("tint", Color(String(_pick.get("goldTint", "#ffcf3a"))))
+	gold_node.set_instance_shader_parameter("glow", float(_pick.get("goldGlow", 0.9)))
+	gold_node.set_instance_shader_parameter("rim_boost", float(_pick.get("goldRim", 0.4)))
 	for i in 8:
 		var l := OmniLight3D.new()
 		l.visible = false
@@ -624,14 +639,35 @@ func sync_tracers(bullets: Array, alpha: float, cam: Basis, team_vis: Callable) 
 	_mm_tracer.visible_instance_count = n
 
 
+func _mm_gem_gold_node() -> MultiMeshInstance3D:
+	for c in get_children():
+		if c is MultiMeshInstance3D and (c as MultiMeshInstance3D).multimesh == _mm_gem_gold:
+			return c
+	return null
+
+
 func sync_items(items: Array, alpha: float, t: float) -> void:
 	var n := 0
 	var nb := 0
+	var ng := 0
 	var seen := {}
+	var sc := float(_pick.get("gemScale", 1.0))
+	var scb := float(_pick.get("bigScale", 1.0))
+	var scg := float(_pick.get("goldScale", 1.0))
 	for g: SimItem in items:
 		var pos := Vector3(g.x * 0.01, 0.02 + g.z * 0.01 + 0.015 * sin(t * 4.0 + g.id), g.y * 0.01)
 		if g.type == "gem":
-			var xf := Transform3D(Basis(Vector3.UP, t * 2.0 + g.id).rotated(Vector3.RIGHT, 0.25), pos)
+			var b := Basis(Vector3.UP, t * 2.0 + g.id).rotated(Vector3.RIGHT, 0.25)
+			if g.gold:
+				# 金瓜子：更大、转得快、一跳一跳，偶尔冒金星
+				var bob := 0.05 * absf(sin(t * 5.0 + g.id))
+				if ng < 40:
+					_mm_gem_gold.set_instance_transform(ng, Transform3D(Basis(Vector3.UP, t * 4.0 + g.id).scaled(Vector3.ONE * scg), pos + Vector3(0, bob, 0)))
+					ng += 1
+				if randf() < 0.04:
+					spawn(pos + Vector3(randf_range(-0.08, 0.08), randf_range(0.05, 0.2), randf_range(-0.08, 0.08)), Vector3(0, 0.3, 0), 0.5, 0.05, Color("#ffe27a"), S_STAR, true, 0.0, 0.0)
+				continue
+			var xf := Transform3D(b.scaled(Vector3.ONE * (scb if g.big else sc)), pos)
 			if g.big:
 				if nb < 80:
 					_mm_gem_big.set_instance_transform(nb, xf)
@@ -650,6 +686,7 @@ func sync_items(items: Array, alpha: float, t: float) -> void:
 			cn.rotation.y = t * 1.5
 	_mm_gem.visible_instance_count = n
 	_mm_gem_big.visible_instance_count = nb
+	_mm_gem_gold.visible_instance_count = ng
 	for id in _cheese_nodes.keys():
 		if not seen.has(id):
 			(_cheese_nodes[id] as Node).queue_free()

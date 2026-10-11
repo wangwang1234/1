@@ -31,8 +31,10 @@ static func roll(w: SimWorld, h: SimHamster) -> void:
 		h.talent_pend = 0
 	var out: Array = []
 	var evs: Array = []
+	# 起手武器（weapons.json 的 noEvo，目前是手枪）不出进化卡：升级都留给换武器和强化（2026-10-11 导演）
+	var no_evo := bool(h.weapon().get("noEvo", false))
 	for k in PK:
-		if h.evo_lv(k) < int(Data.evolutions().get("maxLevel", 9)):
+		if not no_evo and h.evo_lv(k) < int(Data.evolutions().get("maxLevel", 9)):
 			evs.append({"t": "evo", "k": k, "id": h.weapon_id})
 	var gens: Array = []
 	var A := Data.abilities()
@@ -68,23 +70,33 @@ static func roll(w: SimWorld, h: SimHamster) -> void:
 			if x.t == c.t and x.id == c.id and x.get("k", "") == c.get("k", ""):
 				return
 		out.append(c)
-	add.call(pick_evo.call())
+	var pick_weap := func() -> Variant:
+		var ws: Array = []
+		for id in _scope_weapons():
+			if id != h.weapon_id:
+				var taken := false
+				for x in out:
+					if x.t == "weap" and x.id == id:
+						taken = true
+				if not taken:
+					ws.append(id)
+		if ws.is_empty():
+			return null
+		return {"t": "weap", "id": ws[int(w.rnd() * ws.size()) % ws.size()]}
+	add.call(pick_weap.call() if no_evo else pick_evo.call())
 	add.call(pick_gen.call([]))
 	var ev_tot := h.evo_total()
 	var WS: Dictionary = C.weaponSwap
 	var pw := float(WS.fresh) if (ev_tot == 0 and h.lvl < int(WS.freshLevel)) else (float(WS.early) if ev_tot < int(WS.earlyEvoTotal) else float(WS.late))
+	if no_evo:
+		pw = float(WS.get("noEvo", pw))     # 拿着手枪时第三张也常是换武器
 	var B: Dictionary = C.branches
 	var r := w.rnd()
 	var gad_on := bool(Data.rule("scope.gadgetCards", true))
 	var pets_on := bool(Data.rule("scope.pets", true))
 	var third: Variant = null
 	if r < pw:
-		var ws: Array = []
-		for id in _scope_weapons():
-			if id != h.weapon_id:
-				ws.append(id)
-		if not ws.is_empty():
-			third = {"t": "weap", "id": ws[int(w.rnd() * ws.size()) % ws.size()]}
+		third = pick_weap.call()
 	elif r < pw + float(B.gadget):
 		if gad_on:
 			if w.rnd() < float(C.gadgetUpgradeChance) and int(h.gadget.lvl) < 4:

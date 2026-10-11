@@ -848,7 +848,9 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 			tg.dead = true
 			xp_near(o, tg, float(R.minion.xp))
 			if killer != null:
-				drop_loot(tg.x, tg.y, R.minion.drop)    # 仓鼠打死的小兵才掉瓜子 / 奶酪（小兵互殴不掉，免得兵线上堆满）
+				drop_loot(tg.x, tg.y, R.minion.drop, "minion")
+			else:
+				drop_loot(tg.x, tg.y, R.minion.dropOther)     # 被小兵 / 炮台打死也掉一点，比仓鼠打死的少
 			emit({"t": "kill", "id": tg.id, "kind": "minion", "x": tg.x, "y": tg.y, "team": tg.team, "killer": killer.id if killer != null else -1})
 		"turret":
 			tg.dead = true
@@ -885,6 +887,7 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 			var n := rand_int(int(g[0]), int(g[1]))
 			for i in n:
 				drop_gem(tg.x, tg.y, float(C.gemXp))
+			drop_gold_chance(tg.x, tg.y, "crateBig" if cr.big else "crateSmall")
 			if rnd() < float(C.cheese):
 				_add_item("cheese", tg.x, tg.y, 0.0)
 			emit({"t": "kill", "id": tg.id, "kind": "crate", "x": tg.x, "y": tg.y, "big": cr.big, "team": "neutral", "killer": killer.id if killer != null else -1})
@@ -1763,19 +1766,32 @@ func _make_crate(spot: Dictionary) -> SimCrate:
 	return c
 
 
-func drop_loot(x: float, y: float, D: Dictionary) -> void:
-	## 小怪掉落：D.gems = [最少, 最多] 颗瓜子，每颗 D.gemXp 经验；D.cheese = 掉一块加血奶酪的概率
+func drop_loot(x: float, y: float, D: Dictionary, gold_key: String = "") -> void:
+	## 小怪掉落：D.gems = [最少, 最多] 颗瓜子，每颗 D.gemXp 经验；D.cheese = 掉一块加血奶酪的概率；gold_key = 金瓜子概率键（items.gold）
 	var g: Array = D.get("gems", [0, 0])
 	for i in rand_int(int(g[0]), int(g[1])):
 		drop_gem(x, y, float(D.gemXp))
 	if rnd() < float(D.get("cheese", 0.0)):
 		_add_item("cheese", x, y, 0.0)
+	if gold_key != "":
+		drop_gold_chance(x, y, gold_key)
 
 
 func drop_gem(x: float, y: float, xp: float) -> void:
 	if items.size() > int(R.items.gemMax):
 		return
 	_add_item("gem", x, y, xp)
+
+
+func drop_gold_chance(x: float, y: float, key: String) -> void:
+	## 金瓜子：items.gold[key] < 1 是概率，>= 1 是固定颗数
+	var G: Dictionary = R.items.gold
+	var v := float(G.get(key, 0.0))
+	var n := int(v) if v >= 1.0 else (1 if rnd() < v else 0)
+	for i in n:
+		var it := _add_item("gem", x, y, float(G.xp))
+		it.gold = true
+		it.big = false
 
 
 func _add_item(type: String, x: float, y: float, xp: float) -> SimItem:
@@ -1846,7 +1862,7 @@ func _upd_items(dt: float) -> void:
 						removed = true
 						SimHamsterLogic.give_xp(self, best, g.xp)
 						best.munch_t = 0.25
-						emit({"t": "gem", "id": best.id, "big": g.big})
+						emit({"t": "gem", "id": best.id, "big": g.big, "gold": g.gold, "xp": g.xp, "x": best.x, "y": best.y})
 			if not removed and g.t > float(I.gemLife):
 				removed = true
 		else:

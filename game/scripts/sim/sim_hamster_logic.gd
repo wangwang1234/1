@@ -37,6 +37,7 @@ static func calc_stats(h: SimHamster) -> void:
 	st.lightK = 1.0 + float(A.torch.lightK) * lv.call("torch")
 	st.wideK = lv.call("wide")
 	st.hearK = 1.0 + float(A.ears.hearK) * lv.call("ears")
+	st.viewK = 1.0 + float(A.binoc.viewK) * lv.call("binoc")     # 望远镜：画面范围和暗处视野
 	st.nvg = (float(A.nvg.nvgBase) + float(A.nvg.nvgPer) * lv.call("nvg")) if lv.call("nvg") > 0.0 else 0.0
 	st.recon = float(A.recon.recon) * lv.call("recon")
 	st.banner = float(A.banner.banner) * lv.call("banner")

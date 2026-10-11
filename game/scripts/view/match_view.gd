@@ -517,6 +517,11 @@ func _process(delta: float) -> void:
 		var aim_pt := fpos + Vector3(cos(focus.aim), 0, sin(focus.aim)) * 3.0
 		if pl.input.device == "kbm" and not autoplay and focus.inp.has_aim_point:
 			aim_pt = Vector3(focus.inp.aim_x * 0.01, 0, focus.inp.aim_y * 0.01)
+		# 望远镜强化：镜头拉高、看得更宽（基础视宽分屏时是 0.7 倍），平滑过渡
+		var vk := float(pl.ham.st.get("viewK", 1.0))
+		if vk > 1.0:     # 没有望远镜时不碰视宽（截图脚本会自己改近景视宽）
+			var base_w := GameCamera.VIEW_WIDTH * (0.7 if split else 1.0)
+			pl.cam.view_width = lerpf(pl.cam.view_width, base_w * vk, 1.0 - exp(-3.0 * delta))
 		pl.cam.update(delta, fpos + cam_focus_offset, aim_pt + cam_focus_offset, focus.alive)
 		if pl == players[0]:
 			# 听者放在角色头顶（不是 10 米高的镜头上），否则所有 3D 音效都像隔得很远；朝向沿用镜头，左右声道和画面一致
@@ -529,6 +534,9 @@ func _process(delta: float) -> void:
 	if players.is_empty():
 		hud.refresh(delta)
 	for pl in players:
+		# 比分板：按住 Tab（键盘玩家）或手柄的 Select / Back
+		var pad_board: bool = (pl.input.scheme == "pad" or pl.input.allow_pad) and Input.is_joy_button_pressed(pl.input.pad_index, JOY_BUTTON_BACK)
+		pl.hud.board = (pl.input.scheme == "kbm" and Input.is_key_pressed(KEY_TAB)) or pad_board
 		pl.hud.refresh(delta)
 
 
@@ -679,6 +687,12 @@ func _dispatch(events: Array) -> void:
 				var h7 := world.ham_by_id(int(ev.id))
 				if is_local_id(h7.id if h7 != null else -1):
 					Audio.play2d("munch", -10.0, 0.15, 0.04)
+				if bool(ev.get("gold", false)) and h7 != null and team_sees(h7):
+					# 金瓜子：金色星星 + 大号经验数字
+					fx.stars(_wpos(h7.x, h7.y, 30), Color("#ffd166"), 14)
+					fx.number(_wpos(h7.x, h7.y, 60), "+%d 经验" % int(ev.xp), Color("#ffd166"), 1.3)
+					if is_local_id(h7.id):
+						Audio.play2d("card_pick", -6.0, 0.0)
 			"cheese":
 				var h8 := world.ham_by_id(int(ev.id))
 				if h8:

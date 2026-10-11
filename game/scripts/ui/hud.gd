@@ -34,6 +34,8 @@ var card_rects: Array = []
 var card_hover := -1
 var paused := false
 var _reload_hint := 0.0
+var board := false          # 按住 Tab（手柄 Select）显示比分板
+var board_force := false    # 截图脚本用：强制显示比分板
 
 
 func setup(m: MatchView, ham: SimHamster = null, camera: GameCamera = null, inp: PlayerInput = null, split_: bool = false) -> void:
@@ -248,6 +250,8 @@ func draw_all(c: Control) -> void:
 	_draw_minimap(c, s)
 	_draw_feed(c, s)
 	_draw_toasts(c, s)
+	if board or board_force:
+		_draw_board(c, s)
 	if h != null:
 		_draw_cards(c, s, h)
 		if not h.alive:
@@ -954,3 +958,61 @@ func _is_word_char(ch: String) -> bool:
 
 func _no_line_start(tk: String) -> bool:
 	return tk in ["，", "。", "；", "：", "、", "！", "？", "）", "」", "”", ",", ".", ";", ":", "%", ")"]
+
+
+func _draw_board(c: Control, s: float) -> void:
+	## 比分板（按住 Tab）：两队每只仓鼠的等级、武器、击败 / 倒下、伤害、状态；队伍总击败和剩余炮台
+	var w := mv.world
+	var cols := [["", 0.0], ["名字", 0.0], ["等级", 0.36], ["武器", 0.46], ["击败", 0.66], ["倒下", 0.74], ["伤害", 0.82], ["状态", 0.92]]
+	var bw := minf(root.size.x - 40.0 * s, 980.0 * s)
+	var row := 34.0 * s
+	var per_team: Dictionary = {"blue": [], "red": []}
+	for hh in w.hams:
+		(per_team[hh.team] as Array).append(hh)
+	for team: String in per_team:
+		(per_team[team] as Array).sort_custom(func(a, b): return a.kills * 1000 + a.lvl > b.kills * 1000 + b.lvl)
+	var n := (per_team.blue as Array).size() + (per_team.red as Array).size()
+	var bh := row * (n + 4.2) + 70.0 * s
+	var r := Rect2((root.size.x - bw) * 0.5, maxf(90.0 * s, (root.size.y - bh) * 0.45), bw, bh)
+	_panel(c, r, 20 * s, 0.92)
+	var x0 := r.position.x + 28.0 * s
+	var iw := bw - 56.0 * s
+	var y := r.position.y + 18.0 * s
+	var mins := int(w.t) / 60
+	_txt(c, Vector2(r.position.x, y + 26 * s), "比分  ·  %d:%02d" % [mins, int(w.t) % 60], 28 * s, UiTheme.GOLD, HORIZONTAL_ALIGNMENT_CENTER, true, bw, 7)
+	y += 52.0 * s
+	for i in range(1, cols.size()):
+		_txt(c, Vector2(x0 + iw * float(cols[i][1]), y + 18 * s), String(cols[i][0]), 17 * s, UiTheme.SUB, HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
+	y += row * 0.9
+	for team: String in ["blue", "red"]:
+		var tc := UiTheme.BLUE if team == "blue" else UiTheme.RED
+		var tk := 0
+		for hh in per_team[team]:
+			tk += hh.kills
+		var towers := 0
+		for st in w.structs:
+			if st.team == team and st.kind == "turret" and not st.dead:
+				towers += 1
+		c.draw_rect(Rect2(x0 - 10 * s, y + 2 * s, iw + 20 * s, row * 0.86), Color(tc.r, tc.g, tc.b, 0.22))
+		_txt(c, Vector2(x0, y + 24 * s), "%s  ·  击败 %d  ·  炮台 %d" % ["蓝队" if team == "blue" else "红队", tk, towers], 20 * s, tc.lightened(0.25), HORIZONTAL_ALIGNMENT_LEFT, true, -1, 5)
+		y += row
+		for hh: SimHamster in per_team[team]:
+			var mine := hh == me
+			if mine:
+				c.draw_rect(Rect2(x0 - 10 * s, y + 2 * s, iw + 20 * s, row - 4 * s), Color(1, 0.82, 0.4, 0.14))
+			var skin_c := Color(String(Data.load_json("skins").get(hh.skin, {}).get("fur", "#f2a54a")))
+			c.draw_circle(Vector2(x0 + 8 * s, y + row * 0.5), 8 * s, skin_c)
+			c.draw_arc(Vector2(x0 + 8 * s, y + row * 0.5), 8 * s, 0, TAU, 16, tc, 2.5 * s, true)
+			var fc := UiTheme.GOLD if mine else (UiTheme.CREAM if hh.ctl == "player" else Color(0.86, 0.82, 0.9))
+			var nm := hh.name + ("（你）" if mine and hh.name != "你" else "")
+			var W: Dictionary = Data.weapons().get(hh.weapon_id, {})
+			var stat := "存活" if hh.alive else "%d 秒" % ceili(hh.respawn_t)
+			var vals := [nm, "Lv%d" % hh.lvl, String(W.get("name", hh.weapon_id)), str(hh.kills), str(hh.deaths), "%.1fk" % (hh.dmg_dealt / 1000.0) if hh.dmg_dealt >= 1000.0 else str(int(hh.dmg_dealt)), stat]
+			for i in vals.size():
+				var col := fc
+				if i == vals.size() - 1 and not hh.alive:
+					col = Color("#ff8a7a")
+				var cx := x0 + 26 * s if i == 0 else x0 + iw * float(cols[i + 1][1])
+				_txt(c, Vector2(cx, y + 23 * s), String(vals[i]), 19 * s, col, HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
+			y += row
+		y += row * 0.3

@@ -16,7 +16,7 @@ const ACC := {
 	"armor": [["acc_vest", "spine"]], "scholar": [["acc_glasses", "head"]], "nvg": [["acc_nvg", "head"]], "recon": [["acc_antenna", "head"]],
 	"rage": [["acc_headband", "head"]], "crit": [["acc_clover", "head"]], "vamp": [["acc_fangs", "head"]], "scav": [["acc_bando", "spine"]],
 	"gcd": [["acc_belt", "pelvis"]], "magnet": [["acc_magnet", "spine"]], "chain": [["acc_coilpack", "spine"]], "banner": [["acc_banner", "spine"]],
-	"speed": [["acc_shoe_L", "shin_L"], ["acc_shoe_R", "shin_R"]],
+	"speed": [["acc_shoe_L", "shin_L"], ["acc_shoe_R", "shin_R"]], "binoc": [["acc_spyglass", "head"]],
 }
 ## 换弹音效：新姿势类别沿用三种基础换弹声
 const RELOAD_SND := {"pistol": "pistol", "dual": "pistol", "rifle": "rifle", "heavy": "rifle", "flame": "rifle", "beam": "rifle", "shotgun": "shotgun", "launcher": "shotgun", "melee": "pistol"}

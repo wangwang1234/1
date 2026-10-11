@@ -1,5 +1,5 @@
 """全套图标（ART_BIBLE 第 9 节：从 3D 模型直接渲染，统一 3/4 视角、带描边、透明底）。不导出模型，只出 PNG：
-  game/assets/icons/gad_<道具>.png（13）、pet_<宠物>.png（3）、abl_<强化>.png（22）、tal_<天赋>.png（12）、
+  game/assets/icons/gad_<道具>.png（13）、pet_<宠物>.png（3）、abl_<强化>.png（23）、tal_<天赋>.png（12）、
   evo_<配件类>_<a|b|c>.png（8 类 × 3 路线色 = 24；54 条进化路线按 evolutions.json 的 attachmentType 对应到这些图）。
 武器图标 wpn_<武器>.png 由各武器脚本自己渲染（weapon_kit.previews）。
 道具、宠物、配件、强化挂件直接复用对应资产脚本里的造型函数；没有模型的强化和天赋在这里做小徽记。
@@ -350,9 +350,9 @@ def build(ctx):
         "strong": em_dumbbell(), "armor": ck.vest(), "regen": em_regen(), "vamp": ck.fangs(), "speed": ck.shoe("R"), "dash": em_roll(),
         "magnet": ck.magnet(), "torch": ak.torch(True, False), "wide": em_lens(), "ears": em_ear(), "nvg": ck.nvg(), "recon": ck.antenna(),
         "rage": ck.headband(), "crit": ck.clover(), "rate": ak.gold_ring(), "frost": em_ice(), "chain": em_bolt("rail_cyan"), "scholar": ck.glasses(),
-        "scav": ck.bando(), "gcd": ck.belt(), "aura": em_aura(), "banner": ck.banner(),
+        "scav": ck.bando(), "gcd": ck.belt(), "aura": em_aura(), "banner": ck.banner(), "binoc": ck.spyglass(),
     }
-    yaw = {"speed": deg(-50), "torch": deg(-60), "rate": deg(-60), "nvg": deg(-30), "glasses": 0.0}
+    yaw = {"speed": deg(-50), "torch": deg(-60), "rate": deg(-60), "nvg": deg(-30), "glasses": 0.0, "binoc": deg(90)}
     for k, o in abl.items():
         add("abl_" + k, o, yaw=yaw.get(k, 0.0))
     tal = {

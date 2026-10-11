@@ -1,6 +1,7 @@
 {
  "pistol": {
   "name": "手枪",
+  "noEvo": true,
   "rate": 4.2,
   "dmg": 15,
   "spd": 1150,

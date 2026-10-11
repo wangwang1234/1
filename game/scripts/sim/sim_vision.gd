@@ -141,7 +141,7 @@ static func _dim_seen(w: SimWorld, team: String, VS: Dictionary) -> Dictionary:
 		for h in eyes:
 			var dx := e.x - h.x
 			var dy := e.y - h.y
-			var lim := rr + e.r
+			var lim := rr * float(h.st.get("viewK", 1.0)) + e.r
 			if dx * dx + dy * dy > lim * lim:
 				continue
 			if w.map.has_los(h.x, h.y, e.x, e.y) and not SimGadgets.smoke_blocks(w, h.x, h.y, e.x, e.y):
