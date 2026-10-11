@@ -48,6 +48,7 @@ var feed: Array = []             # 击杀播报 {text, color, t}
 var crate_spots: Array = []      # {x, y, big, resp, cur}
 var entities := {}               # id -> SimEntity
 var vis := {"blue": {}, "red": {}}
+var seen := {"blue": {}, "red": {}}     # 视线内（含暗处）的敌人，见 SimVision
 var vis_t := 0.0
 var spawn_q: Array = []
 var wave_next := 15.0
@@ -95,6 +96,7 @@ func setup(cfg: Dictionary) -> void:
 	boom = {"x": 0.0, "y": 0.0, "t": 0.0}
 	entities.clear()
 	vis = {"blue": {}, "red": {}}
+	seen = {"blue": {}, "red": {}}
 	spawn_q.clear()
 	wave_next = float(Data.progression().get("firstWave", 15))
 	over = false
@@ -553,14 +555,14 @@ func hash_range(x: float, y: float, r: float) -> Array:
 	var x1 := floori((x + r) / HC)
 	var y0 := floori((y - r) / HC)
 	var y1 := floori((y + r) / HC)
-	var seen := {}
+	var dedup := {}
 	var out: Array = []
 	for cx in range(x0, x1 + 1):
 		for cy in range(y0, y1 + 1):
 			for e in _hash.get(cx * 4096 + cy, []):
-				if seen.has(e.id):
+				if dedup.has(e.id):
 					continue
-				seen[e.id] = true
+				dedup[e.id] = true
 				out.append(e)
 	return out
 
@@ -633,6 +635,11 @@ func rail_candidates() -> Array:
 
 func is_visible_to(team: String, e: SimEntity) -> bool:
 	return e.team == team or vis[team].has(e.id)
+
+
+func is_seen_by(team: String, e: SimEntity) -> bool:
+	## 在视线内（被照亮或在暗处）：表现层会画出来
+	return e.team == team or seen[team].has(e.id)
 
 
 func ham_by_id(id: int) -> SimHamster:

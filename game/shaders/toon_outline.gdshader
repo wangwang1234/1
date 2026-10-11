@@ -15,6 +15,7 @@ instance uniform int team_index : instance_index(1) = 0;
 instance uniform int path_index : instance_index(2) = 0;
 instance uniform float dissolve : instance_index(7) = 0.0;
 instance uniform float outline_scale : instance_index(9) = 1.0;
+instance uniform float lit_k : instance_index(10) = 1.0;     // 暗处的敌人描边跟着变暗（描边不受光，否则黑暗里会剩一圈亮线）
 
 varying vec2 v_uv;
 
@@ -41,5 +42,5 @@ void fragment() {
 	if (kind == 8) { uv.x += float(path_index) / 16.0; }
 	if (dissolve > 0.0) { discard; }
 	vec3 c = texture(palette, uv).rgb;
-	ALBEDO = c * lightness * line_tint;
+	ALBEDO = c * lightness * line_tint * lit_k;
 }

@@ -1,0 +1,8 @@
+
+CPU：Intel(R) Xeon(R) Processor @ 2.10GHz，4 线程
+slice 3 对 3，120 秒：平均 0.72 ms/步，99% 1.70 ms，99.9% 2.96 ms，最大 6.55 ms，超过 8 ms 的步 0 个，流场 61 次
+full 5 对 5，300 秒：平均 2.31 ms/步，99% 6.29 ms，99.9% 9.32 ms，最大 13.77 ms，超过 8 ms 的步 46 个，流场 830 次
+WARNING: 33 ObjectDB instances were leaked at exit (run with `--verbose` for details).
+   at: cleanup (core/object/object.cpp:2536)
+ERROR: 3 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:822)

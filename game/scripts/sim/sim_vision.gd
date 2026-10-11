@@ -1,7 +1,10 @@
 class_name SimVision
 extends RefCounted
 ## 黑暗视野（全队共享）。对应原型 n2c.js 的 computeVis / litBy。
-## 结果写入 world.vis[team]：id -> true。表现层对不在集合里的敌人直接隐藏，AI 也只在可见集合里选目标。
+## 两个集合（2026-10-11 导演改黑暗思路）：
+##   world.vis[team]：被照亮 / 被发现——有血条名字、上小地图、AI 正常交战、追踪弹会追。
+##   world.seen[team]：在视线内（本队任一仓鼠 rules.vision.dim.range 以内，没被墙 / 掩体 / 烟雾挡住）或已被照亮——表现层照常画出来，
+##   没被照亮就只靠场景光（很暗）；辅助瞄准会吸附；AI 只在更短的距离内、更迟钝地察觉（见 SimAI）。隐身中的仓鼠和地雷不进 seen。
 
 
 static func _lit_by(w: SimWorld, lights: Array, e: SimEntity) -> bool:
@@ -104,3 +107,44 @@ static func compute(w: SimWorld) -> void:
 				if _lit_by(w, L, probe):
 					VS["mine_%d" % int(m.id)] = true
 		w.vis[team] = VS
+		w.seen[team] = _dim_seen(w, team, VS)
+
+
+static func _dim_seen(w: SimWorld, team: String, VS: Dictionary) -> Dictionary:
+	var out := VS.duplicate()
+	var rr := float(w.R.vision.dim.range)
+	var eyes: Array[SimHamster] = []
+	for h in w.hams:
+		if h.alive and h.team == team:
+			eyes.append(h)
+	if eyes.is_empty():
+		return out
+	var cands: Array[SimEntity] = []
+	for h in w.hams:
+		if h.alive and h.team != team and (h.invis_t <= 0.0 or h.reveal_t > 0.0):
+			cands.append(h)
+	for m in w.minions:
+		if not m.dead and m.team != team:
+			cands.append(m)
+	for e in w.mobs:
+		if not e.dead:
+			cands.append(e)
+	for d in w.decoys:
+		if not d.dead and d.team != team:
+			cands.append(d)
+	for s in w.structs:
+		if not s.dead and s.kind == "sentry" and s.team != team:
+			cands.append(s)
+	for e in cands:
+		if out.has(e.id):
+			continue
+		for h in eyes:
+			var dx := e.x - h.x
+			var dy := e.y - h.y
+			var lim := rr + e.r
+			if dx * dx + dy * dy > lim * lim:
+				continue
+			if w.map.has_los(h.x, h.y, e.x, e.y) and not SimGadgets.smoke_blocks(w, h.x, h.y, e.x, e.y):
+				out[e.id] = true
+				break
+	return out

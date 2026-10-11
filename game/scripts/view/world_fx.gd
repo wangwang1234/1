@@ -273,6 +273,7 @@ func _sync_entities(w: SimWorld, alpha: float, delta: float) -> void:
 		var vis := mk != 0
 		mvw.sync(e, alpha, delta, vis)
 		MatchView.apply_mask(mvw, mk)
+		MatchView.apply_lit(mvw, mv.reveal_mask(e) != 0, delta)
 		if vis and e.burn_t > 0.0 and _rng.randf() < 0.45:
 			fx.burn(w3(e.x, e.y, 10))
 		if vis and e.stun > 0.0 and _rng.randf() < delta * 8.0:
@@ -293,6 +294,7 @@ func _sync_entities(w: SimWorld, alpha: float, delta: float) -> void:
 		var pmk := mv.vis_mask(p.owner) if p.owner != null else 0
 		(_pet_views[p.id] as B2Views.PetView).sync(p, alpha, delta, pmk != 0)
 		MatchView.apply_mask(_pet_views[p.id], pmk)
+		MatchView.apply_lit(_pet_views[p.id], p.owner == null or mv.reveal_mask(p.owner) != 0, delta)
 	for id in _pet_views.keys():
 		if not seen.has(id):
 			(_pet_views[id] as Node).queue_free()
@@ -309,6 +311,7 @@ func _sync_entities(w: SimWorld, alpha: float, delta: float) -> void:
 		var dmk := mv.vis_mask(d)
 		(_decoy_views[d.id] as B2Views.DecoyView).sync(d, delta, dmk != 0)
 		MatchView.apply_mask(_decoy_views[d.id], dmk)
+		MatchView.apply_lit(_decoy_views[d.id], mv.reveal_mask(d) != 0, delta)
 	for id in _decoy_views.keys():
 		if not seen.has(id):
 			(_decoy_views[id] as Node).queue_free()
@@ -327,6 +330,7 @@ func _sync_entities(w: SimWorld, alpha: float, delta: float) -> void:
 		var smk := mv.vis_mask(s)
 		(_sentry_views[s.id] as B2Views.SentryView).sync(s, delta, smk != 0)
 		MatchView.apply_mask(_sentry_views[s.id], smk)
+		MatchView.apply_lit(_sentry_views[s.id], mv.reveal_mask(s) != 0, delta)
 	for id in _sentry_views.keys():
 		if not seen.has(id):
 			(_sentry_views[id] as Node).queue_free()

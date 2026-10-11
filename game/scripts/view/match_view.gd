@@ -238,7 +238,19 @@ func hud_of(id: int) -> Hud:
 
 
 func vis_mask(e: SimEntity) -> int:
-	## 这个单位对哪些本地玩家的队伍可见（渲染层位）
+	## 这个单位要在哪些本地玩家的画面里画出来（渲染层位）：在视线内就画（world.seen，含没被照亮的暗处），见 SimVision
+	if players.is_empty():
+		return 2 | 4
+	var m := 0
+	for pl in players:
+		var bit := int(TEAM_BIT.get(pl.team, 2))
+		if e.team == pl.team or world.seen[pl.team].has(e.id):
+			m |= bit
+	return m
+
+
+func reveal_mask(e: SimEntity) -> int:
+	## 被照亮 / 被发现（world.vis）：有血条名字、上小地图、保留边缘光和自身亮度
 	if players.is_empty():
 		return 2 | 4
 	var m := 0
@@ -247,6 +259,19 @@ func vis_mask(e: SimEntity) -> int:
 		if e.team == pl.team or world.vis[pl.team].has(e.id):
 			m |= bit
 	return m
+
+
+static func apply_lit(n: Node, lit: bool, delta: float) -> void:
+	## 暗处的敌人只靠场景光：边缘光、自身亮度、描边按 lit_k 淡掉（约 0.15 秒过渡）；只在变化时写参数
+	if n == null:
+		return
+	var cur := float(n.get_meta("lit_k", -1.0))
+	var target := 1.0 if lit else 0.0
+	if cur == target:
+		return
+	var v := target if cur < 0.0 else move_toward(cur, target, delta * 7.0)
+	n.set_meta("lit_k", v)
+	ToonMaterials.set_param(n, "lit_k", v)
 
 
 static func apply_mask(n: Node, mask: int) -> void:
@@ -282,8 +307,16 @@ func _make_ham_view(h: SimHamster) -> void:
 
 
 func team_sees(e: SimEntity) -> bool:
+	## 画面里看得见（在视线内，含暗处）：特效、音效、伤害数字跟着它
 	if players.size() > 1:
 		return vis_mask(e) != 0
+	return e.team == local_team or world.seen[local_team].has(e.id)
+
+
+func team_reveals(e: SimEntity) -> bool:
+	## 被照亮 / 被发现：血条、名字、小地图跟着它
+	if players.size() > 1:
+		return reveal_mask(e) != 0
 	return e.team == local_team or world.vis[local_team].has(e.id)
 
 
@@ -397,6 +430,7 @@ func _process(delta: float) -> void:
 		var hm := vis_mask(h)
 		hvw.sync(h, alpha, delta, hm != 0)
 		apply_mask(hvw, hm)
+		apply_lit(hvw, reveal_mask(h) != 0, delta)
 		if hvw.visible and h.alive:
 			var hp := Vector3(h.x * 0.01, h.z * 0.01, h.y * 0.01)
 			if h.burn_t > 0.0 and randf() < 0.45:
@@ -430,6 +464,7 @@ func _process(delta: float) -> void:
 		var mm := vis_mask(m)
 		(minion_views[m.id] as UnitViews.MinionView).sync(m, alpha, delta, mm != 0)
 		apply_mask(minion_views[m.id], mm)
+		apply_lit(minion_views[m.id], reveal_mask(m) != 0, delta)
 	for m in world.minions:
 		if m.stun > 0.0 and minion_views.has(m.id) and (minion_views[m.id] as Node3D).visible and randf() < delta * 6.0:
 			fx.spawn(Vector3(m.x * 0.01, 0.3, m.y * 0.01), Vector3(0, 0.2, 0), 0.4, 0.05, Color("#ffd166"), FxSystem.S_STAR, true, 0.0, 0.0)

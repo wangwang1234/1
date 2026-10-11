@@ -40,6 +40,8 @@ instance uniform float rim_boost : instance_index(5) = 0.0;
 instance uniform vec4 tint : instance_index(6) = vec4(1.0, 1.0, 1.0, 1.0);
 instance uniform float dissolve : instance_index(7) = 0.0;
 instance uniform vec4 rim_tint : instance_index(8) = vec4(0.0, 0.0, 0.0, 0.0);
+// 1 = 被照亮 / 自己人（边缘光、自身亮度照常）；0 = 暗处的敌人（只靠场景光）。index 10 和描边着色器共用
+instance uniform float lit_k : instance_index(10) = 1.0;
 
 float hash(vec2 p) {
 	return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
@@ -111,12 +113,12 @@ void fragment() {
 	else if (kind == 4 || kind == 6) { e *= 0.9; }
 	else if (kind == 8) { e *= glow * 3.0; }
 	else { e *= 0.8; }
-	vec3 em = emi * e + col * glow * (kind == 8 ? 0.0 : 0.6);
+	vec3 em = emi * e + col * glow * (kind == 8 ? 0.0 : 0.6) * lit_k;
 	// 边缘光：保证黑暗里也能看清轮廓
 	float fres = pow(1.0 - clamp(dot(NORMAL, VIEW), 0.0, 1.0), rim_power);
 	float rim = smoothstep(0.12, 0.85, fres);
 	vec3 rc = mix(rim_color, rim_tint.rgb, rim_tint.a);
-	em += rc * rim * (rim_strength + rim_boost) * (0.35 + 0.65 * base);
+	em += rc * rim * (rim_strength + rim_boost) * (0.35 + 0.65 * base) * lit_k;
 	em += vec3(1.0) * flash * 0.6;
 	EMISSION = em;
 	// Fine grain affects orientation and roughness as well as albedo.

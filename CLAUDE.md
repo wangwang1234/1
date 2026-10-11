@@ -54,7 +54,7 @@
 - 生成图标：`tools/assets.sh icon_kit`（道具 / 宠物 / 强化 / 天赋 / 进化配件，出 PNG 到 `game/assets/icons/`）
 - 改了调色板 / 模型 / 音效后让 Godot 重新导入：`godot --headless --path game --import`
 - 截图（窗口模式；无显示器时自动套 xvfb-run）：`tools/capture.sh <场景> <输出目录> [分辨率] [参数]`
-  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `visual` `identity` `fb1` `fb2` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
+  - 场景：`menu` `style` `gameplay` `cards` `loadout` `lineup` `screens` `codex` `arsenal` `b2world` `b3map` `visual` `identity` `dim` `fb1` `fb2` `ui2` `duo` `perf`，说明见 `game/scripts/core/capture.gd` 开头
   - `visual`：完整地图固定种子与站位的书房、厨房、客厅和角色近景；带 HUD / 无 HUD 两版。例：`tools/capture.sh visual review/visual 1600x900 --seed 11`；可用 `--zones study,kitchen` 只拍部分。
   - `b3map`：七个美术区域、建筑破损阶段、新特效、整张地图俯瞰（`--parts zones,structs,fx,overview`，`--zones kitchen,fridge` 只拍部分区域）
   - 例：`tools/capture.sh style review/x 1920x1080 --n 6 --from 30 --every 5`
@@ -84,6 +84,8 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-11 黑暗系统改思路（导演定的：视线内才显示 / AI 能察觉但更迟钝 / 辅助瞄准吸附但不上小地图 / 只靠场景光；审阅包 `review/dark_vision/`，汇报 `review/dark_vision/REPORT.md`）：sim 新增 `world.seen`（视线内含暗处，`rules.json` 的 `vision.dim.range` = 780），`world.vis` 仍是“被照亮”（血条名字、小地图、追踪弹）。表现层 `vis_mask` / `team_sees` 改成按 seen 渲染，`reveal_mask` / `team_reveals` 管血条和边缘光；着色器实例参数 `lit_k`（index 10，和描边共用）把暗处敌人的边缘光、自身亮度、描边关掉。AI 暗处感知在 `difficulty.json` 的 dimSee / dimReactK / dimAimK。GDD 第 12 节已改。
+  - 顺手修了击杀连锁闪电的无限递归（`SimWeapons._in_kill_chain`）。
 - 2026-10-11 画面个性化（导演同意的第 1、3 条：色彩光影找回个性 + 尺度感；审阅包 `review/visual_identity/`，汇报 `review/visual_identity/REPORT.md`）：全局分离色调调色（`visual_style.json` 的 `grade`）、光岛 + 投影贴图（`lightIslands`）、地面贴花（`floorDecals`）、地毯绒毛、手电光束灰尘（`character.beamMotes`）。规则写进了 ART_BIBLE 4、4.1 节。
   - 坑：Godot 4.7 的聚光灯投影贴图（light_projector）要开阴影才生效，带投影贴图的灯所有画质档都开阴影。
   - 坑：负缩放（镜像）的贴花会被当成背面、不受光；要镜像就在图集里画一格镜像版。

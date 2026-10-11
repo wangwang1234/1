@@ -15,6 +15,7 @@ extends Node
 ##   visual     固定站位画面审阅（实际地图；HUD / 无 HUD / 角色近景）
 ##   materials  实际引擎材质审阅：四种皮肤 × 两队、组合装备、家具分件
 ##   identity   画面个性化（2026-10-11）：光岛、画面外巨物投影、手机、彩灯、袜子脚印、光束灰尘（--spots a,b 只拍部分）
+##   dim        暗处可见（2026-10-11）：同一画面里黑处 / 月光里 / 手电里的敌人对比，带 HUD 和无 HUD；再把手电转向黑处那只
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
 ##   ui2        批次 2：开局大厅（单人 / 双人）、设置三页
 ##   duo        批次 2：本地双人分屏 AI 对局（--n 张，--every 秒）
@@ -86,6 +87,8 @@ func _run() -> void:
 			await _visual_review()
 		"identity":
 			await _identity()
+		"dim":
+			await _dim()
 		"lighting_walk":
 			await _lighting_walk()
 		"materials":
@@ -1197,3 +1200,88 @@ func _identity() -> void:
 		await _frames(6)
 		await shot("identity_" + String(sp[0]))
 	mv.cam.view_width = GameCamera.VIEW_WIDTH
+
+
+func _free_near(w: SimWorld, p: Vector2, r: float) -> Vector2:
+	for ring in 16:
+		for side in 16:
+			var q := p + Vector2.RIGHT.rotated(float(side) * TAU / 16.0) * float(ring) * 20.0
+			if not w.map.overlaps_solid(q.x, q.y, r + 6.0):
+				return q
+	return p
+
+
+func _dim() -> void:
+	## 暗处可见审阅：玩家手电朝东；红队三只站在 ①手电里 ②手机屏幕光旁 ③完全黑的地方
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.inp.mx = 0.0
+	h.inp.my = 0.0
+	h.inp.fire = false
+	h.iframes = 9999.0
+	for e in w.mobs:
+		e.dead = true
+	for m in w.minions:
+		m.dead = true
+	var foes: Array = []
+	for o in w.hams:
+		if o == h:
+			continue
+		if o.team == "red" and foes.size() < 3:
+			foes.append(o)
+			o.ctl = "player"
+			o.ai = null
+			o.inp.mx = 0.0
+			o.inp.my = 0.0
+			o.inp.fire = false
+			o.iframes = 9999.0
+			o.alive = true
+		else:
+			o.alive = false
+			o.respawn_t = 9999.0
+	# 沙发底（附近没有玩法灯）：①手电里 ②掉落手机的屏幕光旁 ③完全黑的地方
+	var me := _free_near(w, Vector2(1850.0, 2700.0), h.r)
+	var spots := [Vector2(2150.0, 2690.0), Vector2(1590.0, 2820.0), Vector2(1900.0, 2470.0)]
+	for i in foes.size():
+		var f: SimHamster = foes[i]
+		var q := _free_near(w, spots[i], f.r)
+		f.x = q.x
+		f.y = q.y
+		f.px = q.x
+		f.py = q.y
+		f.aim = atan2(me.y - q.y, me.x - q.x)
+		f.inp.aim = f.aim
+	h.x = me.x
+	h.y = me.y
+	h.px = me.x
+	h.py = me.y
+	h.inp.aim = 0.0
+	h.aim = 0.0
+	mv.cam.view_width = GameCamera.VIEW_WIDTH
+	if mv.map_view.islands != null:
+		mv.map_view.islands._t = 6.0     # 手机正好亮屏
+	await _steps(30)
+	mv.cam.snap(MapView.w(h.x, h.y))
+	await _frames(10)
+	var info := []
+	for f: SimHamster in foes:
+		info.append({"pos": [f.x, f.y], "revealed": w.vis.blue.has(f.id), "seen": w.seen.blue.has(f.id)})
+	print("[capture] dim 站位：", JSON.stringify(info))
+	mv.hud.visible = true
+	await shot("dim_hud")
+	mv.hud.visible = false
+	await _frames(3)
+	await shot("dim")
+	# 手电转向黑处那一只：它被照亮，出现血条名字
+	if foes.size() >= 3:
+		var dark: SimHamster = foes[2]
+		h.inp.aim = atan2(dark.y - h.y, dark.x - h.x)
+		h.aim = h.inp.aim
+		await _steps(20)
+		mv.hud.visible = true
+		await _frames(6)
+		await shot("dim_lit_hud")

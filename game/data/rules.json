@@ -98,6 +98,7 @@
   "coneMinDist": 24,
   "losMinDist": 30,
   "aiNearSee": 90,
+  "dim": {"_doc": "暗处可见（2026-10-11 导演改黑暗思路）：在本队任一仓鼠 range 以内、视线没被墙 / 掩体 / 烟雾挡住的敌人和怪物照常显示，只是不被照亮就只靠场景光（很暗），没有血条名字、不上小地图；辅助瞄准会吸附。隐身中的仓鼠和地雷不算。被照亮（world.vis）的仍然有血条、上小地图、队友能看到。", "range": 780},
   "boomTime": 0.4
  },
  "hearing": {
@@ -288,6 +289,7 @@
   "gadgetRate": 0.9,
   "gadgetRange": [140, 480],
   "gadgetWant": {"_doc": "AI 什么时候用道具（原型 aiWantGadget）：hp 项是生命比例，其余是到目标的距离", "eshieldHp": 0.7, "medkitHp": 0.5, "beaconSetHp": 0.8, "beaconBackHp": 0.3, "mine": 220, "sentry": 460, "jetpack": [260, 480], "decoy": 520},
+  "dim": {"_doc": "AI 对暗处（在视线内但没被照亮）的敌人：只在 see 距离内察觉，换到这样的目标后反应时间 × reactK、瞄准误差 × aimK；难度里的 dimSee / dimReactK / dimAimK 会覆盖", "see": 340, "reactK": 1.7, "aimK": 1.6},
   "maxRange": 560,
   "keepRatio": 0.62,
   "buildingRatio": 0.85,

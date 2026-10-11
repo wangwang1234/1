@@ -553,7 +553,7 @@ func _draw_score(c: Control, s: float) -> void:
 		_txt(c, Vector2(cx - 200 * s, 122 * s), "加速决战：建筑受到双倍伤害", 16 * s, Color("#ff8a7a"), HORIZONTAL_ALIGNMENT_CENTER, false, 400 * s, 4)
 	# 鼠王血条（交战或看得见时）
 	var b := w.boss
-	if b != null and not b.dead and (b.hp < b.max_hp or mv.team_sees(b)):
+	if b != null and not b.dead and (b.hp < b.max_hp or mv.team_reveals(b)):
 		var bw := 420.0 * s
 		var br2 := Rect2(cx - bw * 0.5, (148.0 if w.sudden else 128.0) * s, bw, 14 * s)
 		_bar(c, br2, b.hp / b.max_hp, Color("#c77dff"), Color(0.05, 0.03, 0.08, 0.85))
@@ -592,7 +592,7 @@ func _draw_minimap(c: Control, s: float) -> void:
 		if st.kind == "base" and st.shielded and not st.dead:
 			c.draw_rect(Rect2(p - Vector2(sz, sz) * 0.5 - Vector2(3, 3) * s, Vector2(sz, sz) + Vector2(6, 6) * s), Color("#9fe8ff"), false, 1.5 * s)
 	for mm in w.minions:
-		if not mm.dead and mv.team_sees(mm):
+		if not mm.dead and mv.team_reveals(mm):
 			var p2: Vector2 = to.call(mm.x, mm.y)
 			c.draw_rect(Rect2(p2 - Vector2(2, 2) * s, Vector2(4, 4) * s), UiTheme.BLUE if mm.team == "blue" else UiTheme.RED)
 	for cr in w.crates:
@@ -681,24 +681,24 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		if st.kind == "base" and st.shielded:
 			_txt(c, Vector2(p.x - 150 * s, p.y - 8 * s), "护盾中：先拆掉中路炮台" if w.mode == "slice" else "护盾中：先拆掉任意一座炮台", 15 * s, Color("#9fe8ff"), HORIZONTAL_ALIGNMENT_CENTER, false, 300 * s, 5)
 	for m in w.minions:
-		if m.dead or m.hp >= m.max_hp or not mv.team_sees(m):
+		if m.dead or m.hp >= m.max_hp or not mv.team_reveals(m):
 			continue
 		var p2: Vector2 = proj.call(m.x, m.y, 0.42)
 		_bar(c, Rect2(p2.x - 16 * s, p2.y, 32 * s, 5 * s), m.hp / m.max_hp, UiTheme.BLUE if m.team == "blue" else UiTheme.RED, Color(0.05, 0.03, 0.08, 0.75))
 	for e in w.mobs:
-		if e.dead or e.kind == "boss" or e.hp >= e.max_hp or not mv.team_sees(e):
+		if e.dead or e.kind == "boss" or e.hp >= e.max_hp or not mv.team_reveals(e):
 			continue
 		var pm: Vector2 = proj.call(e.x, e.y, 0.5 if e.kind == "rat" else 0.3)
 		_bar(c, Rect2(pm.x - 20 * s, pm.y, 40 * s, 5 * s), e.hp / e.max_hp, Color("#ffd166"), Color(0.05, 0.03, 0.08, 0.75))
-	if w.boss != null and not w.boss.dead and mv.team_sees(w.boss):
+	if w.boss != null and not w.boss.dead and mv.team_reveals(w.boss):
 		var pb: Vector2 = proj.call(w.boss.x, w.boss.y, 1.3)
 		_bar(c, Rect2(pb.x - 70 * s, pb.y, 140 * s, 10 * s), w.boss.hp / w.boss.max_hp, Color("#c77dff"), Color(0.05, 0.03, 0.08, 0.85))
 	for st2 in w.structs:
-		if st2.kind == "sentry" and not st2.dead and mv.team_sees(st2) and st2.hp < st2.max_hp:
+		if st2.kind == "sentry" and not st2.dead and mv.team_reveals(st2) and st2.hp < st2.max_hp:
 			var ps: Vector2 = proj.call(st2.x, st2.y, 0.42)
 			_bar(c, Rect2(ps.x - 18 * s, ps.y, 36 * s, 5 * s), st2.hp / st2.max_hp, UiTheme.BLUE if st2.team == "blue" else UiTheme.RED, Color(0.05, 0.03, 0.08, 0.75))
 	for d in w.decoys:
-		if d.dead or not mv.team_sees(d):
+		if d.dead or not mv.team_reveals(d):
 			continue
 		var pd: Vector2 = proj.call(d.x, d.y, 0.62)
 		if d.team == team:
@@ -792,7 +792,7 @@ func _draw_hearing(c: Control, s: float) -> void:
 		if String(n.team) == team:
 			continue
 		var src: SimEntity = w.entities.get(int(n.src))
-		if src != null and (src.team == team or w.vis[team].has(src.id)):
+		if src != null and (src.team == team or w.seen[team].has(src.id)):     # 画面里看得见（含暗处）就不用边缘提示
 			continue
 		var d := Vector2(float(n.x) - me.x, float(n.y) - me.y).length()
 		var max_d := hear if n.type == "step" else 1600.0 * float(n.loud) * float(me.st.get("hearK", 1.0))
