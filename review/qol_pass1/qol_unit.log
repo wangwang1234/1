@@ -1,0 +1,7 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+  ok   test_qol.test_spectator_delay_cycle_target_loss_and_respawn (28 ms)
+  ok   test_qol.test_split_spectators_and_enemy_exclusion (24 ms)
+  ok   test_qol.test_death_source_survives_network_snapshot (53 ms)
+测试：3 项，失败 0 项，用时 0.1 秒
+[audio] 载入 74 种音效

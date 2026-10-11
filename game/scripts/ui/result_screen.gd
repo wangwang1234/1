@@ -9,6 +9,8 @@ var root: Control
 var _t: = 0.0
 var _title: Label
 var networked: = false
+var again_button: Button
+var ready_status: Label
 
 
 func show_result(local_team: String, stats: Dictionary) -> void :
@@ -110,13 +112,21 @@ func show_result(local_team: String, stats: Dictionary) -> void :
 	hb.add_theme_constant_override("separation", 22)
 	v.add_child(hb)
 	var again: = Button.new()
-	again.text = "返回房间再来一局" if networked else "再来一局"
-	if networked and not LanSession.is_host():
-		again.text = "等待房主返回房间"
-		again.disabled = true
-	again.pressed.connect( func() -> void :
+	again_button = again
+	again.text = "准备下一局" if networked else "再来一局"
+	again.pressed.connect(func() -> void:
 		Audio.play2d("ui_click", -6.0)
-		again_requested.emit())
+		if networked:
+			LanSession.set_next_ready(not bool(LanSession.next_ready.get(LanSession.local_id(), false)))
+		else:
+			again_requested.emit())
+	if networked:
+		ready_status = UiTheme.label("", 20, UiTheme.SUB)
+		ready_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		v.add_child(ready_status)
+		LanSession.next_ready_changed.connect(_refresh_next_ready)
+		_refresh_next_ready()
+
 	hb.add_child(again)
 	var menu: = Button.new()
 	menu.text = "返回主菜单"
@@ -138,3 +148,14 @@ func _process(delta: float) -> void :
 	var k: = minf(1.0, _t * 2.2)
 	var s: = 1.0 + 0.6 * pow(1.0 - k, 3.0) + sin(_t * 2.0) * 0.015
 	_title.scale = Vector2(s, s)
+
+
+func _refresh_next_ready() -> void:
+	if not is_instance_valid(again_button) or not is_instance_valid(ready_status):
+		return
+	var prepared: bool = bool(LanSession.next_ready.get(LanSession.local_id(), false))
+	again_button.text = "取消准备" if prepared else "准备下一局"
+	var count := 0
+	for value in LanSession.next_ready.values():
+		count += int(bool(value))
+	ready_status.text = "%d/%d 已准备 · 双方准备后返回原房间，由房主开始下一局" % [count, LanSession.roster.size()]

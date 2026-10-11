@@ -10,6 +10,7 @@ var root: Control
 var box: VBoxContainer
 var _settings: SettingsPanel
 var _t: = 0.0
+var help: Label
 var networked: = false
 
 
@@ -46,8 +47,9 @@ func _ready() -> void :
 	var sep: = HSeparator.new()
 	sep.add_theme_constant_override("separation", 18)
 	box.add_child(sep)
-	var help: = UiTheme.label(
-		"键鼠：WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚\nR 换弹 · Q 道具 · 1 / 2 / 3 选升级卡 · Esc 暂停\n手柄：左摇杆移动 · 右摇杆瞄准 · RT 射击 · A 翻滚\nX 换弹 · LB 道具 · X / Y / B 选升级卡 · Start 暂停", 19, UiTheme.SUB, false, 4)
+	help = UiTheme.label("", 19, UiTheme.SUB, false, 4)
+	_refresh_help()
+	Settings.controls_changed.connect(_refresh_help)
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	box.add_child(help)
 	b.call_deferred("grab_focus")
@@ -89,3 +91,9 @@ func _unhandled_input(ev: InputEvent) -> void :
 	if _settings == null and ev.is_action_pressed("pause"):
 		get_viewport().set_input_as_handled()
 		resume_requested.emit()
+
+
+func _refresh_help() -> void:
+	help.text = InputBindings.help() + "\n" + InputBindings.caption("p1", "pause") + " / Esc 打开菜单 · 死亡后自动观战己方队友\n手柄：左摇杆移动 · 右摇杆瞄准 · RT 射击 · A 翻滚\nX 换弹 · LB 道具 · X / Y / B 选升级 · 十字键左右切换观战"
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.custom_minimum_size.x = 510

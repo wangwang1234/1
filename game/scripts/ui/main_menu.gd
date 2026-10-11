@@ -261,7 +261,8 @@ func _build_ui() -> void :
 	foot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(foot)
 	_foot.append(foot)
-	var help: = UiTheme.label("WASD 移动 · 鼠标瞄准 · 左键射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选升级 · Esc 暂停     手柄也可以玩 · 支持本地双人分屏", 18, UiTheme.SUB, false, 6)
+	var help: = UiTheme.label(InputBindings.help() + " · Esc 菜单 · 支持手柄和本地双人分屏", 18, UiTheme.SUB, false, 6)
+	Settings.controls_changed.connect(func() -> void: help.text = InputBindings.help() + " · Esc 菜单 · 支持手柄和本地双人分屏")
 	help.set_anchors_preset(Control.PRESET_BOTTOM_LEFT)
 	help.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	help.offset_left = 120

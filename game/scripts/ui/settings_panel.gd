@@ -6,6 +6,10 @@ signal closed
 
 var pages := {}
 var tab_btns := {}
+var binding_profile := "p1"
+var binding_buttons := {}
+var binding_status: Label
+var capture_action := ""
 
 
 func _ready() -> void:
@@ -52,26 +56,51 @@ func _ready() -> void:
 	_slider(pa, "总音量", Settings.master_volume, 0.0, 1.0, func(x: float) -> void: Settings.master_volume = x)
 	_slider(pa, "音效", Settings.sfx_volume, 0.0, 1.0, func(x: float) -> void: Settings.sfx_volume = x)
 	_slider(pa, "音乐", Settings.music_volume, 0.0, 1.0, func(x: float) -> void: Settings.music_volume = x)
+	_check(pa, "切到后台静音", Settings.mute_background, func(b: bool) -> void: Settings.mute_background = b)
 	var pc: VBoxContainer = pages.controls
-	var rows := [
-		["移动", "WASD", "左摇杆", "方向键"], ["瞄准", "鼠标", "右摇杆（不推时自动瞄准）", "自动瞄准"],
-		["射击", "鼠标左键", "RT", "回车"], ["翻滚", "空格", "A", "右 Shift"], ["换弹", "R", "X", "/"],
-		["道具", "Q", "LB", "."], ["选升级", "1 / 2 / 3", "X / Y / B", "8 / 9 / 0"], ["暂停", "Esc", "Start", "Esc"],
-	]
-	var grid := GridContainer.new()
-	grid.columns = 4
-	grid.add_theme_constant_override("h_separation", 26)
-	grid.add_theme_constant_override("v_separation", 8)
-	pc.add_child(grid)
-	for hd in ["", "键鼠", "手柄", "2P 方向键"]:
-		grid.add_child(UiTheme.label(hd, 22, UiTheme.GOLD, true, 4))
-	for r in rows:
-		for i in 4:
-			grid.add_child(UiTheme.label(String(r[i]), 20, UiTheme.CREAM if i > 0 else UiTheme.SUB, false, 0))
-	var note := UiTheme.label("按键自定义会在后续版本加入。手柄按任意键即可切换到手柄操作。", 17, UiTheme.SUB, false, 0)
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.custom_minimum_size = Vector2(680, 0)
-	pc.add_child(note)
+	var profiles := _row(pc, "键位配置")
+	var pick := OptionButton.new()
+	pick.add_item("玩家 1（键鼠 / 联机）")
+	pick.add_item("玩家 2（同机键盘）")
+	pick.item_selected.connect(func(i: int) -> void:
+		capture_action = ""
+		binding_profile = "p1" if i == 0 else "p2"
+		_refresh_bindings())
+	profiles.add_child(pick)
+	var reset := Button.new()
+	reset.text = "恢复本组默认"
+	reset.pressed.connect(func() -> void:
+		capture_action = ""
+		InputBindings.restore(binding_profile)
+		Settings.controls_changed.emit()
+		Settings.save_cfg()
+		_refresh_bindings())
+	profiles.add_child(reset)
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(700, 340)
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	pc.add_child(scroll)
+	var rows := VBoxContainer.new()
+	rows.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(rows)
+	for action in InputBindings.LABELS:
+		var row := _row(rows, String(InputBindings.LABELS[action]))
+		var button := Button.new()
+		button.custom_minimum_size.x = 290
+		button.add_theme_font_size_override("font_size", 20)
+		var a: String = action
+		button.pressed.connect(func() -> void:
+			capture_action = a
+			binding_status.text = "请按键盘或鼠标按钮；Esc 取消，Delete 设为默认。"
+			button.text = "等待按键…")
+		binding_buttons[a] = button
+		row.add_child(button)
+	binding_status = UiTheme.label("", 17, UiTheme.SUB)
+	binding_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	binding_status.custom_minimum_size.x = 700
+	pc.add_child(binding_status)
+	_refresh_bindings()
+
 	var ok := Button.new()
 	ok.text = "好的"
 	ok.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
@@ -82,6 +111,8 @@ func _ready() -> void:
 
 
 func _show(key: String) -> void:
+	capture_action = ""
+	_refresh_bindings()
 	for k in pages:
 		(pages[k] as Control).visible = k == key
 	(tab_btns[key] as Button).button_pressed = true
@@ -143,3 +174,47 @@ func _unhandled_input(ev: InputEvent) -> void:
 	if ev.is_action_pressed("pause") or ev.is_action_pressed("ui_cancel"):
 		get_viewport().set_input_as_handled()
 		_close()
+
+
+func _refresh_bindings() -> void:
+	if binding_status == null:
+		return
+	for a in binding_buttons:
+		var button: Button = binding_buttons[a]
+		button.get_parent().visible = InputBindings.DEFAULTS[binding_profile].has(a)
+		button.text = InputBindings.caption(binding_profile, a) if InputBindings.DEFAULTS[binding_profile].has(a) else ""
+	binding_status.text = "点击按键修改；支持鼠标侧键。同机双人请避免两组使用同一个键。手柄保持原有布局。"
+
+func _input(ev: InputEvent) -> void:
+	if capture_action == "":
+		return
+	# Consume the whole capture gesture, including release events.
+	get_viewport().set_input_as_handled()
+	var key := 0
+	if ev is InputEventKey:
+		if not ev.pressed or ev.echo:
+			return
+		if ev.physical_keycode == KEY_ESCAPE:
+			capture_action = ""
+			_refresh_bindings()
+			return
+		key = ev.physical_keycode
+		if key == KEY_DELETE:
+			key = InputBindings.DEFAULTS[binding_profile][capture_action]
+		elif binding_profile == "p2" and key == KEY_SHIFT and ev.location == KEY_LOCATION_LEFT:
+			binding_status.text = "玩家 2 请使用右 Shift，或选择其他按键。"
+			return
+	elif ev is InputEventMouseButton:
+		if not ev.pressed:
+			return
+		key = -ev.button_index
+	else:
+		return
+	var error := InputBindings.assign(binding_profile, capture_action, key)
+	if error != "":
+		binding_status.text = error + "；请选择其他键，或按 Esc 取消。"
+		return
+	capture_action = ""
+	_refresh_bindings()
+	Settings.controls_changed.emit()
+	Settings.save_cfg()

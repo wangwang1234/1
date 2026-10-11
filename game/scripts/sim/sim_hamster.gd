@@ -44,6 +44,7 @@ var idx := 0
 var skin := "gold"
 var alive := true
 var respawn_t := 0.0
+var death_source := "" # Snapshot-backed: survives missed kill events / reconnects.
 var lvl := 1
 var xp := 0.0
 var xp_next := 41

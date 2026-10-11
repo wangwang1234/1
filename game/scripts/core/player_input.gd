@@ -5,13 +5,6 @@ extends RefCounted
 
 
 
-const ACTIONS: = {
-	"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN], "move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
-	"dash": [KEY_SPACE], "reload": [KEY_R], "gadget": [KEY_Q], "card_1": [KEY_1], "card_2": [KEY_2], "card_3": [KEY_3], "pause": [KEY_ESCAPE, KEY_P],
-}
-const KEYS_P1: = {"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "dash": KEY_SPACE, "reload": KEY_R, "gadget": KEY_Q, "card": [KEY_1, KEY_2, KEY_3]}
-const KEYS_P2: = {"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "fire": KEY_ENTER, "dash": KEY_SHIFT, "reload": KEY_SLASH, "gadget": KEY_PERIOD, "card": [KEY_8, KEY_9, KEY_0]}
-
 var scheme: = "kbm"
 var device: = "kbm"
 var pad_index: = 0
@@ -24,28 +17,32 @@ var _edge: = {}
 static var right_shift_down: = false
 
 
-static func ensure_actions() -> void :
-	for a in ACTIONS:
-		if not InputMap.has_action(a):
-			InputMap.add_action(a, 0.25)
-			for k in ACTIONS[a]:
-				var ev: = InputEventKey.new()
-				ev.physical_keycode = k
-				InputMap.action_add_event(a, ev)
-	if not InputMap.has_action("fire"):
-		InputMap.add_action("fire", 0.25)
-		var mb: = InputEventMouseButton.new()
-		mb.button_index = MOUSE_BUTTON_LEFT
-		InputMap.action_add_event("fire", mb)
-		var rt: = InputEventJoypadMotion.new()
-		rt.axis = JOY_AXIS_TRIGGER_RIGHT
-		rt.axis_value = 1.0
-		InputMap.action_add_event("fire", rt)
-	var pad: = {"dash": JOY_BUTTON_A, "reload": JOY_BUTTON_X, "gadget": JOY_BUTTON_LEFT_SHOULDER, "pause": JOY_BUTTON_START}
-	for a in pad:
-		var jb: = InputEventJoypadButton.new()
-		jb.button_index = pad[a]
-		InputMap.action_add_event(a, jb)
+static func ensure_actions() -> void:
+	InputBindings.apply_actions()
+
+
+var _blocked := {}
+
+func profile() -> String:
+	return "p2" if scheme == "keys2" else "p1"
+
+func block_held() -> void:
+	# Resuming never turns menu clicks/held keys into combat commands.
+	for a in InputBindings.DEFAULTS[profile()]:
+		_blocked[a] = true
+	for a in ["pad_fire", "pad_dash", "pad_reload", "pad_gadget", "pad_card0", "pad_card1", "pad_card2", "pad_move"]:
+		_blocked[a] = true
+	_edge.clear()
+
+func _gate(a: String, down: bool) -> bool:
+	if _blocked.has(a):
+		if not down:
+			_blocked.erase(a)
+		return false
+	return down
+
+func _action(a: String) -> bool:
+	return _gate(a, InputBindings.down(profile(), a))
 
 
 func _key(k: int) -> bool:
@@ -73,17 +70,21 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 	match scheme:
 		"keys2":
 			device = "keys2"
-			mv = Vector2(float(_key(KEYS_P2.right)) - float(_key(KEYS_P2.left)), float(_key(KEYS_P2.down)) - float(_key(KEYS_P2.up)))
+			mv = Vector2(float(_action("move_right")) - float(_action("move_left")), float(_action("move_down")) - float(_action("move_up")))
 		"pad":
 			device = "pad"
 			mv = pad_mv if pad_mv.length() > 0.2 else Vector2.ZERO
 		_:
-			mv = Vector2(float(_key(KEY_D) or (arrows and _key(KEY_RIGHT))) - float(_key(KEY_A) or (arrows and _key(KEY_LEFT))),
-				float(_key(KEY_S) or (arrows and _key(KEY_DOWN))) - float(_key(KEY_W) or (arrows and _key(KEY_UP))))
+			mv = Vector2(float(_action("move_right")) - float(_action("move_left")), float(_action("move_down")) - float(_action("move_up")))
 			if use_pad and (pad_mv.length() > 0.25 or pad_aim.length() > 0.3):
 				device = "pad"
 			if pad_mv.length() > 0.2:
 				mv = pad_mv
+	if _blocked.has("pad_move"):
+		if pad_mv.length() <= 0.2:
+			_blocked.erase("pad_move")
+		elif device == "pad":
+			mv = Vector2.ZERO
 	if mv.length() > 1.0:
 		mv = mv.normalized()
 	inp.mx = mv.x
@@ -112,18 +113,16 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 	var fire: = false
 	match scheme:
 		"keys2":
-			fire = _key(KEYS_P2.fire)
+			fire = _action("fire")
 		"pad":
-			fire = Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4 or Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER)
+			fire = _gate("pad_fire", Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4 or Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER))
 		_:
-			fire = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or (use_pad and Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4)
+			fire = _action("fire") or (use_pad and _gate("pad_fire", Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4))
 	inp.fire = fire and not picking_cards
-	var K: Dictionary = KEYS_P2 if scheme == "keys2" else KEYS_P1
 	var kb: = scheme != "pad"
-	var kb_dash: = right_shift_down if scheme == "keys2" else _key(K.dash)
-	var dash: = (kb and kb_dash) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A))
-	var reload: = (kb and _key(K.reload)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_X) and h.choices.is_empty())
-	var gadget: = (kb and _key(K.gadget)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_LEFT_SHOULDER))
+	var dash: = (kb and _action("dash")) or (use_pad and _gate("pad_dash", Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A)))
+	var reload: = (kb and _action("reload")) or (use_pad and _gate("pad_reload", Input.is_joy_button_pressed(pad_index, JOY_BUTTON_X)) and h.choices.is_empty())
+	var gadget: = (kb and _action("gadget")) or (use_pad and _gate("pad_gadget", Input.is_joy_button_pressed(pad_index, JOY_BUTTON_LEFT_SHOULDER)))
 	if _pressed_edge("dash", dash):
 		inp.dash = true
 	if _pressed_edge("reload", reload):
@@ -131,13 +130,13 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, picking_cards: 
 	if _pressed_edge("gadget", gadget):
 		inp.gadget = true
 	for i in 3:
-		var down: = kb and _key(int(K.card[i]))
+		var down: = kb and _action("card_%d" % (i + 1))
 		if _pressed_edge("card%d" % i, down):
 			inp.card = i
 	if use_pad and not h.choices.is_empty():
 		var btns: = [JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B]
 		for i in 3:
-			if _pressed_edge("pcard%d" % i, Input.is_joy_button_pressed(pad_index, btns[i])):
+			if _pressed_edge("pcard%d" % i, _gate("pad_card%d" % i, Input.is_joy_button_pressed(pad_index, btns[i]))):
 				inp.card = i
 				device = "pad"
 
@@ -157,8 +156,8 @@ func card_hint() -> String:
 		"pad":
 			return "按 X / Y / B 选升级"
 		"keys2":
-			return "按 8 / 9 / 0 选升级"
-	return "按 1 / 2 / 3 选升级"
+			return "按 %s 选升级" % " / ".join(card_keys())
+	return "按 %s 选升级" % " / ".join(card_keys())
 
 
 func gadget_key() -> String:
@@ -166,5 +165,33 @@ func gadget_key() -> String:
 		"pad":
 			return "LB"
 		"keys2":
-			return "."
-	return "Q"
+			return InputBindings.caption("p2", "gadget", true)
+	return InputBindings.caption("p1", "gadget", true)
+
+
+func card_keys() -> Array:
+	if device == "pad":
+		return ["X", "Y", "B"]
+	return [InputBindings.caption(profile(), "card_1", true), InputBindings.caption(profile(), "card_2", true), InputBindings.caption(profile(), "card_3", true)]
+
+func spectate_direction(ev: InputEvent) -> int:
+	if scheme != "pad":
+		if InputBindings.event_matches(profile(), "spectate_prev", ev):
+			device = "keys2" if scheme == "keys2" else "kbm"
+			return -1
+		if InputBindings.event_matches(profile(), "spectate_next", ev):
+			device = "keys2" if scheme == "keys2" else "kbm"
+			return 1
+	if (scheme == "pad" or allow_pad) and ev is InputEventJoypadButton and ev.device == pad_index and ev.pressed:
+		if ev.button_index == JOY_BUTTON_DPAD_LEFT:
+			device = "pad"
+			return -1
+		if ev.button_index == JOY_BUTTON_DPAD_RIGHT:
+			device = "pad"
+			return 1
+	return 0
+
+func spectate_hint() -> String:
+	if device == "pad" or scheme == "pad":
+		return "十字键左右切换队友"
+	return "%s / %s 切换队友" % [InputBindings.caption(profile(), "spectate_prev", true), InputBindings.caption(profile(), "spectate_next", true)]

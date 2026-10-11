@@ -1,0 +1,4 @@
+{
+  "spectator": {"deathDelay": 1.2},
+  "input": {"resumeGuardFrames": 2}
+}

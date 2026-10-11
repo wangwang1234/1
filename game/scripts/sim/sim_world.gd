@@ -769,6 +769,12 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 			th.alive = false
 			th.hp = 0.0
 			th.deaths += 1
+			var source_name: String = "环境伤害"
+			if killer != null:
+				source_name = killer.name
+			elif o != null:
+				source_name = {"turret": "炮台", "base": "鼠窝", "minion": "小兵", "sentry": "自动炮台", "boss": "鼠王", "roach": "蟑螂", "rat": "鼠帮枪手"}.get(o.kind, "战场伤害")
+			th.death_source = source_name
 			th.kill_streak = 0
 			th.respawn_t = minf(float(R.hamster.respawnMax), float(R.hamster.respawnBase) + th.lvl * float(R.hamster.respawnPerLevel))
 			if killer != null:

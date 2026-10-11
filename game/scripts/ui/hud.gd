@@ -253,9 +253,17 @@ func draw_all(c: Control) -> void :
 	if h != null:
 		_draw_cards(c, s, h)
 		if not h.alive:
-			var txt: = "%d 秒后复活" % ceili(h.respawn_t)
-			UiTheme.draw_text_outline(c, UiTheme.display_font, Vector2(0, root.size.y * 0.42), "被打倒了…", int(44 * s), Color("#ff8a7a"), HORIZONTAL_ALIGNMENT_CENTER, 10, root.size.x)
-			UiTheme.draw_text_outline(c, UiTheme.body_font, Vector2(0, root.size.y * 0.42 + 50 * s), txt, int(26 * s), UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, 8, root.size.x)
+			var target: SimHamster = mv.spectating(h)
+			var txt := "%d 秒后复活" % maxi(0, ceili(h.respawn_t)) if not w.over else "对局已结束"
+			var pl = mv.player_of(h.id)
+			var waiting: bool = pl != null and pl.spectator.elapsed >= mv._spectate_delay
+			var title := "正在观战：%s" % target.name if target != null else ("队友全部倒下，等待复活" if waiting and not w.over else "被打倒了…")
+			var y := root.size.y * 0.18
+			_panel(c, Rect2(root.size.x * 0.15, y - 40 * s, root.size.x * 0.7, 142 * s), 18 * s, 0.82)
+			_txt(c, Vector2(0, y), title, 30 * s, UiTheme.GOLD if target != null else Color("#ff8a7a"), HORIZONTAL_ALIGNMENT_CENTER, true, root.size.x)
+			_txt(c, Vector2(0, y + 36 * s), txt + (" · 击败你的：" + h.death_source if h.death_source != "" else ""), 22 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, false, root.size.x)
+			_txt(c, Vector2(0, y + 72 * s), pin.spectate_hint() + " · 复活后自动回到自己", 18 * s, UiTheme.SUB, HORIZONTAL_ALIGNMENT_CENTER, false, root.size.x)
+
 	if white > 0.0:
 		c.draw_rect(Rect2(Vector2.ZERO, root.size), Color(1, 1, 1, clampf(white, 0.0, 1.0)))
 
@@ -876,7 +884,7 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void :
 	var ta: = clampf(cards_t * 5.0, 0.0, 1.0)
 	_txt(c, Vector2(0, y0 - 20 * s), title, 30 * s, Color(1, 0.82, 0.4, ta), HORIZONTAL_ALIGNMENT_CENTER, true, root.size.x, 8)
 	var mouse: = c.get_local_mouse_position()
-	var keys: = ["1", "2", "3"] if pin.device == "kbm" else ["X", "Y", "B"]
+	var keys: = pin.card_keys()
 	for i in n:
 		var cd: Dictionary = h.choices[i]
 		var L: = SimCards.label(h, cd)
@@ -952,9 +960,14 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void :
 			var W2: = Data.weapon(String(cd.id))
 			var rg: = int(float(W2.get("range", 0)))
 			_txt(c, Vector2(r.position.x + 18 * s, r.end.y - 14 * s), "射程 %d%s" % [rg, (" · 有效 %d" % int(rg * float(W2.eff))) if W2.has("eff") and float(W2.eff) < 1.0 else ""], 14 * s, UiTheme.SUB)
-		var kc: = Vector2(r.end.x - 26 * s, r.end.y - 26 * s)
-		c.draw_circle(kc, 16 * s, UiTheme.GOLD)
-		_txt(c, kc + Vector2(-16, 7) * s, keys[i], 19 * s, UiTheme.INK, HORIZONTAL_ALIGNMENT_CENTER, true, 32 * s, 0)
+		var key_width: float = maxf(32 * s, UiTheme.display_font.get_string_size(String(keys[i]), HORIZONTAL_ALIGNMENT_LEFT, -1, int(19 * s)).x + 18 * s)
+		var key_rect := Rect2(r.end.x - key_width - 10 * s, r.end.y - 42 * s, key_width, 32 * s)
+		var key_box := StyleBoxFlat.new()
+		key_box.bg_color = UiTheme.GOLD
+		key_box.set_corner_radius_all(int(16 * s))
+		c.draw_style_box(key_box, key_rect)
+		_txt(c, key_rect.position + Vector2(0, 23 * s), String(keys[i]), 19 * s, UiTheme.INK, HORIZONTAL_ALIGNMENT_CENTER, true, key_rect.size.x, 0)
+
 
 
 func _wrap(text: String, width: float, size: int) -> Array:

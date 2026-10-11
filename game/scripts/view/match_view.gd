@@ -23,6 +23,8 @@ class LocalPlayer:
 	var dead_time: = 0.0
 	var last_alive: = Vector3.ZERO
 	var want_pad: = false
+	var spectator := SpectatorState.new()
+	var camera_subject := -1
 
 var world: SimWorld
 var local: SimHamster
@@ -60,6 +62,8 @@ var render_buffer: NetRenderBuffer
 var _network_time: = 0.0
 var _prediction_offset: = Vector2.ZERO
 var _finished_sent: = false
+var _resume_guard := 0
+var _spectate_delay := float(Data.load_json("qol").spectator.deathDelay)
 
 
 func start(cfg: Dictionary) -> void :
@@ -343,6 +347,15 @@ func _notification(what: int) -> void :
 
 
 func _unhandled_input(ev: InputEvent) -> void :
+	if paused or _finished_sent or world == null:
+		return
+	for pl in players:
+		if not pl.ham.alive:
+			var direction: int = pl.input.spectate_direction(ev)
+			if direction != 0:
+				pl.spectator.cycle(world, pl.ham, direction, _spectate_eligible)
+				get_viewport().set_input_as_handled()
+				return
 	if ev is InputEventMouseMotion:
 		_mouse = (ev as InputEventMouseMotion).position
 		input.device = "kbm"
@@ -371,7 +384,7 @@ func _physics_process(dt: float) -> void :
 		return
 	if local != null and not autoplay:
 		for pl in players:
-			if networked and paused:
+			if paused or _resume_guard > 0 or not pl.ham.alive or world.over:
 				NetInput.clear(pl.ham.inp)
 				continue
 			var mp: = get_viewport().get_mouse_position()
@@ -380,6 +393,8 @@ func _physics_process(dt: float) -> void :
 			if prediction != null:
 				pl.input.position_hint = Vector2(prediction.ham.x, prediction.ham.y) + _prediction_offset
 			pl.input.poll(pl.ham, pl.cam, mp, not pl.ham.choices.is_empty(), world)
+	if _resume_guard > 0:
+		_resume_guard -= 1
 	if networked and not LanSession.is_host():
 		prediction.advance(world, LanSession.send_input(local), dt)
 		_dispatch(LanSession.drain_events())
@@ -539,27 +554,34 @@ func _process(delta: float) -> void :
 		cam.update(delta, fp0, fp0 + Vector3(cos(f0.aim), 0, sin(f0.aim)) * 3.0, f0.alive)
 		listener.global_transform = Transform3D(cam.global_transform.basis, fp0 + Vector3(0, 1.2, 0))
 	for pl in players:
-		var focus: SimHamster = pl.ham
-		var shown: = prediction.ham if prediction != null else focus
-		var local_alpha: = Engine.get_physics_interpolation_fraction() if prediction != null else alpha
-		var fpos: = Vector3((lerpf(shown.px, shown.x, local_alpha) + _prediction_offset.x) * 0.01, 0, (lerpf(shown.py, shown.y, local_alpha) + _prediction_offset.y) * 0.01)
-		if focus.alive:
-			pl.dead_time = 0.0
-			pl.last_alive = fpos
+		var previous_id: int = pl.camera_subject
+		var follow: SimHamster = pl.spectator.update(world, pl.ham, 0.0 if paused and not networked else delta, _spectate_delay, _spectate_eligible)
+		var fpos: Vector3 = pl.spectator.last_position
+		var aim_pt: Vector3 = fpos
+		if follow != null:
+			var use_prediction: bool = prediction != null and follow == local and follow.alive
+			var shown: SimHamster = prediction.ham if use_prediction else follow
+			var local_alpha: float = Engine.get_physics_interpolation_fraction() if use_prediction else alpha
+			var offset: Vector2 = _prediction_offset if use_prediction else Vector2.ZERO
+			fpos = Vector3((lerpf(shown.px, shown.x, local_alpha) + offset.x) * 0.01, 0, (lerpf(shown.py, shown.y, local_alpha) + offset.y) * 0.01)
+			aim_pt = fpos + Vector3(cos(shown.aim), 0, sin(shown.aim)) * 3.0
+			if follow == pl.ham and pl.input.device == "kbm" and not autoplay and follow.inp.has_aim_point:
+				aim_pt = Vector3(follow.inp.aim_x * 0.01, 0, follow.inp.aim_y * 0.01)
+			pl.camera_subject = follow.id
 		else:
-
-			pl.dead_time += delta
-			fpos = pl.last_alive
-			if pl.dead_time > 1.8:
-				var b: Vector2 = world.map.base_pos[focus.team]
-				fpos = Vector3(b.x * 0.01 + (3.6 if focus.team == "blue" else -3.6), 0, b.y * 0.01)
-		var aim_pt: = fpos + Vector3(cos(shown.aim), 0, sin(shown.aim)) * 3.0
-		if pl.input.device == "kbm" and not autoplay and focus.inp.has_aim_point:
-			aim_pt = Vector3(focus.inp.aim_x * 0.01, 0, focus.inp.aim_y * 0.01)
-		pl.cam.update(delta, fpos + cam_focus_offset, aim_pt + cam_focus_offset, focus.alive)
+			pl.camera_subject = -1
+			if pl.spectator.elapsed >= _spectate_delay:
+				var base: Vector2 = world.map.base_pos[pl.team]
+				fpos = Vector3(base.x * 0.01 + (3.6 if pl.team == "blue" else -3.6), 0, base.y * 0.01)
+				aim_pt = fpos
+		if previous_id != pl.camera_subject:
+			pl.cam.kick = Vector3.ZERO
+			pl.cam.trauma = 0.0
+			pl.cam.snap(fpos + cam_focus_offset)
+		pl.cam.update(delta, fpos + cam_focus_offset, aim_pt + cam_focus_offset, follow != null and follow.alive)
 		if pl == players[0]:
-
 			listener.global_transform = Transform3D(pl.cam.global_transform.basis, fpos + Vector3(0, 1.2, 0))
+
 	fx.sync_tracers(world.bullets, alpha, cam.global_transform.basis, func(b, _p): return true)
 	fx.sync_items(world.items, alpha, Time.get_ticks_msec() / 1000.0, render_buffer)
 	fx.sync_lobs(world.lobs, render_buffer)
@@ -1148,7 +1170,20 @@ func _exit_tree() -> void :
 
 func set_paused(p: bool) -> void :
 	paused = p
+	_resume_guard = int(Data.load_json("qol").input.resumeGuardFrames)
 	for pl in players:
+		NetInput.clear(pl.ham.inp)
+		pl.input.block_held()
 		pl.hud.set_paused(p)
 	if players.is_empty():
 		hud.set_paused(p)
+
+
+func _spectate_eligible(id: int) -> bool:
+	return not networked or LanSession.player_connected(id)
+
+func spectating(ham: SimHamster) -> SimHamster:
+	var pl = player_of(ham.id)
+	if pl == null or ham.alive or pl.spectator.target_id < 0:
+		return null
+	return world.ham_by_id(pl.spectator.target_id)

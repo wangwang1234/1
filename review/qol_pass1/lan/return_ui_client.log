@@ -1,0 +1,4 @@
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+[audio] 载入 74 种音效
+RECEIPT {"case":"return","checks":38,"discarded_events":0,"elapsed_seconds":4.51666666666666,"lobby_returns":1,"matches":2,"max_event_count":0,"max_event_frames":0,"ok":true,"reason":"host returned during reconnect and both played second match","repaired_snapshots":3,"resumes":0,"role":"client","snapshots":38}

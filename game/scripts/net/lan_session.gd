@@ -2,6 +2,9 @@ extends Node
 
 
 
+signal next_ready_changed
+var next_ready := {}
+
 signal room_changed
 signal status_changed(message: String)
 signal match_requested(config: Dictionary)
@@ -101,7 +104,7 @@ func _can_send_to(id: int) -> bool:
 func signature() -> String:
 	if _signature.is_empty():
 		var parts: = PackedStringArray([str(_net.protocol), str(ProjectSettings.get_setting("application/config/version", ""))])
-		for file in ["rules", "weapons", "evolutions", "abilities", "gadgets", "talents", "pets", "skins", "units", "progression", "map_layout", "network"]:
+		for file in ["rules", "weapons", "evolutions", "abilities", "gadgets", "talents", "pets", "skins", "units", "progression", "map_layout", "network", "qol"]:
 			parts.append(JSON.stringify(Data.load_json(file), "", true))
 		_signature = "|".join(parts).sha256_text()
 	return _signature
@@ -304,6 +307,7 @@ func start_game() -> bool:
 
 @rpc("authority", "call_remote", "reliable", 0)
 func _begin(cfg: Dictionary) -> void :
+	next_ready.clear()
 	config = cfg.duplicate(true)
 	config.local_peer = local_id()
 	loading = true
@@ -535,17 +539,17 @@ func drain_events() -> Array:
 	return event_buffer.take(world)
 
 
-func return_to_room() -> void :
+func return_to_room(keep_ready: bool = false) -> void :
 	if not is_host():
 		return
 	for id in roster:
 		if id != 1 and _can_send_to(id):
-			_back.rpc_id(id)
-	_back()
+			_back.rpc_id(id, next_ready if keep_ready else {})
+	_back(next_ready.duplicate() if keep_ready else {})
 
 
 @rpc("authority", "call_remote", "reliable", 0)
-func _back() -> void :
+func _back(prepared: Dictionary = {}) -> void :
 	for id in _reserved.keys():
 		roster.erase(id)
 		_tokens.erase(id)
@@ -571,8 +575,9 @@ func _back() -> void :
 	_attempt_age = 0.0
 	if is_host():
 		multiplayer.multiplayer_peer.refuse_new_connections = false
-		for p in roster.values():
-			p.ready = false
+		for id in roster:
+			roster[id].ready = bool(prepared.get(id, false))
+	next_ready.clear()
 	session_ended.emit("")
 	if is_host():
 		_broadcast_room()
@@ -675,6 +680,7 @@ func _fail(reason: String) -> void :
 
 
 func leave() -> void :
+	next_ready.clear()
 	discovery.stop()
 	reconnecting = false
 	_token = ""
@@ -837,3 +843,47 @@ func _resume_ack(match_id: int) -> void:
 		_resume_wait.erase(sender)
 		_status("玩家已重连，对局继续")
 		discovery.advertisement = _room_advertisement()
+
+
+func player_connected(ham_id: int) -> bool:
+	for id in peer_hams:
+		if peer_hams[id].id == ham_id:
+			if id == local_id():
+				return not reconnecting
+			return _can_send_to(id) and not _reserved.has(id)
+	return true # AI teammates have no network peer.
+
+
+func set_next_ready(value: bool) -> void:
+	if not active() or not running or world == null or not world.over:
+		return
+	if is_host():
+		_accept_next_ready(1, int(config.match_id), value)
+	else:
+		_next_vote.rpc_id(1, int(config.match_id), value)
+
+@rpc("any_peer", "call_remote", "reliable", 0)
+func _next_vote(match_id: int, value: bool) -> void:
+	if is_host():
+		_accept_next_ready(multiplayer.get_remote_sender_id(), match_id, value)
+
+func _accept_next_ready(id: int, match_id: int, value: bool) -> void:
+	if not running or world == null or not world.over or match_id != int(config.get("match_id", -1)) or not roster.has(id):
+		return
+	next_ready[id] = value
+	for peer_id in roster:
+		if peer_id != 1 and _can_send_to(peer_id):
+			_next_state.rpc_id(peer_id, match_id, next_ready)
+	next_ready_changed.emit()
+	if roster.size() < 2:
+		return
+	for peer_id in roster:
+		if not bool(next_ready.get(peer_id, false)) or (peer_id != 1 and not _can_send_to(peer_id)):
+			return
+	return_to_room(true)
+
+@rpc("authority", "call_remote", "reliable", 0)
+func _next_state(match_id: int, prepared: Dictionary) -> void:
+	if running and match_id == int(config.get("match_id", -1)):
+		next_ready = prepared.duplicate()
+		next_ready_changed.emit()

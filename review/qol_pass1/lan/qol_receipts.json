@@ -1,0 +1,16 @@
+[
+  {
+    "failures": [],
+    "ok": true,
+    "returns": 3,
+    "role": "host",
+    "rounds": 3
+  },
+  {
+    "failures": [],
+    "ok": true,
+    "returns": 3,
+    "role": "client",
+    "rounds": 3
+  }
+]

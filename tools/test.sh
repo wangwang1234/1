@@ -22,5 +22,8 @@ if check_log "$LOG" && grep -q "view_smoke\] 完成 (done)" "$LOG"; then echo "�
 echo "== 主菜单冒烟 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 -- --quit-after 5 >"$LOG" 2>&1 || true
 if check_log "$LOG"; then echo "主菜单冒烟：通过"; else echo "主菜单冒烟：失败"; exit 1; fi
+echo "== 操作设置 / 观战运行时回归 =="
+"$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 res://tests/qol_ui_smoke.tscn >"$LOG" 2>&1 || true
+if check_log "$LOG" && grep -q 'QOL_UI_RECEIPT.*"ok":true' "$LOG"; then echo "设置 / 观战回归：通过"; else echo "设置 / 观战回归：失败"; cat "$LOG"; exit 1; fi
 rm -f "$LOG"
 echo "全部通过"
