@@ -1,17 +1,17 @@
 class_name SimHamsterLogic
 extends RefCounted
+## 仓鼠每帧逻辑。对应原型 updHam / startDash / startReload / useGadget / calcStats / giveXP / respawn。
 
 
-
-static func calc_stats(h: SimHamster) -> void :
-	var a: = h.ab
-	var T: = h.tal
+static func calc_stats(h: SimHamster) -> void:
+	var a := h.ab
+	var T := h.tal
 	var A: Dictionary = Data.rules().abilities
 	var HR: Dictionary = Data.rules().hamster
 	var U: Dictionary = Data.units().hamster
-	var giant: = T.has("giant")
-	var lv: = func(k: String) -> float: return float(a.get(k, 0))
-	var st: = {}
+	var giant := T.has("giant")
+	var lv := func(k: String) -> float: return float(a.get(k, 0))
+	var st := {}
 	st.speed = float(U.speed) * (1.0 + float(A.speed.speed) * lv.call("speed")) * (0.92 if giant else 1.0)
 	st.maxHp = (float(U.maxHp) * (1.0 + float(A.strong.maxHp) * lv.call("strong")) + (h.lvl - 1) * float(U.hpPerLevel)) * (1.6 if giant else 1.0)
 	st.regen = float(A.regen.regen) * lv.call("regen")
@@ -43,18 +43,18 @@ static func calc_stats(h: SimHamster) -> void :
 	st.scale = 1.0 + float(A.strong.scale) * lv.call("strong")
 	h.st = st
 	h.r = (float(HR.giantRadius) if giant else float(U.radius)) * float(st.scale)
-	var f: = h.hp / h.max_hp if h.max_hp > 0.0 else 1.0
+	var f := h.hp / h.max_hp if h.max_hp > 0.0 else 1.0
 	h.max_hp = float(st.maxHp)
 	h.hp = minf(h.max_hp, maxf(1.0, f * h.max_hp))
 
 
-static func place_at_base(w: SimWorld, h: SimHamster) -> void :
+static func place_at_base(w: SimWorld, h: SimHamster) -> void:
 	var HR: Dictionary = w.R.hamster
 	var b: Vector2 = w.map.base_pos[h.team]
-	var s: = 1.0 if h.team == "blue" else -1.0
+	var s := 1.0 if h.team == "blue" else -1.0
 	var j: Array = HR.spawnJitter
-	h.x = b.x + s * float(HR.spawnOffset) + w.rand( - float(j[0]), float(j[0]))
-	h.y = b.y + w.rand( - float(j[1]), float(j[1]))
+	h.x = b.x + s * float(HR.spawnOffset) + w.rand(-float(j[0]), float(j[0]))
+	h.y = b.y + w.rand(-float(j[1]), float(j[1]))
 	h.vx = 0.0
 	h.vy = 0.0
 	w.map.resolve_circle(h, h.r)
@@ -62,7 +62,7 @@ static func place_at_base(w: SimWorld, h: SimHamster) -> void :
 	h.py = h.y
 
 
-static func respawn(w: SimWorld, h: SimHamster) -> void :
+static func respawn(w: SimWorld, h: SimHamster) -> void:
 	h.alive = true
 	calc_stats(h)
 	h.hp = h.max_hp
@@ -107,14 +107,14 @@ static func respawn(w: SimWorld, h: SimHamster) -> void :
 	w.toast(h, "复活！", "#8de0a6", 1.2)
 
 
-static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void :
-	var maxl: = int(Data.progression().get("maxLevel", 30))
+static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void:
+	var maxl := int(Data.progression().get("maxLevel", 30))
 	if h == null or h.lvl >= maxl:
 		return
 	h.xp += n * float(h.st.get("xpK", 1.0))
 	var talent_levels: Array = Data.progression().get("talentLevels", [10, 20, 30])
-	var talents_on: = bool(Data.rule("scope.talents", true))
-	var leveled: = 0
+	var talents_on := bool(Data.rule("scope.talents", true))
+	var leveled := 0
 	while h.xp >= h.xp_next and h.lvl < maxl:
 		h.xp -= h.xp_next
 		h.lvl += 1
@@ -122,7 +122,7 @@ static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void :
 		h.pending += 1
 		calc_stats(h)
 		h.hp = minf(h.max_hp, h.hp + h.max_hp * float(Data.progression().get("levelUpHeal", 0.2)))
-		var is_talent: = talents_on and talent_levels.has(h.lvl)
+		var is_talent := talents_on and talent_levels.has(h.lvl)
 		if is_talent:
 			h.talent_pend += 1
 		w.emit({"t": "levelup", "id": h.id, "lvl": h.lvl, "talent": is_talent})
@@ -132,7 +132,7 @@ static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void :
 		else:
 			w.toast(h, "咕咚！升到 Lv%d，选一个奖励" % h.lvl, "#ffd166", 2.2)
 	if leveled > 0:
-
+		# 一次连升几级（比如打鼠王）也只冒一个“+HP”，不然几个字叠在一起
 		w.emit({"t": "pop", "x": h.x, "y": h.y, "h": h.r * 3.2, "text": "+HP", "color": "#8de0a6", "size": 15})
 	if h.lvl >= maxl:
 		h.xp = 0.0
@@ -140,7 +140,7 @@ static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void :
 		SimCards.roll(w, h)
 
 
-static func start_dash(w: SimWorld, h: SimHamster) -> void :
+static func start_dash(w: SimWorld, h: SimHamster) -> void:
 	var HR: Dictionary = w.R.hamster
 	SimMotion.start_roll(h, HR)
 	h.iframes = maxf(h.iframes, float(HR.rollIframes))
@@ -153,8 +153,8 @@ static func start_dash(w: SimWorld, h: SimHamster) -> void :
 	SimWeapons.on_dash(w, h)
 
 
-static func start_reload(w: SimWorld, h: SimHamster) -> void :
-	var W: = h.weapon()
+static func start_reload(w: SimWorld, h: SimHamster) -> void:
+	var W := h.weapon()
 	if int(W.get("mag", 0)) <= 0 or h.reload_t > 0.0:
 		return
 	w.noise(h.x, h.y, "step", 0.4, h)
@@ -167,19 +167,19 @@ static func gadget_target(w: SimWorld, h: SimHamster) -> Vector2:
 	return SimGadgets.target(w, h)
 
 
-static func use_gadget(w: SimWorld, h: SimHamster) -> void :
+static func use_gadget(w: SimWorld, h: SimHamster) -> void:
 	SimGadgets.use(w, h)
 
 
-static func spawn_squad(w: SimWorld, h: SimHamster) -> void :
-
-	var best_lane: = ""
-	var best_i: = 0
+static func spawn_squad(w: SimWorld, h: SimHamster) -> void:
+	## 天赋“小队”：在最近的兵线上召唤 3 个小兵
+	var best_lane := ""
+	var best_i := 0
 	var bd: = 1e+18
 	for lane in w.map.lanes.keys():
-		var path: = w.lane_path(h.team, lane)
+		var path := w.lane_path(h.team, lane)
 		for i in path.size():
-			var d: = SimUtil.d2(path[i].x, path[i].y, h.x, h.y)
+			var d := SimUtil.d2(path[i].x, path[i].y, h.x, h.y)
 			if d < bd:
 				bd = d
 				best_lane = lane
@@ -187,7 +187,7 @@ static func spawn_squad(w: SimWorld, h: SimHamster) -> void :
 	if best_lane == "":
 		return
 	for k in int(w.R.talents.squad.n):
-		var m: = w.spawn_minion(h.team, best_lane)
+		var m := w.spawn_minion(h.team, best_lane)
 		m.x = h.x + w.rand(-30.0, 30.0)
 		m.y = h.y + w.rand(-30.0, 30.0)
 		m.px = m.x
@@ -198,15 +198,15 @@ static func spawn_squad(w: SimWorld, h: SimHamster) -> void :
 	w.emit({"t": "squad", "id": h.id, "x": h.x, "y": h.y, "team": h.team})
 
 
-static func update(w: SimWorld, h: SimHamster, dt: float) -> void :
+static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 	var HR: Dictionary = w.R.hamster
 	if not h.alive:
 		h.respawn_t -= dt
 		if h.respawn_t <= 0.0 and not w.over:
 			respawn(w, h)
 		return
-	var st: = h.st
-	var inp: = h.inp
+	var st := h.st
+	var inp := h.inp
 	h.fire_cd -= dt
 	h.dash_cd -= dt
 	h.iframes -= dt
@@ -235,13 +235,13 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void :
 		if h.squad_t <= 0.0:
 			h.squad_t = float(w.R.talents.squad.every)
 			spawn_squad(w, h)
-
+	# 治疗光环
 	if float(st.aura) > 0.0:
-		var ar: = float(Data.rule("abilities.aura.auraRadius", 220))
+		var ar := float(Data.rule("abilities.aura.auraRadius", 220))
 		for o in w.hams:
 			if o.alive and o.team == h.team and o.hp < o.max_hp and Vector2(o.x - h.x, o.y - h.y).length() < ar:
 				o.hp = minf(o.max_hp, o.hp + float(st.aura) * dt)
-
+	# 眩晕
 	if h.stun_t > 0.0:
 		h.stun_t -= dt
 		inp.fire = false
@@ -255,26 +255,26 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void :
 		return
 	SimGadgets.tick_hamster(w, h, dt)
 	SimWeapons.evo_tick(w, h, dt)
-
+	# 弹射飞行
 	if not h.air.is_empty():
-		var A: = h.air
+		var A := h.air
 		A.t += dt
-		var k: = minf(1.0, float(A.t) / float(A.dur))
+		var k := minf(1.0, float(A.t) / float(A.dur))
 		h.x = lerpf(float(A.x0), float(A.x1), k)
 		h.y = lerpf(float(A.y0), float(A.y1), k)
 		h.z = sin(k * PI) * float(A.hgt)
 		h.moving = true
 		h.walk += dt * 8.0
 		h.aim = inp.aim
-		var Wa: = h.weapon()
+		var Wa := h.weapon()
 		if inp.fire and h.fire_cd <= 0.0 and h.reload_t <= 0.0 and Wa.get("kind", "") == "bullet" and (int(Wa.get("mag", 0)) == 0 or h.ammo > 0):
 			SimWeapons.fire(w, h)
 		if k >= 1.0:
 			w.land(h)
 		return
-
+	# 回血：再生 + 鼠窝附近
 	var ob: Vector2 = w.map.base_pos[h.team]
-	var heal: = float(st.regen)
+	var heal := float(st.regen)
 	if Vector2(h.x - ob.x, h.y - ob.y).length() < float(HR.baseHealRadius):
 		heal += float(HR.baseHeal)
 	if heal > 0.0 and h.hp < h.max_hp:
@@ -284,7 +284,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void :
 		if h.shield_t <= 0.0:
 			h.shield += 1
 			h.shield_t = float(st.shieldCd)
-
+	# 选卡
 	if inp.card >= 0:
 		if not h.choices.is_empty():
 			SimCards.apply(w, h, inp.card)
@@ -307,14 +307,14 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void :
 					w.deal_dmg(e, float(st.dashDmg) * float(st.dmg), {"team": h.team, "owner": h, "x": h.x, "y": h.y})
 					w.knock(e, e.x - h.x, e.y - h.y, 220.0)
 	SimMotion.integrate(w.map, h, dt)
-
+	# 脚步声（看不见的敌人在附近移动时能听到）
 	if h.moving and h.roll_t <= 0.0:
 		h.step_t -= dt
 		if h.step_t <= 0.0:
 			h.step_t = float(w.R.hearing.stepInterval)
 			w.noise(h.x, h.y, "step", 0.5, h)
-	var W: = h.weapon()
-	var mag: = int(W.get("mag", 0))
+	var W := h.weapon()
+	var mag := int(W.get("mag", 0))
 	if h.reload_t > 0.0:
 		h.reload_t -= dt
 		if h.reload_t <= 0.0:
@@ -331,7 +331,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void :
 		inp.gadget = false
 		if float(h.gadget.cd) <= 0.0 and h.roll_t <= 0.0:
 			use_gadget(w, h)
-	var can_shoot: = h.roll_t <= 0.0 and h.reload_t <= 0.0 and (mag == 0 or h.ammo > 0)
+	var can_shoot := h.roll_t <= 0.0 and h.reload_t <= 0.0 and (mag == 0 or h.ammo > 0)
 	if W.has("spinup"):
 		if inp.fire and h.reload_t <= 0.0:
 			if h.spin == 0.0:
