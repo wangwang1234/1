@@ -95,6 +95,36 @@ for index, scenario in enumerate(("resume", "expiry", "invalid", "mismatch", "qu
         if proxy:
             proxy.close()
             receipts.append({"case": scenario + "-proxy", "ok": True, "packets": proxy.packets, "dropped": proxy.lost, "burst_dropped": proxy.burst_dropped, "one_way_delay_ms": [25, 100 if proxy.stress else 75], "random_loss": 0.04 if proxy.stress else 0.02, "blackouts_seconds": [[25, 26.2], [55, 65]] if proxy.stress else []})
+if not os.environ.get("LAN_ONLY") or os.environ["LAN_ONLY"] == "ten":
+    # Ten real processes on the full map: host + 9 clients, then an eleventh that must be refused.
+    peers, port = [], 29900
+    try:
+        specs = [("host", [])] + [("client", ["--idx", str(i)] + (["--quit", "1"] if i == 9 else [])) for i in range(1, 10)] + [("overflow", ["--idx", "10", "--overflow", "1"])]
+        for name, extra in specs:
+            path = OUT / f"ten_{name}{extra[1] if extra else ''}.log"
+            log = path.open("w")
+            p = subprocess.Popen([GODOT, "--headless", "--path", str(ROOT / "game"), "res://tests/lan_multi_peer.tscn", "--",
+                "--test-role", "host" if name == "host" else "client", "--port", str(port), "--players", "10"] + extra, stdout=log, stderr=subprocess.STDOUT)
+            peers.append((p, log, path))
+            time.sleep(0.25)
+        for p, log, path in peers:
+            code = p.wait(timeout=200)
+            log.close()
+            text = path.read_text()
+            errors = [line for line in text.splitlines() if (line.startswith("ERROR:") or "SCRIPT ERROR" in line)
+                and not any(noise in line for noise in ("ALSA", "init_output_device", "resources still in use at exit", "ObjectDB instances were leaked"))]
+            assert code == 0 and not errors, path.name + "\n" + text[-4000:]
+            rows = [json.loads(line[8:]) for line in text.splitlines() if line.startswith("RECEIPT ")]
+            assert len(rows) == 1 and rows[0]["ok"], path.name + "\n" + text[-4000:]
+            rows[0].update(*[json.loads(line[7:]) for line in text.splitlines() if line.startswith("METRIC ")])
+            receipts.extend(rows)
+        print("ten passed", flush=True)
+    finally:
+        for p, log, path in peers:
+            if p.poll() is None:
+                p.kill()
+                p.wait()
+            log.close()
 if not os.environ.get("LAN_ONLY") or os.environ["LAN_ONLY"] == "lobby":
     result = subprocess.run([GODOT, "--headless", "--path", str(ROOT / "game"), "res://tests/lan_lobby_state.tscn"], capture_output=True, text=True, timeout=20)
     output = result.stdout + result.stderr

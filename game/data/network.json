@@ -1,7 +1,9 @@
 {
-  "protocol": 5,
+  "protocol": 6,
   "port": 28765,
-  "maxPlayers": 2,
+  "maxPlayers": 10,
+  "minPlayers": 2,
+  "spareConnections": 2,
   "snapshotHz": 20,
   "inputTimeout": 0.35,
   "connectTimeout": 8.0,

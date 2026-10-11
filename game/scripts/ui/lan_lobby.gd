@@ -11,6 +11,9 @@ var skin: OptionButton
 var weapon: OptionButton
 var map_pick: OptionButton
 var roster_label: Label
+var team_lists: = {}
+var search_rows: Array[Control] = []
+var team_box: HBoxContainer
 var status_label: Label
 var host_btn: Button
 var join_btn: Button
@@ -32,7 +35,7 @@ func _ready() -> void :
 	v.add_theme_constant_override("separation", 12)
 	add_child(v)
 	v.add_child(UiTheme.label("局域网联机", 46, UiTheme.GOLD, true, 8))
-	v.add_child(UiTheme.label("两台电脑连接同一 Wi-Fi / 路由器 · 各自独立画面 · 支持同队合作与红蓝对战", 18, Color("#c4bbd2")))
+	v.add_child(UiTheme.label("最多 %d 台电脑连接同一 Wi-Fi / 路由器 · 各自独立画面 · 自由分队，空位由 AI 补齐" % int(Data.load_json("network").maxPlayers), 18, Color("#c4bbd2")))
 	var name_row: = _row(v, "你的昵称")
 	nickname = LineEdit.new()
 	nickname.text = "玩家"
@@ -63,12 +66,14 @@ func _ready() -> void :
 	port.value = int(Data.load_json("network").port)
 	port.custom_minimum_size.x = 140
 	ip_row.add_child(port)
+	search_rows.append(ip_row)
 	var found_row := _row(v, "附近房间")
 	room_pick = OptionButton.new()
 	room_pick.theme_type_variation = "GhostButton"
 	room_pick.custom_minimum_size.x = 440
 	room_pick.add_theme_font_size_override("font_size", 18)
 	found_row.add_child(room_pick)
+	search_rows.append(found_row)
 	room_join = _button(found_row, "直接加入", _join_found)
 	room_pick.item_selected.connect(func(_i: int) -> void: _select_found())
 	LanSession.discovery.changed.connect(_refresh_rooms)
@@ -79,14 +84,30 @@ func _ready() -> void :
 	ip_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ip_label.custom_minimum_size.x = 790
 	v.add_child(ip_label)
+	search_rows.append(ip_label)
 	var connection: = HBoxContainer.new()
 	connection.add_theme_constant_override("separation", 12)
 	v.add_child(connection)
+	search_rows.append(connection)
 	host_btn = _button(connection, "创建房间", func() -> void : LanSession.host(_profile(), {"mode": _value(map_pick)}, int(port.value)))
 	join_btn = _button(connection, "加入房间", func() -> void : LanSession.join(address.text, _profile(), int(port.value)))
-	roster_label = UiTheme.label("", 22, UiTheme.CREAM)
-	roster_label.custom_minimum_size = Vector2(790, 68)
+	roster_label = UiTheme.label("", 20, Color("#d8cfe3"))
 	v.add_child(roster_label)
+	var teams: = HBoxContainer.new()
+	teams.add_theme_constant_override("separation", 24)
+	v.add_child(teams)
+	team_box = teams
+	for t in [["blue", "蓝队", Color("#8fc4ff")], ["red", "红队", Color("#ff9a8a")]]:
+		var col: = VBoxContainer.new()
+		col.custom_minimum_size.x = 383
+		col.add_theme_constant_override("separation", 2)
+		teams.add_child(col)
+		var head: = UiTheme.label(String(t[1]), 22, t[2], true, 4)
+		col.add_child(head)
+		var body: = UiTheme.label("", 18, UiTheme.CREAM)
+		body.custom_minimum_size.y = 5 * 26
+		col.add_child(body)
+		team_lists[t[0]] = [head, body, String(t[1])]
 	status_label = UiTheme.label(LanSession.status, 20, UiTheme.GOLD)
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	status_label.custom_minimum_size.x = 790
@@ -181,14 +202,31 @@ func _refresh() -> void :
 	start_btn.disabled = not LanSession.can_start()
 	start_btn.visible = not connected or LanSession.is_host()
 	leave_btn.visible = connected
-	var rows: = PackedStringArray()
+	# Inside a room the search / IP rows are noise; hiding them keeps ten seats on screen.
+	for row in search_rows:
+		row.visible = not connected
+	team_box.visible = connected
+	var mode: = String(LanSession.room_options.mode) if connected else _value(map_pick)
+	var per: = LanSession.team_size(mode)
 	var ids: Array = LanSession.roster.keys()
 	ids.sort()
-	for id in ids:
-		var p: Dictionary = LanSession.roster[id]
-		rows.append("%s%s · %s · %s · %s" % [p.name, "（房主）" if id == 1 else "", "蓝队" if p.team == "blue" else "红队",
-			Data.weapon(p.weapon).name, "已准备" if p.ready else "未准备"])
-	roster_label.text = "\n".join(rows) if not rows.is_empty() else "等待创建或加入房间（2 人）"
+	for t in team_lists:
+		var rows: = PackedStringArray()
+		for id in ids:
+			var p: Dictionary = LanSession.roster[id]
+			if p.team == t:
+				rows.append("%s %s%s%s · %s" % ["✔" if p.ready else "○", p.name, "（房主）" if id == 1 else "", "（你）" if id == LanSession.local_id() and connected else "",
+					Data.weapon(p.weapon).name])
+		var row: Array = team_lists[t]
+		(row[0] as Label).text = "%s  %d/%d" % [row[2], rows.size(), per]
+		(row[1] as Label).text = "\n".join(rows) if not rows.is_empty() else "（空位由 AI 补齐）"
+	# A full team cannot be picked; your own seat does not count against it.
+	for i in team.item_count:
+		team.set_item_disabled(i, connected and not LanSession.team_has_room(String(team.get_item_metadata(i)), LanSession.local_id()))
+	if connected and LanSession.roster.has(LanSession.local_id()):
+		_select(team, String(LanSession.roster[LanSession.local_id()].team))
+	roster_label.text = ("房间 %d/%d 人 · 至少 %d 人、全部准备后房主可开始" % [LanSession.roster.size(), LanSession.capacity(), int(Data.load_json("network").get("minPlayers", 2))]) if connected \
+		else "创建或加入房间（%s最多 %d 人）" % ["完整地图" if mode == "full" else "中路小图", LanSession.capacity(mode)]
 	var local: Dictionary = LanSession.roster.get(LanSession.local_id(), {})
 	ready_btn.text = "取消准备" if bool(local.get("ready", false)) else "准备"
 	status_label.text = LanSession.status
@@ -208,7 +246,7 @@ func _refresh_rooms() -> void:
 		var state := "可加入" if row.state == "open" else ("对局中" if row.state == "playing" else "已满")
 		if row.signature != LanSession.signature():
 			state = "版本不同"
-		room_pick.add_item("%s · %s · %d/2 · %s" % [row.name, "完整地图" if row.mode == "full" else "中路小图", row.count, state])
+		room_pick.add_item("%s · %s · %d/%d · %s" % [row.name, "完整地图" if row.mode == "full" else "中路小图", row.count, int(row.get("capacity", LanSession.capacity(String(row.mode)))), state])
 		room_pick.set_item_metadata(room_pick.item_count - 1, key)
 		if selected == key:
 			room_pick.select(room_pick.item_count - 1)

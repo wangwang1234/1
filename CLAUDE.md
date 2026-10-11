@@ -81,6 +81,9 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-11 局域网联机房间上限 2 → 10 人（基于 ChatGPT 的 `codex/lan-v0.3.6`，版本 0.3.7-lan7，审阅包 `review/lan10/`，汇报 `review/lan10/REPORT.md`，说明 `docs/LAN.md`）：完整地图 10 人 / 中路小图 6 人，自动分队，掉线超时由 AI 接管。
+  - 联机回归：`python3 tools/test_lan_resume.py`（`LAN_ONLY=ten` 只跑 11 进程的十人局）。
+  - 注意：这条联机线还没合进主线（主线有导演反馈第一、二轮和第三轮 PR），合并时 `hud.gd` / `match_view.gd` / `main_menu.gd` 冲突较多。
 - 2026-10-10 画面升级第一轮：对照导演提供的《逃离鸭科夫》截图，改善环境光、连续光源衰减、接触阴影、材质区分、地板与陶盆、成组装饰、相机角度。审阅与验证见 `review/visual_pass1/REPORT.md`。这是第一轮视觉提升，尚未达到参考游戏的完整资产品质。
   - 画面参数集中在 `game/data/visual_style.json`，不更改战斗模拟或视野范围；新增装饰净空、确定性及模拟隔离测试。
   - 地板 / 陶盆重建用 `tools/assets.sh env_visual_kit`，须在 `env_kit` 后生成（全量生成的字母顺序已满足）。

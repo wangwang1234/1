@@ -46,13 +46,24 @@ func test_input_validation() -> void:
 	check(not NetInput.apply(h.inp, valid), "reject NaN")
 
 func test_discovery_validation_and_expiry() -> void:
-	var row := {"name": "房间", "port": 28765, "mode": "slice", "state": "open", "count": 1, "signature": "a".repeat(64)}
+	var row := {"name": "房间", "port": 28765, "mode": "slice", "state": "open", "count": 1, "capacity": 6, "signature": "a".repeat(64)}
 	check(not LanDiscovery.clean_room(row, "127.0.0.1").is_empty(), "valid room")
 	row.port = 999999
 	check(LanDiscovery.clean_room(row, "127.0.0.1").is_empty(), "invalid port")
 	row.port = 28765
 	row.state = "bad"
 	check(LanDiscovery.clean_room(row, "127.0.0.1").is_empty(), "invalid state")
+	row.state = "open"
+	row.count = 7
+	row.capacity = 10
+	check(not LanDiscovery.clean_room(row, "127.0.0.1").is_empty(), "ten-seat room with seven players")
+	row.count = 11
+	check(LanDiscovery.clean_room(row, "127.0.0.1").is_empty(), "more players than seats rejected")
+	row.count = 3
+	row.capacity = 11
+	check(LanDiscovery.clean_room(row, "127.0.0.1").is_empty(), "capacity above maxPlayers rejected")
+	row.erase("capacity")
+	check(LanDiscovery.clean_room(row, "127.0.0.1").is_empty(), "missing capacity rejected")
 	var discovery := LanDiscovery.new()
 	check(discovery.start_scan() == OK, "ephemeral scan socket")
 	discovery.rooms["test"] = {"age": 0.0}
@@ -109,7 +120,7 @@ func test_event_outage_bounded_and_stale_effects_discarded() -> void:
 func test_discovery_refreshes_map_and_version() -> void:
 	var host := LanDiscovery.new()
 	var scanner := LanDiscovery.new()
-	var row := {"name": "房间", "port": 28765, "mode": "slice", "state": "open", "count": 1, "signature": "a".repeat(64)}
+	var row := {"name": "房间", "port": 28765, "mode": "slice", "state": "open", "count": 1, "capacity": 6, "signature": "a".repeat(64)}
 	check(host.start_host(row, 0) == OK, "discovery host")
 	check(scanner.start_scan() == OK, "discovery scanner")
 	var notifications := [0]
@@ -196,3 +207,21 @@ func test_prediction_keeps_press_direction_after_input_ack() -> void:
 	prediction.advance(w, {"seq": 2, "input": input, "dash": false, "action": 0}, 1.0 / 60.0)
 	prediction.reconcile(w, source, 1, 0)
 	near(prediction.ham.rdx, -1, 0.0001, "replayed later input cannot change pending dash")
+
+
+func test_dropped_player_handed_to_ai() -> void:
+	var w := SimWorld.new()
+	var players: Array = []
+	for i in 10:
+		players.append({"team": "blue" if i < 5 else "red", "ctl": "player", "name": "P%d" % i, "skin": "gold", "weapon": "pistol"})
+	w.setup({"mode": "full", "seed": 7, "players": players, "ai": {"blue": 0, "red": 0}})
+	check(w.hams.size() == 10 and w.hams.all(func(h: SimHamster) -> bool: return h.ctl == "player"), "ten human seats, no AI filler")
+	var h: SimHamster = w.hams[3]
+	h.inp.fire = true
+	var start := Vector2(h.x, h.y)
+	w.hand_to_ai(h)
+	check(h.ctl == "ai" and h.ai != null and not h.inp.fire, "takeover resets input and creates AI state")
+	for i in 60 * 8:
+		w.step(1.0 / 60.0)
+	check(Vector2(h.x, h.y).distance_to(start) > 50.0, "AI drives the abandoned hamster")
+	w.dispose()

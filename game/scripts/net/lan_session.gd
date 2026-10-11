@@ -68,7 +68,7 @@ const CHUNK_BYTES := NetSnapshotChunks.CHUNK_BYTES
 
 func _ready() -> void :
 	process_mode = Node.PROCESS_MODE_ALWAYS
-	# This is a host-authoritative two-player topology. Do not relay peer-list
+	# Host-authoritative star topology (up to network.json maxPlayers). Do not relay peer-list
 	# notifications to old transports while a replacement connection is admitted.
 	multiplayer.server_relay = false
 	_net = Data.load_json("network")
@@ -107,6 +107,29 @@ func signature() -> String:
 	return _signature
 
 
+## Seats in the room: maxPlayers, but never more than both teams of the chosen map hold.
+func capacity(mode: String = "") -> int:
+	var m: = mode if not mode.is_empty() else String(room_options.get("mode", "full"))
+	return mini(int(_net.maxPlayers), 2 * team_size(m))
+
+
+static func team_size(mode: String) -> int:
+	return int(Lobby.TEAM_SIZE.get(mode, Lobby.TEAM_SIZE.full))
+
+
+func team_count(team: String, except: int = 0) -> int:
+	var n: = 0
+	for id in roster:
+		if id != except and String(roster[id].team) == team:
+			n += 1
+	return n
+
+
+## True when this player may sit on that team (their own seat does not count against it).
+func team_has_room(team: String, id: int = 0) -> bool:
+	return team_count(team, id) < team_size(String(room_options.get("mode", "full")))
+
+
 func addresses() -> PackedStringArray:
 	var out: = PackedStringArray()
 	for ip in IP.get_local_addresses():
@@ -123,7 +146,8 @@ func _status(message: String) -> void :
 func host(profile: Dictionary, options: Dictionary, port: int = 0) -> Error:
 	leave()
 	var enet: = ENetMultiplayerPeer.new()
-	var error: = enet.create_server(port if port > 0 else int(_net.port), int(_net.maxPlayers), 4)
+	# Extra slots let a reconnecting player's new transport arrive before the old one is released.
+	var error: = enet.create_server(port if port > 0 else int(_net.port), int(_net.maxPlayers) + int(_net.get("spareConnections", 2)), 4)
 	if error != OK:
 		_status("无法创建房间：端口被占用或网络不可用")
 		return error
@@ -134,7 +158,7 @@ func host(profile: Dictionary, options: Dictionary, port: int = 0) -> Error:
 	room_options = {"mode": "slice" if options.get("mode") == "slice" else "full"}
 	roster = {1: local_profile.duplicate()}
 	discovery.start_host(_room_advertisement())
-	_status("房间已创建，等待另一位玩家加入")
+	_status("房间已创建，等待其他玩家加入（最多 %d 人）" % capacity())
 	room_changed.emit()
 	return OK
 
@@ -187,12 +211,15 @@ func _register(version: String, profile: Dictionary, token: String = "") -> void
 	if version == signature() and running and not token.is_empty():
 		_accept_resume(sender, token)
 		return
-	if version != signature() or running or loading or roster.size() >= int(_net.maxPlayers):
+	if version != signature() or running or loading or roster.size() >= capacity():
 		_reject.rpc_id(sender, "版本不一致，请使用同一份联机版" if version != signature() else "房间已满或对局已经开始")
 		return
 	_tokens[sender] = Crypto.new().generate_random_bytes(32).hex_encode()
 	_seat_token.rpc_id(sender, _tokens[sender])
-	roster[sender] = clean_profile(profile)
+	var seat: = clean_profile(profile)
+	if not team_has_room(seat.team, sender):
+		seat.team = "red" if seat.team == "blue" else "blue"
+	roster[sender] = seat
 	_joining.erase(sender)
 	_broadcast_room()
 
@@ -215,7 +242,11 @@ func update_profile(profile: Dictionary) -> void :
 func _set_profile(id: int, p: Dictionary) -> void :
 	if not roster.has(id):
 		return
-	roster[id] = clean_profile(p)
+	var seat: = clean_profile(p)
+	# A full team keeps the player where they were; the lobby greys that option out.
+	if seat.team != String(roster[id].team) and not team_has_room(seat.team, id):
+		seat.team = String(roster[id].team)
+	roster[id] = seat
 
 	for row in roster.values():
 		row.ready = false
@@ -265,12 +296,16 @@ func _room(players: Dictionary, options: Dictionary) -> void :
 		_back()
 		if role != "client":
 			return
-	_status("已连接：双方准备后由房主开始")
+	_status("已连接：%d/%d 人，全部准备后由房主开始" % [roster.size(), capacity()])
 	room_changed.emit()
 
 
 func can_start() -> bool:
-	return is_host() and not loading and not running and roster.size() == int(_net.maxPlayers) and roster.keys().all(func(id: int) -> bool: return id == 1 or _can_send_to(id)) and roster.values().all( func(p: Dictionary) -> bool: return p.ready)
+	if not is_host() or loading or running or roster.size() < int(_net.get("minPlayers", 2)) or roster.size() > capacity():
+		return false
+	if team_count("blue") > team_size(String(room_options.mode)) or team_count("red") > team_size(String(room_options.mode)):
+		return false
+	return roster.keys().all(func(id: int) -> bool: return id == 1 or _can_send_to(id)) and roster.values().all( func(p: Dictionary) -> bool: return p.ready)
 
 
 func start_game() -> bool:
@@ -330,7 +365,7 @@ func _begin(cfg: Dictionary) -> void :
 	snapshots_received = 0
 	repaired_snapshots = 0
 	snapshot_bytes = 0
-	_status("双方正在加载地图…")
+	_status("所有玩家正在加载地图…")
 	match_requested.emit(config)
 
 
@@ -338,11 +373,13 @@ func attach(w: SimWorld) -> void :
 	world = w
 	_baseline = NetSnapshot.baseline_index(NetSnapshot.capture(w))
 	peer_hams.clear()
+	# Seats are matched once by spawn order, then by hamster id (an AI takeover changes ctl).
 	var i: = 0
 	for h in w.hams:
-		if h.ctl == "player":
-			peer_hams[int(config.players[i].peer_id)] = h
+		if h.ctl == "player" and i < config.players.size():
+			config.players[i].ham = h.id
 			i += 1
+	_map_seats()
 	if is_host():
 		_loaded[1] = true
 		_check_loaded()
@@ -591,10 +628,14 @@ func _on_disconnected(id: int) -> void:
 		NetInput.clear(peer_hams[id].inp)
 		_reserved[id] = float(_net.reconnectGrace)
 		_resume_wait.erase(id)
-		_status("玩家暂时断线，保留位置 %d 秒等待重连" % ceili(float(_net.reconnectGrace)))
+		_status("%s 暂时断线，保留位置 %d 秒等待重连" % [String(roster[id].name), ceili(float(_net.reconnectGrace))])
 		discovery.advertisement = _room_advertisement()
 	elif loading:
-		_fail("另一位玩家在加载时断开，请重新建房")
+		var who: = String(roster[id].name)
+		roster.erase(id)
+		_tokens.erase(id)
+		return_to_room()
+		_status("%s 在加载时断开，已返回房间" % who)
 	else:
 		roster.erase(id)
 		_tokens.erase(id)
@@ -618,8 +659,7 @@ func _process(dt: float) -> void :
 	for id in _reserved.keys():
 		_reserved[id] -= dt
 		if _reserved[id] <= 0:
-			_fail("玩家未在 %d 秒内重连，对局结束" % ceili(float(_net.reconnectGrace)))
-			return
+			_hand_to_ai(id)
 	for id in _resume_wait.keys():
 		_resume_wait[id] -= dt
 		if _resume_wait[id] <= 0:
@@ -645,7 +685,7 @@ func _process(dt: float) -> void :
 	if loading and _since > float(_net.loadTimeout):
 		_fail("加载超时，请重新创建房间")
 	elif role == "client" and not running and not loading and roster.is_empty() and _since > float(_net.connectTimeout):
-		_fail("连接超时：请确认双方在同一局域网，并允许游戏访问网络")
+		_fail("连接超时：请确认和房主在同一局域网，并允许游戏访问网络")
 	elif role == "client" and running and _since > float(_net.snapshotTimeout):
 		_server_lost()
 
@@ -702,7 +742,7 @@ func leave() -> void :
 
 func _room_advertisement() -> Dictionary:
 	return {"name": local_profile.name, "port": _port, "mode": room_options.mode, "signature": signature(),
-		"count": roster.size(), "state": "playing" if running or loading else ("full" if roster.size() >= int(_net.maxPlayers) else "open")}
+		"count": roster.size(), "capacity": capacity(), "state": "playing" if running or loading else ("full" if roster.size() >= capacity() else "open")}
 
 func scan_rooms() -> void:
 	if not active() and not discovery.scanning:
@@ -765,6 +805,33 @@ func _reconnect_tick(dt: float) -> void:
 	if enet.create_client(_endpoint, _port, 4) == OK:
 		multiplayer.multiplayer_peer = enet
 
+func _map_seats() -> void:
+	peer_hams.clear()
+	for p in config.get("players", []):
+		var h: SimHamster = world.ham_by_id(int(p.get("ham", -1))) if world != null else null
+		if h != null and int(p.peer_id) > 0:
+			peer_hams[int(p.peer_id)] = h
+
+
+## A player who missed the reconnect window: their hamster keeps playing under AI control.
+func _hand_to_ai(id: int) -> void:
+	var who: = String(roster.get(id, {}).get("name", "玩家"))
+	_reserved.erase(id)
+	_tokens.erase(id)
+	roster.erase(id)
+	if peer_hams.has(id):
+		if world != null:
+			world.hand_to_ai(peer_hams[id])
+		peer_hams.erase(id)
+	for key in [_last_input, _last_action, _consumed_input, _consumed_action, _input_age]:
+		key.erase(id)
+	for p in config.get("players", []):
+		if int(p.peer_id) == id:
+			p.peer_id = -1
+	_status("%s 未在 %d 秒内重连，由 AI 接管" % [who, ceili(float(_net.reconnectGrace))])
+	discovery.advertisement = _room_advertisement()
+
+
 func _accept_resume(sender: int, token: String) -> void:
 	var previous := -1
 	for id in _tokens:
@@ -808,12 +875,7 @@ func _resume_state(match_id: int, digest: String, players: Dictionary, owners: A
 	roster = players
 	config.players = owners
 	config.local_peer = local_id()
-	peer_hams.clear()
-	var i := 0
-	for h in world.hams:
-		if h.ctl == "player":
-			peer_hams[int(owners[i].peer_id)] = h
-			i += 1
+	_map_seats()
 	chunk_buffer.clear()
 	event_buffer.clear()
 	_last_snapshot_tick = world.tick

@@ -72,7 +72,7 @@ func advance(dt: float) -> void:
 				continue
 			var key := "%s:%d" % [address, row.port]
 			row.age = 0.0
-			for field in ["name", "state", "count", "mode", "signature"]:
+			for field in ["name", "state", "count", "capacity", "mode", "signature"]:
 				updated = updated or not rooms.has(key) or rooms[key][field] != row[field]
 			rooms[key] = row
 	for key in rooms.keys():
@@ -102,11 +102,17 @@ static func clean_room(value: Dictionary, address: String) -> Dictionary:
 		return {}
 	if not NetInput.finite_number(value.get("count")):
 		return {}
-	if value.count < 1 or value.count > 2 or value.count != floor(float(value.count)):
+	var limit := int(Data.load_json("network").maxPlayers)
+	if not NetInput.finite_number(value.get("capacity")):
+		return {}
+	if value.capacity < 2 or value.capacity > limit or value.capacity != floor(float(value.capacity)):
+		return {}
+	var capacity := int(value.capacity)
+	if value.count < 1 or value.count > capacity or value.count != floor(float(value.count)):
 		return {}
 	var count := int(value.count)
 	return {"address": address, "port": port, "name": String(value.name).replace("\n", " ").substr(0, 16),
-		"signature": String(value.signature).substr(0, 64), "state": value.state, "mode": value.mode, "count": count}
+		"signature": String(value.signature).substr(0, 64), "state": value.state, "mode": value.mode, "count": count, "capacity": capacity}
 
 func stop() -> void:
 	if socket != null:

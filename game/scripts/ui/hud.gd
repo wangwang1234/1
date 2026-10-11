@@ -566,8 +566,8 @@ func _draw_score(c: Control, s: float) -> void:
 
 func _draw_network(c: Control, s: float) -> void :
 	if LanSession.reconnecting or not LanSession._reserved.is_empty():
-		var remaining := ceili(float(Data.load_json("network").reconnectGrace) - LanSession._reconnect_age) if LanSession.reconnecting else ceili(float(LanSession._reserved.values()[0]))
-		var message := "连接中断，自动重连中 · %d 秒" % remaining if LanSession.reconnecting else "玩家暂时断线，等待重连 · %d 秒" % remaining
+		var remaining := ceili(float(Data.load_json("network").reconnectGrace) - LanSession._reconnect_age) if LanSession.reconnecting else ceili(float(LanSession._reserved.values().min()))
+		var message := "连接中断，自动重连中 · %d 秒" % remaining if LanSession.reconnecting else "%d 名玩家暂时断线，%d 秒内未回来由 AI 接管" % [LanSession._reserved.size(), remaining]
 		var r := Rect2(Vector2(520, 140) * s, Vector2(880, 54) * s)
 		_panel(c, r, 9 * s, 0.9)
 		_txt(c, r.position + Vector2(24, 36) * s, message, 22 * s, UiTheme.GOLD)

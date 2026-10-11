@@ -29,6 +29,7 @@ var discarded_events := 0
 var gap_sent := false
 var lobby_returns := 0
 var returned_during_reconnect := false
+var seat_reserved := false
 
 func _ready() -> void:
 	var args: Dictionary = get_tree().root.get_node("Main").parse_args(OS.get_cmdline_user_args()) if get_tree().root.has_node("Main") else _args()
@@ -206,6 +207,12 @@ func _physics_process(dt: float) -> void:
 			ended = ""
 		if scenario == "resume" and matches == 2 and match_age > (2.0 if role == "host" else 1.0):
 			_finish(role == "host" or (resumes == 2 and received > snapshots_at_drop + 10), "two reconnects and second match")
+	if scenario in ["expiry", "invalid"] and role == "host" and not LanSession._reserved.is_empty():
+		seat_reserved = true
+	if scenario in ["expiry", "invalid"] and role == "host" and seat_reserved and LanSession._reserved.is_empty():
+		var takeover := w.hams.filter(func(h: SimHamster) -> bool: return h.name == "测试客户端")
+		_finish(LanSession.running and ended.is_empty() and LanSession.roster.size() == 1 and takeover.size() == 1 and takeover[0].ctl == "ai" and takeover[0].ai != null,
+			"expired seat handed to AI while the match continues")
 	if scenario in ["expiry", "invalid"] and not ended.is_empty():
 		_finish(not LanSession.active() and resumes == 0, "expired or invalid seat rejected: " + ended)
 	if scenario == "mismatch" and (not ended.is_empty() or (role == "host" and elapsed > 3)):

@@ -255,7 +255,8 @@ func _process(_delta: float) -> void:
 		var profile: Dictionary = LanSession.roster.get(LanSession.local_id(), {})
 		if not profile.is_empty() and not bool(profile.ready):
 			LanSession.set_ready(true)
-		if LanSession.can_start() and not _busy:
+		# --lan-players N: the host waits for N seats (default: start as soon as two are ready).
+		if LanSession.can_start() and LanSession.roster.size() >= int(args.get("lan-players", 2)) and not _busy:
 			LanSession.start_game()
 	_fps.visible = Settings.show_fps
 	if _fps.visible:

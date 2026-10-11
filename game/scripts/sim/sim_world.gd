@@ -232,11 +232,7 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 	h.xp_next = Data.xp_need(1)
 	h.gadget = {"id": "frag", "lvl": 1, "cd": 2.0}
 	if ctl == "ai":
-		h.ai = SimHamster.AiState.new()
-		var lanes := map.lanes.keys()
-		h.ai.lane = String(lanes[idx % lanes.size()]) if not lanes.is_empty() else "mid"
-		h.ai.dash_t = rand(1.0, 3.0)
-		h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
+		_init_ai(h)
 	SimHamsterLogic.calc_stats(h)
 	h.hp = h.max_hp
 	h.ammo = SimWeapons.mag_size(h)
@@ -581,6 +577,24 @@ func rail_candidates() -> Array:
 
 func is_visible_to(team: String, e: SimEntity) -> bool:
 	return e.team == team or vis[team].has(e.id)
+
+
+func _init_ai(h: SimHamster) -> void:
+	h.ai = SimHamster.AiState.new()
+	var lanes := map.lanes.keys()
+	h.ai.lane = String(lanes[h.idx % lanes.size()]) if not lanes.is_empty() else "mid"
+	h.ai.dash_t = rand(1.0, 3.0)
+	h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
+
+
+## 联机玩家掉线超时：这只仓鼠交给 AI 继续打（等级、装备都保留）。
+func hand_to_ai(h: SimHamster) -> void:
+	if h.ctl == "ai":
+		return
+	h.ctl = "ai"
+	h.inp = SimHamster.HamInput.new()
+	h.inp.aim = h.aim
+	_init_ai(h)
 
 
 func ham_by_id(id: int) -> SimHamster:
