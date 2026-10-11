@@ -78,12 +78,24 @@
 - ffmpeg 6.1（音效转 OGG、录屏转码）
 - GitHub：远程 `origin` = github.com/wangwang1234/1，开发分支 `claude/new-session-w3yl0l`（`git push -u origin claude/new-session-w3yl0l`）
 
+## 两个 AI 协作（Claude Code + ChatGPT / Codex，2026-10-11 起）
+- **只有一条主线**：GitHub `wangwang1234/1` 的默认分支 `claude/new-session-w3yl0l`。所有人以它为准。
+- 开工前：`git fetch origin` 后，从主线最新提交新建自己的分支（Claude 用 `claude/…`，ChatGPT 用 `codex/…`）。**不要从旧提交、本地保存的副本或导出包恢复的代码开始。**
+- 收工：推送分支，对主线开 Pull Request；测试全过再合并。合并后对方下次开工就能看到。
+- 提交的必须是原始源码（带注释、原格式），不要提交从导出包 / pck 反编译恢复的文件。
+- 每次合并前在本文件“当前进度”最上面加一条：做了什么、审阅包 / 汇报路径、新坑。
+- 分工：ChatGPT 负责画面和联机，Claude 负责玩法和内容；尽量不同时改同一个文件，冲突时由合并的一方解决并在 PR 里写明。
+- 测试：`tools/test.sh`（全部）+ `python3 tools/test_lan_resume.py`（联机，约 10 分钟）。
+
 ## 第一次会话
 1. 检查 Godot、Blender、Python、git 是否可用；缺什么就告诉导演怎么安装（这属于需要导演操作的事），装好后继续。
 2. 初始化 git，提交交接包。
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-11 **合并：主线 + 第三轮（武器精简 10 把 / 右键技能 / 黑暗视野 / 画面个性化）+ 局域网联机（ChatGPT 的 v0.3.6-lan6 + 我改的 10 人房间，版本 0.3.7-lan7）**。审阅包 `review/lan10/`，联机说明 `docs/LAN.md`。
+  - ChatGPT 上传的联机文件是从编译包恢复的（注释全丢、`-> void :` 格式）；合并前按原文件重建，只保留真实代码改动（合并提交里有说明）。新建的 `scripts/net/*`、`lan_lobby.gd` 仍是恢复后的格式，以后改到时顺手整理。
+  - 联机回归：`python3 tools/test_lan_resume.py`（`LAN_ONLY=ten` 只跑 11 进程的十人局）；完整地图 10 人 / 中路小图 6 人，自动分队，掉线超时由 AI 接管。
 - 2026-10-11 武器精简到 10 把 + 右键武器专属技能（导演定：方案 A + 武器专属技能；审阅包 `review/skills/`，汇报 `review/skills/REPORT.md`，安装包 `release/manzai_skills_win64.zip` / `manzai_skills_mac.zip`）：开放武器由 `rules.json` 的 `scope.weapons` 决定（`Data.active_weapons()`，大厅 / 图鉴 / 卡池都用它；收起的 8 把代码数据保留）。技能在 `scripts/sim/sim_skills.gd`，数值在 `weapons.json` 每把的 `skill`（type / cd / 参数 / aiRange）；输入右键 / E / 手柄左扳机 / 2P 逗号；AI 用 `rules.json` 的 `ai.skillRate`。
   - **建议的下一步**：10 把武器的基础平衡（AK、冲锋枪、霰弹枪偏弱，见汇报里的胜率表）；技能专属特效音效。
   - 坑：HUD 冷却扇形不能画整圈或极窄扇形（三角化失败会让冒烟测试失败），已经夹在 0.02～0.995。

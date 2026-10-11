@@ -37,6 +37,7 @@ func _init() -> void:
 			inst.reset()
 			var ts := Time.get_ticks_msec()
 			inst.call(name)
+			TestCase.cleanup_worlds()
 			var dur := Time.get_ticks_msec() - ts
 			if inst.failures.is_empty():
 				report.append("  ok   %s.%s (%d ms)%s" % [f.get_basename(), name, dur, ("  " + inst.note) if inst.note != "" else ""])

@@ -57,8 +57,17 @@ var split := false
 var split_layer: CanvasLayer
 
 
+var networked: = false
+var prediction: NetPrediction
+var render_buffer: NetRenderBuffer
+var _network_time: = 0.0
+var _prediction_offset: = Vector2.ZERO
+var _finished_sent: = false
+
+
 func start(cfg: Dictionary) -> void:
 	_cfg = cfg
+	networked = bool(cfg.get("network", false))
 	PlayerInput.ensure_actions()
 	PlayerInput.right_shift_down = false
 	world = SimWorld.new()
@@ -68,16 +77,19 @@ func start(cfg: Dictionary) -> void:
 	var pi := 0
 	for h in world.hams:
 		if h.ctl == "player":
+			var owner_cfg: Dictionary = pcfg[pi] if pi < pcfg.size() else {}
+			pi += 1
+			if networked and int(owner_cfg.get("peer_id", -1)) != int(cfg.get("local_peer", 1)):
+				continue
 			var pl := LocalPlayer.new()
 			pl.ham = h
 			pl.team = h.team
-			pl.input = PlayerInput.new() if pi > 0 else input
-			var pc: Dictionary = pcfg[pi] if pi < pcfg.size() else {}
+			pl.input = PlayerInput.new() if not players.is_empty() else input
+			var pc: Dictionary = owner_cfg
 			pl.input.scheme = String(pc.get("input", "kbm"))
 			pl.input.pad_index = int(pc.get("pad", 0))
 			pl.want_pad = bool(pc.get("want_pad", false))
 			players.append(pl)
-			pi += 1
 	if not players.is_empty():
 		local = players[0].ham
 		local_team = local.team
@@ -160,6 +172,16 @@ func start(cfg: Dictionary) -> void:
 		hud = players[0].hud
 	Audio.play_ambience(true)
 	Audio.play_music("match", 1.5)
+
+
+	if networked:
+		if not LanSession.is_host():
+			prediction = NetPrediction.new()
+			prediction.reset(local)
+			render_buffer = NetRenderBuffer.new()
+		LanSession.snapshot_received.connect(_receive_snapshot)
+		LanSession.resume_received.connect(_reset_network_display)
+		LanSession.attach(world)
 
 
 func _setup_split() -> void:
@@ -378,17 +400,30 @@ func _unhandled_input(ev: InputEvent) -> void:
 
 
 func _physics_process(dt: float) -> void:
-	if world == null or paused:
+	if world == null or (paused and not networked):
 		return
-	if hitstop > 0.0:
+	if networked and not LanSession.running:
+		return
+	if hitstop > 0.0 and not networked:
 		hitstop -= dt
 		return
 	if local != null and not autoplay:
 		for pl in players:
+			if networked and paused:
+				NetInput.clear(pl.ham.inp)
+				continue
 			var mp := get_viewport().get_mouse_position()
 			if split:
 				mp = pl.box.get_local_mouse_position()
+			if prediction != null:
+				pl.input.position_hint = Vector2(prediction.ham.x, prediction.ham.y) + _prediction_offset
 			pl.input.poll(pl.ham, pl.cam, mp, not pl.ham.choices.is_empty() and pl.hud.card_at(mp) >= 0, world)
+	if networked and not LanSession.is_host():
+		prediction.advance(world, LanSession.send_input(local), dt)
+		_dispatch(LanSession.drain_events())
+		return
+	if networked:
+		LanSession.before_step(dt)
 	var steps := 1
 	if time_scale < 1.0:
 		# 慢动作：按比例跳过逻辑帧
@@ -397,11 +432,34 @@ func _physics_process(dt: float) -> void:
 		_t -= steps
 	for i in steps:
 		world.step(dt)
-	_dispatch(world.drain_events())
+	var events: = world.drain_events()
+	if networked:
+		LanSession.publish(events)
+	_dispatch(events)
 	_music_tick()
+	_finish_tick()
+
+
+func _reset_network_display() -> void:
+	prediction = NetPrediction.new()
+	prediction.reset(local)
+	render_buffer = NetRenderBuffer.new()
+	_prediction_offset = Vector2.ZERO
+
+
+func _receive_snapshot(packet: Dictionary) -> void :
+	if world != null and NetSnapshot.apply(world, packet):
+		render_buffer.push(packet, _network_time)
+		prediction.reconcile(world, local, int(packet.get("input_ack", {}).get(LanSession.local_id(), 0)), int(packet.get("action_ack", {}).get(LanSession.local_id(), 0)))
+		_dispatch(LanSession.drain_events())
+		_music_tick()
+		_finish_tick()
+
+
+func _finish_tick() -> void :
 	if world.over and not _over_handled:
 		_over_handled = true
-		time_scale = 0.35
+		time_scale = 1.0 if networked else 0.35
 		for id in ham_views:
 			var h := world.ham_by_id(id)
 			if h != null and h.team == world.winner:
@@ -410,7 +468,8 @@ func _physics_process(dt: float) -> void:
 		for pl in players:
 			any_win = any_win or pl.team == world.winner
 		Audio.play_music("victory" if any_win or players.is_empty() else "defeat", 0.4)
-	if world.over and world.end_t <= 0.0 and time_scale < 1.0:
+	if world.over and world.end_t <= 0.0 and not _finished_sent:
+		_finished_sent = true
 		time_scale = 1.0
 		finished.emit(world.winner, _stats())
 
@@ -419,8 +478,23 @@ func _process(delta: float) -> void:
 	_flush_quiet(delta)
 	if world == null:
 		return
+	if networked:
+		hitstop = maxf(0.0, hitstop - delta)
 	var alpha := Engine.get_physics_interpolation_fraction()
-	if hitstop > 0.0 or paused:
+	if prediction != null:
+		_network_time += delta
+		render_buffer.advance(delta)
+		_prediction_offset = prediction.render_offset(world, delta)
+
+		for group in NetSnapshot.GROUPS:
+			if group in ["lobs", "items"]:
+				continue
+			for entity in world.get(group):
+				var pose: = render_buffer.sample(entity.id)
+				entity.px = float(pose.get("x", entity.x))
+				entity.py = float(pose.get("y", entity.y))
+		alpha = 0.0
+	if (hitstop > 0.0 or paused) and not networked:
 		alpha = 1.0
 	for h in world.hams:
 		if not ham_views.has(h.id):
@@ -428,7 +502,11 @@ func _process(delta: float) -> void:
 		var hvw: HamsterView = ham_views[h.id]
 		hvw.frozen = h.frozen_until > world.t
 		var hm := vis_mask(h)
-		hvw.sync(h, alpha, delta, hm != 0)
+		var shown: = prediction.ham if prediction != null and h == local else h
+		var pose: = render_buffer.sample(h.id) if render_buffer != null and h != local else {}
+		hvw.sync(shown, Engine.get_physics_interpolation_fraction() if shown != h else alpha, delta, hm != 0, pose)
+		if shown != h:
+			hvw.position += Vector3(_prediction_offset.x, 0, _prediction_offset.y) * 0.01
 		apply_mask(hvw, hm)
 		apply_lit(hvw, reveal_mask(h) != 0, delta)
 		if hvw.visible and h.alive:
@@ -503,7 +581,9 @@ func _process(delta: float) -> void:
 		listener.global_transform = Transform3D(cam.global_transform.basis, fp0 + Vector3(0, 1.2, 0))
 	for pl in players:
 		var focus: SimHamster = pl.ham
-		var fpos := Vector3(lerpf(focus.px, focus.x, alpha) * 0.01, 0, lerpf(focus.py, focus.y, alpha) * 0.01)
+		var shown: = prediction.ham if prediction != null else focus
+		var local_alpha: = Engine.get_physics_interpolation_fraction() if prediction != null else alpha
+		var fpos: = Vector3((lerpf(shown.px, shown.x, local_alpha) + _prediction_offset.x) * 0.01, 0, (lerpf(shown.py, shown.y, local_alpha) + _prediction_offset.y) * 0.01)
 		if focus.alive:
 			pl.dead_time = 0.0
 			pl.last_alive = fpos
@@ -514,7 +594,7 @@ func _process(delta: float) -> void:
 			if pl.dead_time > 1.8:
 				var b: Vector2 = world.map.base_pos[focus.team]
 				fpos = Vector3(b.x * 0.01 + (3.6 if focus.team == "blue" else -3.6), 0, b.y * 0.01)
-		var aim_pt := fpos + Vector3(cos(focus.aim), 0, sin(focus.aim)) * 3.0
+		var aim_pt: = fpos + Vector3(cos(shown.aim), 0, sin(shown.aim)) * 3.0
 		if pl.input.device == "kbm" and not autoplay and focus.inp.has_aim_point:
 			aim_pt = Vector3(focus.inp.aim_x * 0.01, 0, focus.inp.aim_y * 0.01)
 		# 望远镜强化：镜头拉高、看得更宽（基础视宽分屏时是 0.7 倍），平滑过渡
@@ -527,8 +607,8 @@ func _process(delta: float) -> void:
 			# 听者放在角色头顶（不是 10 米高的镜头上），否则所有 3D 音效都像隔得很远；朝向沿用镜头，左右声道和画面一致
 			listener.global_transform = Transform3D(pl.cam.global_transform.basis, fpos + Vector3(0, 1.2, 0))
 	fx.sync_tracers(world.bullets, alpha, cam.global_transform.basis, func(b, _p): return true)
-	fx.sync_items(world.items, alpha, Time.get_ticks_msec() / 1000.0)
-	fx.sync_lobs(world.lobs)
+	fx.sync_items(world.items, alpha, Time.get_ticks_msec() / 1000.0, render_buffer)
+	fx.sync_lobs(world.lobs, render_buffer)
 	wfx.sync(world, alpha, delta, cam.global_transform.basis)
 	fx.update(delta)
 	if players.is_empty():
@@ -1139,6 +1219,14 @@ func _stats() -> Dictionary:
 
 
 func _exit_tree() -> void:
+	if networked:
+		if LanSession.snapshot_received.is_connected(_receive_snapshot):
+			LanSession.snapshot_received.disconnect(_receive_snapshot)
+		if LanSession.resume_received.is_connected(_reset_network_display):
+			LanSession.resume_received.disconnect(_reset_network_display)
+		if LanSession.world == world:
+			LanSession.world = null
+			LanSession.peer_hams.clear()
 	if split:
 		get_viewport().disable_3d = false
 	if world != null:

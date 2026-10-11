@@ -17,6 +17,7 @@ var device := "kbm"      # 当前实际在用的设备（kbm 方案里接上手�
 var pad_index := 0
 var allow_pad := true    # kbm 方案是否同时接手柄（2P 用手柄时，手柄归 2P）
 var arrows := true       # kbm 方案是否也认方向键（2P 用方向键时方向键归 2P）
+var position_hint: = Vector2(INF, INF)
 var _pad_aim := 0.0
 var _edge := {}
 var _press_on_card := false   # 这次左键是按在升级卡上按下去的（那就是选卡，按住期间不开火）
@@ -64,6 +65,7 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool
 	## over_card：鼠标正停在升级卡上（这时左键是选卡，不开火；其余时候选卡期间照样能射击）
 	if h == null:
 		return
+	var origin: = position_hint if position_hint.is_finite() else Vector2(h.x, h.y)
 	var inp := h.inp
 	var mv := Vector2.ZERO
 	var pad_mv := Vector2.ZERO
@@ -95,7 +97,7 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool
 		var g := cam.screen_to_ground(mouse_screen, 0.16)
 		var gx := g.x * 100.0
 		var gy := g.z * 100.0
-		inp.aim = atan2(gy - h.y, gx - h.x)
+		inp.aim = atan2(gy - origin.y, gx - origin.x)
 		inp.aim_x = gx
 		inp.aim_y = gy
 		inp.has_aim_point = true
@@ -109,7 +111,7 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool
 			# 没推右摇杆 / 方向键：自动瞄准射程内最近的敌人，没有就朝移动方向
 			var t: SimEntity = SimWeapons.auto_aim(w, h, maxf(300.0, minf(SimWeapons.range_of(h), 640.0))) if w != null else null
 			if t != null:
-				_pad_aim = atan2(t.y - h.y, t.x - h.x)
+				_pad_aim = atan2(t.y - origin.y, t.x - origin.x)
 			elif mv.length() > 0.3:
 				_pad_aim = atan2(mv.y, mv.x)
 		inp.aim = _pad_aim

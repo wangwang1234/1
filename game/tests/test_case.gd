@@ -5,6 +5,9 @@ var failures: Array[String] = []
 var note := ""
 
 
+static var _worlds: Array[SimWorld] = []
+
+
 func reset() -> void:
 	failures.clear()
 	note = ""
@@ -25,9 +28,17 @@ func near(a: float, b: float, eps: float, msg: String) -> bool:
 
 
 static func make_world(mode: String = "slice", seed_: int = 7, ai_blue: int = 3, ai_red: int = 3, players: Array = []) -> SimWorld:
+	_worlds = _worlds.filter(func(old: SimWorld) -> bool: return not old.entities.is_empty())
 	var w := SimWorld.new()
 	w.setup({"mode": mode, "seed": seed_, "players": players, "ai": {"blue": ai_blue, "red": ai_red}})
+	_worlds.append(w)
 	return w
+
+
+static func cleanup_worlds() -> void:
+	for w in _worlds:
+		w.dispose()
+	_worlds.clear()
 
 
 static func run(w: SimWorld, seconds: float) -> void:

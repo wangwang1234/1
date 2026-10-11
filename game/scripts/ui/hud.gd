@@ -248,6 +248,8 @@ func draw_all(c: Control) -> void:
 		_draw_crosshair(c, s, h)
 	_draw_score(c, s)
 	_draw_minimap(c, s)
+	if mv.networked:
+		_draw_network(c, s)
 	_draw_feed(c, s)
 	_draw_toasts(c, s)
 	if board or board_force:
@@ -491,7 +493,8 @@ func _draw_crosshair(c: Control, s: float, h: SimHamster) -> void:
 	var p := c.get_local_mouse_position()
 	if pin.device != "kbm":
 		var ahead := clampf(SimWeapons.range_of(h) * 0.55, 160.0, 420.0)
-		p = cam.unproject_position(Vector3((h.x + cos(h.aim) * ahead) * 0.01, 0.16, (h.y + sin(h.aim) * ahead) * 0.01))
+		var shown: = mv.prediction.ham if mv.prediction != null and h == mv.local else h
+		p = cam.unproject_position(Vector3((shown.x + cos(shown.aim) * ahead) * 0.01, 0.16, (shown.y + sin(shown.aim) * ahead) * 0.01))
 	var col := UiTheme.CREAM
 	var r := 11.0 * s
 	# 右键技能冷却：准星外一圈细弧，转满就是好了（好了的瞬间不画，免得一直有一圈）
@@ -589,6 +592,30 @@ func _draw_score(c: Control, s: float) -> void:
 		_bar(c, br2, b.hp / b.max_hp, Color("#c77dff"), Color(0.05, 0.03, 0.08, 0.85))
 		_txt(c, br2.position + Vector2(0, -4 * s), "鼠王", 18 * s, Color("#ffd166"), HORIZONTAL_ALIGNMENT_CENTER, true, bw, 5)
 	c.draw_set_transform(Vector2.ZERO)
+
+
+func _draw_network(c: Control, s: float) -> void :
+	if LanSession.reconnecting or not LanSession._reserved.is_empty():
+		var remaining := ceili(float(Data.load_json("network").reconnectGrace) - LanSession._reconnect_age) if LanSession.reconnecting else ceili(float(LanSession._reserved.values().min()))
+		var message := "连接中断，自动重连中 · %d 秒" % remaining if LanSession.reconnecting else "%d 名玩家暂时断线，%d 秒内未回来由 AI 接管" % [LanSession._reserved.size(), remaining]
+		var r := Rect2(Vector2(520, 140) * s, Vector2(880, 54) * s)
+		_panel(c, r, 9 * s, 0.9)
+		_txt(c, r.position + Vector2(24, 36) * s, message, 22 * s, UiTheme.GOLD)
+
+	var map: = mv.world.map
+	var width: = 360.0 * s
+	var height: = width * (map.max_y - map.min_y) / (map.max_x - map.min_x)
+	var pos: = Vector2(root.size.x - width - 18 * s, 16 * s + height + 26 * s)
+	var metrics: = LanSession.metrics
+	var ping: = "%d ms" % roundi(metrics.rtt_ms) if metrics.rtt_ms >= 0 else "测量中"
+	var stale: = not LanSession.is_host() and LanSession._since > float(Data.load_json("network").inputTimeout)
+	var color: = Color("#ffd166") if stale or metrics.rtt_ms > 120 or metrics.missing_percent > 5 else Color("#9fe8b4")
+	_panel(c, Rect2(pos - Vector2(8, 6) * s, Vector2(width + 16 * s, 55 * s)), 9 * s, 0.8)
+	_txt(c, pos + Vector2(0, 15 * s), "%s · %s%s" % ["房主" if LanSession.is_host() else "局域网", ping, " · 同步中断" if stale else ""], 18 * s, color)
+	var details: = "状态发送 %.1f KB/s" % metrics.snapshot_kbps
+	if mv.render_buffer != null:
+		details = "接收 %.1f KB/s · 缺帧 %.0f%% · 缓冲 %d ms" % [metrics.snapshot_kbps, metrics.missing_percent, roundi(mv.render_buffer.delay * 1000)]
+	_txt(c, pos + Vector2(0, 39 * s), details, 16 * s, UiTheme.SUB)
 
 
 func _draw_minimap(c: Control, s: float) -> void:
@@ -695,6 +722,17 @@ func _draw_toasts(c: Control, s: float) -> void:
 	_txt(c, r.position + Vector2(0, 37 * s), String(t.text), 28 * s, col, HORIZONTAL_ALIGNMENT_CENTER, true, r.size.x)
 
 
+func _project_entity(e: SimEntity, height: float) -> Vector2:
+	var pos: = Vector2(e.x, e.y)
+	if mv.prediction != null and e == mv.local and mv.ham_views.has(e.id):
+		var node: Node3D = mv.ham_views[e.id]
+		return cam.unproject_position(node.global_position + Vector3(0, height - mv.local.z * 0.01, 0))
+	if mv.render_buffer != null:
+		var pose: = mv.render_buffer.sample(e.id)
+		pos = Vector2(float(pose.get("x", e.x)), float(pose.get("y", e.y)))
+	return cam.unproject_position(Vector3(pos.x * 0.01, height, pos.y * 0.01))
+
+
 func _draw_world_ui(c: Control, s: float) -> void:
 	var w := mv.world
 	var cam := cam
@@ -713,15 +751,15 @@ func _draw_world_ui(c: Control, s: float) -> void:
 	for m in w.minions:
 		if m.dead or m.hp >= m.max_hp or not mv.team_reveals(m):
 			continue
-		var p2: Vector2 = proj.call(m.x, m.y, 0.42)
+		var p2: = _project_entity(m, 0.42)
 		_bar(c, Rect2(p2.x - 16 * s, p2.y, 32 * s, 5 * s), m.hp / m.max_hp, UiTheme.BLUE if m.team == "blue" else UiTheme.RED, Color(0.05, 0.03, 0.08, 0.75))
 	for e in w.mobs:
 		if e.dead or e.kind == "boss" or e.hp >= e.max_hp or not mv.team_reveals(e):
 			continue
-		var pm: Vector2 = proj.call(e.x, e.y, 0.5 if e.kind == "rat" else 0.3)
+		var pm: = _project_entity(e, 0.5 if e.kind == "rat" else 0.3)
 		_bar(c, Rect2(pm.x - 20 * s, pm.y, 40 * s, 5 * s), e.hp / e.max_hp, Color("#ffd166"), Color(0.05, 0.03, 0.08, 0.75))
 	if w.boss != null and not w.boss.dead and mv.team_reveals(w.boss):
-		var pb: Vector2 = proj.call(w.boss.x, w.boss.y, 1.3)
+		var pb: = _project_entity(w.boss, 1.3)
 		_bar(c, Rect2(pb.x - 70 * s, pb.y, 140 * s, 10 * s), w.boss.hp / w.boss.max_hp, Color("#c77dff"), Color(0.05, 0.03, 0.08, 0.85))
 	for st2 in w.structs:
 		if st2.kind == "sentry" and not st2.dead and mv.team_reveals(st2) and st2.hp < st2.max_hp:
@@ -767,7 +805,7 @@ func _draw_world_ui(c: Control, s: float) -> void:
 			continue
 		if h != me and not (h.team == team or w.vis[team].has(h.id)):
 			continue
-		var p4: Vector2 = proj.call(h.x, h.y, 0.62 + h.z * 0.01)
+		var p4: = _project_entity(h, 0.62 + h.z * 0.01)
 		var hk := h.hp / h.max_hp
 		var bw := 62.0 * s
 		var col := UiTheme.GREEN if h.team == team else Color("#ff6b5e")
@@ -782,14 +820,15 @@ func _draw_world_ui(c: Control, s: float) -> void:
 			_txt(c, Vector2(p4.x - 100 * s, p4.y - 30 * s), "♛", 20 * s, Color("#ffd166"), HORIZONTAL_ALIGNMENT_CENTER, false, 200 * s, 5)
 	# 本地玩家：射程圈、投掷落点圈
 	if me != null and me.alive and not mv.autoplay:
+		var shown: = mv.prediction.ham if mv.prediction != null and me == mv.local else me
 		var gid := String(me.gadget.id)
 		var land_r := 0.0
 		var land := Vector2.ZERO
 		if THROWN.has(gid) and float(me.gadget.cd) <= 0.0:
-			land = SimGadgets.target(w, me)
+			land = SimGadgets.target(w, shown)
 			land_r = float(THROWN[gid])
 		if me.weapon_id == "gl":
-			land = SimWeaponModes.lob_target(w, me, SimWeapons.range_of(me))
+			land = SimWeaponModes.lob_target(w, shown, SimWeapons.range_of(me))
 			land_r = float(me.weapon().aoe) * float(SimWeapons.params(me).aoe)
 		if land_r > 0.0:
 			var lp := PackedVector2Array()
@@ -802,7 +841,7 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		var pts := PackedVector2Array()
 		for i in 49:
 			var a := TAU * i / 48.0
-			pts.append(proj.call(me.x + cos(a) * rr, me.y + sin(a) * rr, 0.02))
+			pts.append(proj.call(shown.x + cos(a) * rr, shown.y + sin(a) * rr, 0.02))
 		for i in 48:
 			if i % 2 == 0:
 				c.draw_line(pts[i], pts[i + 1], Color(1, 0.95, 0.85, 0.14), 2 * s, true)

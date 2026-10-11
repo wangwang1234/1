@@ -646,7 +646,7 @@ func _mm_gem_gold_node() -> MultiMeshInstance3D:
 	return null
 
 
-func sync_items(items: Array, alpha: float, t: float) -> void:
+func sync_items(items: Array, alpha: float, t: float, buffer: NetRenderBuffer = null) -> void :
 	var n := 0
 	var nb := 0
 	var ng := 0
@@ -655,7 +655,8 @@ func sync_items(items: Array, alpha: float, t: float) -> void:
 	var scb := float(_pick.get("bigScale", 1.0))
 	var scg := float(_pick.get("goldScale", 1.0))
 	for g: SimItem in items:
-		var pos := Vector3(g.x * 0.01, 0.02 + g.z * 0.01 + 0.015 * sin(t * 4.0 + g.id), g.y * 0.01)
+		var pose: = buffer.sample(g.id) if buffer != null else {}
+		var pos: = Vector3(float(pose.get("x", g.x)) * 0.01, 0.02 + float(pose.get("z", g.z)) * 0.01 + 0.015 * sin(t * 4.0 + g.id), float(pose.get("y", g.y)) * 0.01)
 		if g.type == "gem":
 			var b := Basis(Vector3.UP, t * 2.0 + g.id).rotated(Vector3.RIGHT, 0.25)
 			if g.gold:
@@ -701,7 +702,7 @@ const LOB_MODEL := {
 }
 
 
-func sync_lobs(lobs: Array) -> void:
+func sync_lobs(lobs: Array, buffer: NetRenderBuffer = null) -> void :
 	var seen := {}
 	for L: SimLob in lobs:
 		seen[L.id] = true
@@ -712,7 +713,8 @@ func sync_lobs(lobs: Array) -> void:
 			add_child(n)
 			_lob_nodes[L.id] = n
 		var node: Node3D = _lob_nodes[L.id]
-		node.position = Vector3(L.x * 0.01, L.z * 0.01, L.y * 0.01)
+		var pose: = buffer.sample(L.id) if buffer != null else {}
+		node.position = Vector3(float(pose.get("x", L.x)) * 0.01, float(pose.get("z", L.z)) * 0.01, float(pose.get("y", L.y)) * 0.01)
 		if L.att == null and not L.stuck:
 			node.rotation = Vector3(L.rot, L.rot * 0.7, 0)
 		if L.fuse >= 0.0 and L.fuse < 0.6:

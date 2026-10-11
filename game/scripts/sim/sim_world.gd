@@ -70,6 +70,7 @@ var _hash := {}
 
 func setup(cfg: Dictionary) -> void:
 	## cfg: {mode: "slice"/"full", seed: int, players: [{team, ctl, name, skin}], ai: {blue: n, red: n}, weapons: {name: id}}
+	dispose()
 	R = Data.rules()
 	seed_value = int(cfg.get("seed", 1))
 	rng.seed = seed_value
@@ -243,12 +244,7 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 	h.xp_next = Data.xp_need(1)
 	h.gadget = {"id": "frag", "lvl": 1, "cd": 2.0}
 	if ctl == "ai":
-		h.ai = SimHamster.AiState.new()
-		var lanes := map.lanes.keys()
-		h.ai.lane = String(lanes[idx % lanes.size()]) if not lanes.is_empty() else "mid"
-		h.ai.dash_t = rand(1.0, 3.0)
-		h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
-		h.ai.prof = ai_profile(team)
+		_init_ai(h)
 	SimHamsterLogic.calc_stats(h)
 	h.hp = h.max_hp
 	h.ammo = SimWeapons.mag_size(h)
@@ -308,40 +304,7 @@ func dispose() -> void:
 	all.append_array(bullets); all.append_array(lobs); all.append_array(items); all.append_array(entities.values())
 	all.append_array(mobs); all.append_array(pets); all.append_array(decoys)
 	for e in all:
-		if e is SimEntity:
-			(e as SimEntity).burn_by = null
-		if e is SimHamster:
-			var h := e as SimHamster
-			if h.ai != null:
-				h.ai.target = null
-			h.dash_hit.clear()
-		elif e is SimMinion:
-			(e as SimMinion).target = null
-		elif e is SimStructure:
-			(e as SimStructure).target = null
-			(e as SimStructure).owner = null
-		elif e is SimProp:
-			(e as SimProp).solid = null
-		elif e is SimBullet:
-			(e as SimBullet).by = null
-			(e as SimBullet).owner = null
-			(e as SimBullet).in_solid = null
-		elif e is SimLob:
-			(e as SimLob).owner = null
-			(e as SimLob).att = null
-		elif e is SimMob:
-			(e as SimMob).target = null
-			(e as SimMob).camp = {}
-		elif e is SimPet:
-			(e as SimPet).owner = null
-			(e as SimPet).target = null
-		elif e is SimDecoy:
-			(e as SimDecoy).owner = null
-	for h in hams:
-		h.pet_list.clear()
-	for p in pets:
-		p.owner = null
-		p.target = null
+		SimLifecycle.release(e)
 	for m in mines:
 		m.owner = null
 	for z in zones:
@@ -448,6 +411,7 @@ func step(dt: float) -> void:
 		for m in minions:
 			if m.dead:
 				entities.erase(m.id)
+				SimLifecycle.release(m)
 			else:
 				keep.append(m)
 		minions = keep
@@ -456,7 +420,7 @@ func step(dt: float) -> void:
 		for e in mobs:
 			if e.dead:
 				entities.erase(e.id)
-				e.target = null
+				SimLifecycle.release(e)
 			else:
 				keep3.append(e)
 		mobs = keep3
@@ -466,14 +430,15 @@ func step(dt: float) -> void:
 			if not p.dead:
 				keep4.append(p)
 			else:
-				p.target = null
+				entities.erase(p.id)
+				SimLifecycle.release(p)
 		pets = keep4
 	if decoys.any(func(d): return d.dead):
 		var keep5: Array[SimDecoy] = []
 		for d in decoys:
 			if d.dead:
 				entities.erase(d.id)
-				d.owner = null
+				SimLifecycle.release(d)
 			else:
 				keep5.append(d)
 		decoys = keep5
@@ -482,8 +447,7 @@ func step(dt: float) -> void:
 		for q in structs:
 			if q.dead and q.kind == "sentry":
 				entities.erase(q.id)
-				q.owner = null
-				q.target = null
+				SimLifecycle.release(q)
 			else:
 				keep6.append(q)
 		structs = keep6
@@ -492,6 +456,7 @@ func step(dt: float) -> void:
 		for c in crates:
 			if c.dead:
 				entities.erase(c.id)
+				SimLifecycle.release(c)
 			else:
 				keep2.append(c)
 		crates = keep2
@@ -640,6 +605,25 @@ func is_visible_to(team: String, e: SimEntity) -> bool:
 func is_seen_by(team: String, e: SimEntity) -> bool:
 	## 在视线内（被照亮或在暗处）：表现层会画出来
 	return e.team == team or seen[team].has(e.id)
+
+
+func _init_ai(h: SimHamster) -> void:
+	h.ai = SimHamster.AiState.new()
+	var lanes := map.lanes.keys()
+	h.ai.lane = String(lanes[h.idx % lanes.size()]) if not lanes.is_empty() else "mid"
+	h.ai.dash_t = rand(1.0, 3.0)
+	h.ai.jungle_t = rand(float(R.ai.jungle.first[0]), float(R.ai.jungle.first[1]))
+	h.ai.prof = ai_profile(h.team)
+
+
+## 联机玩家掉线超时：这只仓鼠交给 AI 继续打（等级、装备都保留）。
+func hand_to_ai(h: SimHamster) -> void:
+	if h.ctl == "ai":
+		return
+	h.ctl = "ai"
+	h.inp = SimHamster.HamInput.new()
+	h.inp.aim = h.aim
+	_init_ai(h)
 
 
 func ham_by_id(id: int) -> SimHamster:
