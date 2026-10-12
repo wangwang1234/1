@@ -7,7 +7,7 @@ const GROUPS: = {"hams": preload("res://scripts/sim/sim_hamster.gd"), "minions":
 	"props": preload("res://scripts/sim/sim_prop.gd"), "crates": preload("res://scripts/sim/sim_crate.gd"), "bullets": preload("res://scripts/sim/sim_bullet.gd"), "lobs": preload("res://scripts/sim/sim_lob.gd"),
 	"items": preload("res://scripts/sim/sim_item.gd"), "mobs": preload("res://scripts/sim/sim_mob.gd"), "pets": preload("res://scripts/sim/sim_pet.gd"), "decoys": preload("res://scripts/sim/sim_decoy.gd")}
 const FIELDS: = ["t", "tick", "over", "winner", "end_t", "sudden", "min_mul", "wave_n",
-	"boss", "boss_next", "boom", "feed", "vis", "seen", "noises", "fires", "mines", "smokes", "flares", "zones", "corrs", "camps"]
+	"boss", "boss_next", "boom", "feed", "vis", "seen", "noises", "fires", "mines", "smokes", "flares", "zones", "corrs", "camps", "blackout"]
 const SKIP: = ["ai", "inp", "solid", "in_solid", "px", "py"]
 static var _fields: = {}
 

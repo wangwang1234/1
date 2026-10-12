@@ -44,11 +44,46 @@ func _solo() -> void:
 		await _drive(mv, 3)
 		i += 1
 	print("[view_smoke] 18 把武器开火完成（含右键技能）")
-	for gid in Data.gadgets().keys():
-		h.gadget = {"id": gid, "lvl": 2, "cd": 0.0}
-		h.inp.gadget = true
-		await _drive(mv, 30)
-	print("[view_smoke] 13 种道具完成")
+	# 全部道具（旧 13 种 + Q / E 新 13 种）：装进所属槽并使用；部署物挨一枪、再被打掉
+	for gid in Data.gadget_ids():
+		h.hp = h.max_hp * 0.5
+		SimGadgets.force_use(w, h, gid)
+		await _drive(mv, 24)
+		for s in w.structs:
+			if s.kind == "dep" and not s.dead:
+				w.deal_dmg(s, 1.0, {"team": "red", "owner": null, "x": s.x, "y": s.y})
+		await _drive(mv, 6)
+	for s in w.structs:
+		if s.kind == "dep" and not s.dead:
+			w.deal_dmg(s, 99999.0, {"team": "red", "owner": null, "x": s.x, "y": s.y})
+	# 护盾展开器被打碎、传送被打断、捕鼠夹夹住敌人
+	SimGadgets.force_use(w, h, "bubble")
+	w.deal_dmg(h, h.max_hp, {"team": "red", "owner": null, "x": h.x, "y": h.y})
+	h.hp = h.max_hp
+	SimGadgets.force_use(w, h, "warp")
+	await _drive(mv, 10)
+	w.deal_dmg(h, 1.0, {"team": "red", "owner": null, "x": h.x, "y": h.y})
+	SimGadgets.force_use(w, h, "trap")
+	var foe := w._make_ham("red", "ai", "夹子靶", 99, "gold")
+	foe.x = h.x
+	foe.y = h.y + 2.0
+	await _drive(mv, 30)
+	foe.alive = false
+	foe.respawn_t = 9999.0
+	# HUD：两个道具槽 + 触屏按钮 + 4 张卡（含新道具卡和道具通用升级卡）
+	var hud: Hud = mv.hud_of(h.id)
+	hud.touch_mode = true
+	await _drive(mv, 3)
+	hud.press_slot("e")
+	h.gup = {"gcdx": 2, "gcap": 2}
+	h.choices = [{"t": "gad", "id": "cover"}, {"t": "gad", "id": "sonar"}, {"t": "gup", "id": "gcdx"}, {"t": "gup", "id": "gcap"}]
+	h.pending = 1
+	hud.show_cards()
+	await _drive(mv, 20)
+	h.inp.card = 0
+	await _drive(mv, 10)
+	hud.touch_mode = false
+	print("[view_smoke] %d 种道具完成（Q / E 双槽、部署物、全息诱饵、触屏按钮、4 张卡）" % Data.gadget_ids().size())
 	for type in ["chick", "firefly", "hedgehog"]:
 		h.pet_list.append(SimMobs.make_pet(w, type, h))
 	w.t = float(Data.progression().bossFirst) - 0.1

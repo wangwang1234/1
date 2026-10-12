@@ -1,67 +1,539 @@
 {
+ "_doc": "道具（Q / E 双槽，2026-10-12）。每个道具：name 名字、desc 卡面描述、slot 所属槽（q = 战术道具：投掷 / 部署，作用于战场；e = 强化道具：即时生效，作用于自己）、pool 所属池（start = 开局池，开局默认装备 / 开局界面可选；upgrade = 升级池，升级时以“新道具卡”出现；空 = 收起，代码数据保留）、cd 冷却（秒）、charges 基础携带上限（充能数）、fx 效果：type 是效果类型，其余是参数（类型和参数说明见 _fxDoc；旧道具的 type 等于自己的 id，参数仍在 rules.json 的 gadgets.<id>）、ai 机器人什么时候用：cat 优先级类别（save 保命 > fight 交战 > intel 情报），when 条件（数组 = 任一组满足；每组内全部满足；条件说明见 _aiDoc）。新增道具只要组合已有的效果类型和条件，不需要改代码。",
+ "_fxDoc": {
+  "deploy": "部署物（带阵营色、耐久条，敌方可攻击摧毁）。place：front 放在面前 dist 处 / feet 脚下 / throw 扔到准星落点（贴在墙或地面上）；hp 耐久、life 持续秒数、r 碰撞半径、max 每人同时最多几个（超出时最早的那个消失）、light 给本队的视野半径（0 = 不发光）、hidden 敌人要走到多近才看得见（0 = 正常可见）；parts 功能件：watch{r, alert} 区域视野 + 敌人进入时小地图标红 alert 秒；snare{trigR, root, dmg} 敌人踩中定身 root 秒并受伤，触发后消失；block{arcR, half, thick} 半圆防弹板（双方子弹都挡，敌方子弹扣耐久）；heal{r, hps} 范围内队友每秒回 hps × 最大生命；shoot{range, dmg, cd, …} 自动射击范围内敌方单位；reflect{r, max} 范围内敌方火箭弹原路反弹，弹满 max 发后消失",
+  "decoy": "诱饵分身：life、hp、dist、lure 吸引系数（越小越吸引火力）、lureR 生效时正在打主人的敌方 AI / 小兵 / 野怪在这个距离内会改打分身、look holo = 与自身外观相同的全息影像",
+  "summon": "呼叫己方小兵：n 只数、follow 跟随秒数（结束后回最近的兵线继续推进）、spread 散布半径",
+  "buff": "自身增益：dur 秒；rate 攻速倍率、speed 移速倍率；after{dur, speed} 结束后的减益",
+  "shield": "护盾：hpK = 最大生命的比例，dur 秒；被打碎时有碎裂特效",
+  "teleport": "读条传送：cast 读条秒数（受到伤害打断）、corner 地图四角区域占宽高的比例、avoidR 不会落在敌方鼠窝这个距离内、tries 取样次数",
+  "vision": "夜视：dur 秒、r 暗处可视半径（不受墙挡的近身感知同夜视仪强化）",
+  "pulse": "声呐：r 扫描半径、dur 显示敌人轮廓的秒数（可穿墙）",
+  "frag / molotov / flash / mine / sentry / eshield / smoke / flare / decoy / jetpack / medkit / freeze / beacon": "旧道具，效果和参数见 rules.json 的 gadgets.<id>（保持原效果）"
+ },
+ "_aiDoc": {
+  "hpBelow / hpAbove": "自身生命比例低于 / 高于",
+  "hurt": "刚受到伤害",
+  "fight": "正在和敌方仓鼠交火（有仓鼠目标）",
+  "target": "有任意目标（仓鼠 / 小兵 / 野怪 / 建筑）",
+  "foeDist": "[近, 远]：到当前目标的距离在这个区间",
+  "retreat": "处于撤退状态",
+  "chased": "[距离]：这个距离内有看得见的敌方仓鼠",
+  "lockedBy": "至少这么多个敌方单位（AI 仓鼠、小兵、野怪、炮台，或正对着自己的真人）在打自己",
+  "hurtAllies": "[只数, 距离, 生命比例]：附近生命低于比例的队友（含自己）至少几只",
+  "noCover": "自己和目标之间没有墙，附近也没有己方掩体",
+  "jungle": "正在打野，或在野怪营地附近（ai.junglePR 内）",
+  "enemyZone": "在地图的敌方半场",
+  "blackout": "停电夜活动进行中（world.blackout）",
+  "foeRocket": "[距离]：这个距离内看得见拿火箭筒的敌方仓鼠",
+  "defend": "[距离]：在己方炮台 / 鼠窝这个距离内，且附近有敌人",
+  "pushing": "推线中（附近有己方小兵）",
+  "spot": "[距离]：在路口（兵线拐点）、野区入口、基地入口这个距离内，且附近没有自己的同种部署物",
+  "dimFoe": "当前目标在暗处（看得见但没被照亮）",
+  "chance": "满足其它条件时再按这个概率（每次判定）",
+  "noActive": "自己没有生效中的同类效果（buff / 护盾 / 夜视）"
+ },
+ "slots": {
+  "q": {"name": "战术道具", "short": "战术", "color": "#c77dff"},
+  "e": {"name": "强化道具", "short": "强化", "color": "#ffb347"}
+ },
+ "upgrades": {
+  "_doc": "道具通用升级卡：一张卡同时作用于 Q 和 E；更换道具后保留。per 每张的效果，max 最多几张",
+  "gcdx": {"name": "道具冷却缩短", "desc": "Q、E 两个道具冷却各缩短 15%（最多 −45%）", "per": -0.15, "max": 3},
+  "gcap": {"name": "道具携带上限 +1", "desc": "Q、E 两个道具都能多带 1 次（最多 +3）", "per": 1, "max": 3}
+ },
  "frag": {
-  "name": "手雷",
+  "name": "破片手雷",
   "desc": "扔出去 1.5 秒后爆炸",
-  "cd": 7
+  "slot": "q",
+  "pool": "start",
+  "cd": 7,
+  "charges": 1,
+  "fx": {"type": "frag"},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"target": true, "foeDist": [140, 480]}
+   ]
+  }
  },
  "molotov": {
   "name": "燃烧瓶",
   "desc": "落地起火，烧一片区域",
-  "cd": 10
+  "slot": "q",
+  "pool": "",
+  "cd": 10,
+  "charges": 1,
+  "fx": {"type": "molotov"},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"target": true, "foeDist": [140, 480]}
+   ]
+  }
  },
  "flash": {
   "name": "闪光弹",
   "desc": "致盲附近敌人，玩家会白屏",
-  "cd": 12
+  "slot": "q",
+  "pool": "",
+  "cd": 12,
+  "charges": 1,
+  "fx": {"type": "flash"},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"fight": true, "foeDist": [140, 480]}
+   ]
+  }
  },
  "mine": {
-  "name": "地雷",
+  "name": "隐形地雷",
   "desc": "埋在脚下，敌人踩到就炸，最多 3 个",
-  "cd": 6
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 6,
+  "charges": 1,
+  "fx": {"type": "mine"},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"target": true, "foeDist": [0, 220]},
+    {"retreat": true, "chased": [420]}
+   ]
+  }
  },
  "sentry": {
   "name": "自动炮台",
   "desc": "放一台小炮台，自动射击 16 秒",
-  "cd": 18
+  "slot": "q",
+  "pool": "",
+  "cd": 18,
+  "charges": 1,
+  "fx": {"type": "sentry"},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"target": true, "foeDist": [0, 460]}
+   ]
+  }
  },
  "eshield": {
   "name": "能量护盾",
   "desc": "5 秒内获得等于生命上限的护盾",
-  "cd": 20
+  "slot": "e",
+  "pool": "",
+  "cd": 20,
+  "charges": 1,
+  "fx": {"type": "eshield"},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"hurt": true, "hpBelow": 0.7, "noActive": true}
+   ]
+  }
  },
  "smoke": {
   "name": "烟雾弹",
   "desc": "放出一团烟，挡住视线和手电光",
-  "cd": 14
+  "slot": "q",
+  "pool": "",
+  "cd": 14,
+  "charges": 1,
+  "fx": {"type": "smoke"},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"retreat": true, "chased": [480]}
+   ]
+  }
  },
  "flare": {
   "name": "照明弹",
   "desc": "照亮一大片 10 秒，全队可见",
-  "cd": 16
+  "slot": "q",
+  "pool": "",
+  "cd": 16,
+  "charges": 1,
+  "fx": {"type": "flare"},
+  "ai": {
+   "cat": "intel",
+   "when": [
+    {"target": true, "foeDist": [140, 480]}
+   ]
+  }
  },
  "decoy": {
   "name": "诱饵仓鼠",
   "desc": "充气仓鼠吸引火力，还会发出假脚步声",
-  "cd": 15
+  "slot": "q",
+  "pool": "",
+  "cd": 15,
+  "charges": 1,
+  "fx": {"type": "decoy"},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"target": true, "foeDist": [0, 520]}
+   ]
+  }
  },
  "jetpack": {
-  "name": "喷气背包",
+  "name": "火箭喷射包",
   "desc": "朝准星方向飞过障碍",
-  "cd": 10
+  "slot": "e",
+  "pool": "upgrade",
+  "cd": 10,
+  "charges": 1,
+  "fx": {"type": "jetpack"},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"fight": true, "foeDist": [260, 480], "hpAbove": 0.5},
+    {"retreat": true, "chased": [360], "hpBelow": 0.5}
+   ]
+  }
  },
  "medkit": {
-  "name": "急救瓜子包",
+  "name": "医疗包",
   "desc": "3 秒内回复 40% 生命",
-  "cd": 18
+  "slot": "e",
+  "pool": "start",
+  "cd": 18,
+  "charges": 1,
+  "fx": {"type": "medkit"},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"hpBelow": 0.5, "noActive": true}
+   ]
+  }
  },
  "freeze": {
   "name": "冰冻手雷",
   "desc": "冻住范围内的敌人 1.5 秒",
-  "cd": 14
+  "slot": "q",
+  "pool": "",
+  "cd": 14,
+  "charges": 1,
+  "fx": {"type": "freeze"},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"target": true, "foeDist": [140, 480]}
+   ]
+  }
  },
  "beacon": {
   "name": "传送信标",
   "desc": "先插信标，再按一次瞬间传回",
-  "cd": 12
+  "slot": "e",
+  "pool": "",
+  "cd": 12,
+  "charges": 1,
+  "fx": {"type": "beacon"},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"hpAbove": 0.8},
+    {"hpBelow": 0.3}
+   ]
+  }
+ },
+ "cam": {
+  "name": "粘附摄像头",
+  "desc": "扔出去粘在墙上或地上，持续提供这片区域的视野；敌人进入时在队伍小地图上标红。可被击毁",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 16,
+  "charges": 1,
+  "fx": {
+   "type": "deploy",
+   "place": "throw",
+   "hp": 60,
+   "life": 45,
+   "r": 12,
+   "max": 2,
+   "light": 340,
+   "hidden": 0,
+   "parts": {
+    "watch": {"r": 340, "alert": 2.5}
+   }
+  },
+  "ai": {
+   "cat": "intel",
+   "when": [
+    {"spot": [260], "chance": 0.6}
+   ]
+  }
+ },
+ "trap": {
+  "name": "捕鼠夹",
+  "desc": "放在地上，敌人踩中被夹住 1.5 秒并受到伤害；敌人要走到很近才看得见",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 10,
+  "charges": 1,
+  "fx": {
+   "type": "deploy",
+   "place": "feet",
+   "hp": 40,
+   "life": 60,
+   "r": 14,
+   "max": 3,
+   "light": 0,
+   "hidden": 130,
+   "parts": {
+    "snare": {"trigR": 24, "root": 1.5, "dmg": 35}
+   }
+  },
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"retreat": true, "chased": [600]},
+    {"spot": [200], "chance": 0.25}
+   ]
+  }
+ },
+ "cover": {
+  "name": "展开式掩体",
+  "desc": "在面前立起半圆防弹板（耐久 300，持续 15 秒），双方都可利用",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 18,
+  "charges": 1,
+  "fx": {
+   "type": "deploy",
+   "place": "front",
+   "dist": 30,
+   "hp": 300,
+   "life": 15,
+   "r": 14,
+   "max": 1,
+   "light": 0,
+   "hidden": 0,
+   "parts": {
+    "block": {"arcR": 48, "half": 1.5708, "thick": 12}
+   }
+  },
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"fight": true, "noCover": true, "foeDist": [180, 700]}
+   ]
+  }
+ },
+ "regen": {
+  "name": "再生力场",
+  "desc": "放下装置，范围内的队友 8 秒内持续回血；装置被打掉就中断",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 22,
+  "charges": 1,
+  "fx": {
+   "type": "deploy",
+   "place": "feet",
+   "hp": 120,
+   "life": 8,
+   "r": 16,
+   "max": 1,
+   "light": 120,
+   "hidden": 0,
+   "parts": {
+    "heal": {"r": 190, "hps": 0.055}
+   }
+  },
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"hurtAllies": [2, 190, 0.7]}
+   ]
+  }
+ },
+ "holo": {
+  "name": "全息诱饵",
+  "desc": "生成和你一模一样的全息分身，吸引敌方机器人、小兵和野怪的火力，持续 8 秒",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 16,
+  "charges": 1,
+  "fx": {"type": "decoy", "dist": 46, "hp": 90, "life": 8, "r": 16, "lure": 0.35, "lureR": 720, "look": "holo"},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"lockedBy": 2}
+   ]
+  }
+ },
+ "guardgun": {
+  "name": "哨戒炮",
+  "desc": "放一台低伤害自动炮台，持续 20 秒，攻击范围内的敌方单位（含小兵、野怪）",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 22,
+  "charges": 1,
+  "fx": {
+   "type": "deploy",
+   "place": "front",
+   "dist": 34,
+   "hp": 160,
+   "life": 20,
+   "r": 16,
+   "max": 1,
+   "light": 200,
+   "hidden": 0,
+   "parts": {
+    "shoot": {
+     "range": 360,
+     "dmg": 5,
+     "cd": 0.3,
+     "turn": 10,
+     "fireAngle": 0.25,
+     "bulletSpeed": 1100,
+     "bulletR": 4,
+     "kb": 20,
+     "spread": 0.06,
+     "muzzle": 20,
+     "muzzleH": 24,
+     "retarget": 0.25,
+     "mobs": true
+    }
+   }
+  },
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"defend": [520]},
+    {"jungle": true, "target": true}
+   ]
+  }
+ },
+ "signal": {
+  "name": "信号弹",
+  "desc": "朝天发射信号弹，呼叫 3 个己方小兵出现在身边，跟随你 20 秒",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 30,
+  "charges": 1,
+  "fx": {"type": "summon", "n": 3, "follow": 20, "spread": 40},
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"pushing": true, "target": true},
+    {"lockedBy": 3}
+   ]
+  }
+ },
+ "reflector": {
+  "name": "榴弹反射器",
+  "desc": "部署装置 12 秒，范围内飞来的火箭弹会被原路弹回去，最多弹 2 发；可被射击摧毁",
+  "slot": "q",
+  "pool": "upgrade",
+  "cd": 18,
+  "charges": 1,
+  "fx": {
+   "type": "deploy",
+   "place": "front",
+   "dist": 40,
+   "hp": 120,
+   "life": 12,
+   "r": 15,
+   "max": 1,
+   "light": 120,
+   "hidden": 0,
+   "parts": {
+    "reflect": {"r": 150, "max": 2}
+   }
+  },
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"foeRocket": [700]},
+    {"defend": [420], "chance": 0.3}
+   ]
+  }
+ },
+ "adren": {
+  "name": "肾上腺素",
+  "desc": "攻速 +30%、移速 +15%，持续 6 秒；结束后减速 2 秒",
+  "slot": "e",
+  "pool": "upgrade",
+  "cd": 20,
+  "charges": 1,
+  "fx": {
+   "type": "buff",
+   "dur": 6,
+   "rate": 1.3,
+   "speed": 1.15,
+   "after": {"dur": 2, "speed": 0.75}
+  },
+  "ai": {
+   "cat": "fight",
+   "when": [
+    {"fight": true, "foeDist": [0, 600], "noActive": true}
+   ]
+  }
+ },
+ "bubble": {
+  "name": "护盾展开器",
+  "desc": "获得最大生命 30% 的护盾，持续 5 秒，被打碎时会碎裂",
+  "slot": "e",
+  "pool": "upgrade",
+  "cd": 18,
+  "charges": 1,
+  "fx": {"type": "shield", "hpK": 0.3, "dur": 5},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"hurt": true, "hpBelow": 0.6, "noActive": true}
+   ]
+  }
+ },
+ "warp": {
+  "name": "随机传送装置",
+  "desc": "读条 1 秒后传送到地图的随机角落，受到伤害会打断；不会传进敌方鼠窝范围",
+  "slot": "e",
+  "pool": "upgrade",
+  "cd": 35,
+  "charges": 1,
+  "fx": {"type": "teleport", "cast": 1.0, "corner": 0.28, "avoidR": 900, "tries": 48},
+  "ai": {
+   "cat": "save",
+   "when": [
+    {"hpBelow": 0.35, "chased": [520]}
+   ]
+  }
+ },
+ "goggles": {
+  "name": "夜视仪",
+  "desc": "戴上 20 秒，暗处也看得清；“停电夜”活动时特别有用",
+  "slot": "e",
+  "pool": "upgrade",
+  "cd": 30,
+  "charges": 1,
+  "fx": {"type": "vision", "dur": 20, "r": 520},
+  "ai": {
+   "cat": "intel",
+   "when": [
+    {"blackout": true, "noActive": true, "cat": "save"},
+    {"dimFoe": true, "noActive": true}
+   ]
+  }
+ },
+ "sonar": {
+  "name": "声呐脉冲",
+  "desc": "以自己为中心发出扫描波，3 秒内显示范围内敌人的轮廓（可穿墙）",
+  "slot": "e",
+  "pool": "upgrade",
+  "cd": 18,
+  "charges": 1,
+  "fx": {"type": "pulse", "r": 900, "dur": 3},
+  "ai": {
+   "cat": "intel",
+   "when": [
+    {"jungle": true, "chance": 0.5},
+    {"enemyZone": true, "chance": 0.5}
+   ]
+  }
  }
 }

@@ -44,7 +44,7 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 			consider.call(e, float(WT.ham) * fk, float(A.get("suddenHamRange", RG.ham)) if objective else float(RG.ham))
 	for e in w.decoys:
 		if not e.dead and e.team != h.team and sees.call(e):
-			consider.call(e, float(WT.decoy), float(RG.decoy))
+			consider.call(e, float(WT.decoy) * e.lure, float(RG.decoy))
 	for e in w.minions:
 		if not e.dead and e.team != h.team and sees.call(e):
 			consider.call(e, float(WT.minion), float(RG.minion))
@@ -65,8 +65,9 @@ static func _target(w: SimWorld, h: SimHamster) -> SimEntity:
 			if not m.dead and m.team == h.team and Vector2(m.x - s.x, m.y - s.y).length() < s.range_:
 				allies = true
 				break
-		if s.kind == "sentry":
-			consider.call(s, float(WT.struct), s.range_ + float(RG.structExtra))
+		if s.kind == "sentry" or s.kind == "dep":
+			if s.kind == "sentry" or sees.call(s):
+				consider.call(s, float(WT.struct), maxf(s.range_, 200.0) + float(RG.structExtra))
 		elif objective:
 			consider.call(s, float(WT.struct) * float(A.get("suddenStructWeight", 1.0)), 1e9)
 		elif allies or s.hp < s.max_hp * float(A.structLowHp):
@@ -86,7 +87,7 @@ static func dim_see_range(w: SimWorld, h: SimHamster) -> float:
 
 static func is_dim_target(w: SimWorld, h: SimHamster, tg: SimEntity) -> bool:
 	## 目标是暗处的敌方单位（在视线内但没被照亮）；建筑和宝箱一直算看得见
-	if tg == null or tg is SimStructure and (tg as SimStructure).kind != "sentry" or tg.kind == "crate":
+	if tg == null or tg is SimStructure and (tg as SimStructure).kind != "sentry" and (tg as SimStructure).kind != "dep" or tg.kind == "crate":
 		return false
 	return tg.team != h.team and not w.vis[h.team].has(tg.id)
 
@@ -112,10 +113,6 @@ static func _aim_at(w: SimWorld, h: SimHamster, tg: SimEntity) -> void:
 	h.inp.aim = atan2(ty - h.y, tx - h.x) + j * sway + w.rand(-j, j) * 0.4
 
 
-static func _want_gadget(w: SimWorld, h: SimHamster, tg: SimEntity) -> bool:
-	return SimGadgets.ai_want(w, h, tg)
-
-
 static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 	var A: Dictionary = w.R.ai
 	var ai := h.ai
@@ -124,6 +121,7 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 	inp.dash = false
 	inp.reload = false
 	inp.gadget = false
+	inp.gadget2 = false
 	inp.skill = false
 	inp.card = -1
 	inp.mx = 0.0
@@ -304,8 +302,17 @@ static func think(w: SimWorld, h: SimHamster, dt: float) -> void:
 	if ai.dodge_left > 0.0:
 		inp.mx += ai.dodge_x * 1.3
 		inp.my += ai.dodge_y * 1.3
-	if float(h.gadget.cd) <= 0.0 and w.rnd() < dt * float(A.gadgetRate) * float(P.get("gadgetK", 1.0)) and _want_gadget(w, h, tg):
-		inp.gadget = true
+	# 道具：每 gadgetItem.every 秒按两个槽的 AI 条件判定一次（保命 > 交战 > 情报），命中后按难度的道具频率真正使用
+	ai.gad_t -= dt
+	if ai.gad_t <= 0.0:
+		var GI: Dictionary = A.gadgetItem
+		ai.gad_t = float(GI.every)
+		var slot := SimGadgets.ai_pick_slot(w, h, tg)
+		if slot != "" and w.rnd() < float(GI.every) * float(GI.rate) * float(P.get("gadgetK", 1.0)):
+			if slot == "q":
+				inp.gadget = true
+			else:
+				inp.gadget2 = true
 	# 左轮神枪手：对建筑 / 箱子这类不能标记的目标改成点射（按住不放永远不会开火）
 	if inp.fire and tg != null and SimWeapons.special(h, "deadeye") != null and not (tg is SimHamster or tg is SimMinion or tg is SimMob or tg is SimDecoy):
 		inp.fire = h.mark_hold <= 0.0

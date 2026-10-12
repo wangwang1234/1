@@ -559,6 +559,93 @@ def ambience(seed):
     return x
 
 
+# ---------------------------------------------------------------------------
+# Q / E 双槽新道具（2026-10-12）
+# ---------------------------------------------------------------------------
+
+def trap_snap(seed):
+    """捕鼠夹：弹簧“啪”一声金属合上 + 余振。"""
+    s = Synth(seed)
+    x = mix(s.filt(s.noise(0.03), "hp", 2500) * s.env(0.03, 0.0005, 0.02) * 0.9,
+            s.sweep(900, 300, 0.05, "tri") * s.env(0.05, 0.001, 0.04) * 0.6,
+            place(s.sweep(2100, 2050, 0.25, "sine") * s.env(0.25, 0.001, 0.2) * 0.18, 0.01),
+            place(s.filt(s.noise(0.06), "lp", 500) * s.env(0.06, 0.001, 0.05) * 0.4, 0.005))
+    return trim(s.reverb(x, 0.5, 0.15))
+
+
+def deploy(seed):
+    """部署物落地展开：咔哒两下 + 液压嘶声。"""
+    s = Synth(seed)
+    x = mix(s.sweep(1100, 900, 0.05, "tri") * s.env(0.05, 0.001, 0.04) * 0.35,
+            place(s.sweep(1500, 1300, 0.05, "tri") * s.env(0.05, 0.001, 0.04) * 0.3, 0.12),
+            place(s.filt(s.noise(0.25), "bp", 2400, 1.2) * s.env(0.25, 0.02, 0.2) * 0.25, 0.04),
+            place(s.filt(s.noise(0.1), "lp", 400) * s.env(0.1, 0.002, 0.08) * 0.35, 0.16))
+    return trim(x)
+
+
+def sonar(seed):
+    """声呐：清亮的“咚——”声 + 拖尾回声。"""
+    s = Synth(seed)
+    ping = s.sweep(1250, 1180, 0.9, "sine") * s.env(0.9, 0.004, 0.8) * 0.45
+    echo = place(s.sweep(1180, 1150, 0.6, "sine") * s.env(0.6, 0.01, 0.5) * 0.15, 0.35)
+    return trim(s.reverb(mix(ping, echo), 1.6, 0.45, 5000))
+
+
+def inject(seed):
+    """肾上腺素：针筒“嗤”一下 + 两声心跳。"""
+    s = Synth(seed)
+    hiss = s.filt(s.noise(0.18), "hp", 3000) * s.env(0.18, 0.005, 0.15) * 0.35
+    beats = [place(s.sweep(70, 45, 0.12) * s.env(0.12, 0.003, 0.1) * 0.9, 0.2 + k * 0.32) for k in range(2)]
+    return trim(mix(hiss, *beats))
+
+
+def holo(seed):
+    """全息投影：上行的闪烁音 + 颤音。"""
+    s = Synth(seed)
+    t = s.t(0.45)
+    trem = 0.6 + 0.4 * np.sin(2 * np.pi * 28 * t)
+    x = s.sweep(500, 1600, 0.45, "tri") * s.env(0.45, 0.02, 0.4) * trem * 0.3
+    return trim(s.reverb(mix(x, place(s.filt(s.noise(0.3), "bp", 5000, 2) * s.env(0.3, 0.05, 0.25) * 0.12, 0.05)), 0.8, 0.3))
+
+
+def warp_charge(seed):
+    """传送读条：1 秒的上升嗡鸣。"""
+    s = Synth(seed)
+    x = mix(s.sweep(180, 900, 1.0, "saw") * s.env(1.0, 0.3, 0.95, "lin") * 0.12,
+            s.sweep(360, 1800, 1.0, "sine") * s.env(1.0, 0.3, 0.95, "lin") * 0.2)
+    return trim(s.filt(x, "lp", 3000))
+
+
+def signal_up(seed):
+    """信号弹：“嗖——”上天 + 空中“啪”。"""
+    s = Synth(seed)
+    whoosh = s.filt(s.noise(0.5), "bp", 1800, 1.5) * s.env(0.5, 0.05, 0.45) * 0.5
+    whistle = s.sweep(900, 2400, 0.5, "sine") * s.env(0.5, 0.02, 0.45) * 0.18
+    pop = place(s.filt(s.noise(0.15), "lp", 900) * s.env(0.15, 0.001, 0.12) * 0.7, 0.55)
+    return trim(s.reverb(mix(whoosh, whistle, pop), 1.2, 0.35))
+
+
+def reflect(seed):
+    """反射器弹回火箭：金属“铮”+ 能量回旋。"""
+    s = Synth(seed)
+    x = mix(s.sweep(3200, 3000, 0.3, "sine") * s.env(0.3, 0.001, 0.28) * 0.3,
+            s.sweep(400, 1400, 0.18, "saw") * s.env(0.18, 0.002, 0.15) * 0.15,
+            s.filt(s.noise(0.04), "hp", 4000) * s.env(0.04, 0.001, 0.03) * 0.4)
+    return trim(s.reverb(x, 0.7, 0.3))
+
+
+def nvg_on(seed):
+    """夜视仪开机：高频电子“嘀——”上升。"""
+    s = Synth(seed)
+    return trim(mix(s.sweep(2000, 7000, 0.35, "sine") * s.env(0.35, 0.02, 0.33) * 0.18, s.sweep(120, 120, 0.3, "square") * s.env(0.3, 0.01, 0.25) * 0.04))
+
+
+def shield_break(seed):
+    """护盾碎裂：玻璃碎 + 低沉的能量消散。"""
+    s = Synth(seed)
+    return trim(mix(glass(seed) * 0.8, s.sweep(500, 90, 0.4, "tri") * s.env(0.4, 0.002, 0.35) * 0.35))
+
+
 SOUNDS = {
     "shot_pistol": (lambda sd: gun_shot("pistol", sd), 4),
     "shot_ak47": (lambda sd: gun_shot("ak47", sd), 4),
@@ -635,6 +722,17 @@ SOUNDS = {
     "boss_roar": (boss_roar, 2),
     "fanfare": (fanfare, 1),
     "peck": (peck, 3),
+    # Q / E 双槽新道具（2026-10-12）
+    "trap_snap": (trap_snap, 3),
+    "deploy": (deploy, 3),
+    "sonar": (sonar, 2),
+    "inject": (inject, 2),
+    "holo": (holo, 2),
+    "warp_charge": (warp_charge, 1),
+    "signal_up": (signal_up, 2),
+    "reflect": (reflect, 2),
+    "nvg_on": (nvg_on, 2),
+    "shield_break": (shield_break, 2),
 }
 
 

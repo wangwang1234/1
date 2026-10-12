@@ -6,8 +6,10 @@ extends CanvasLayer
 const NCOL := {"gun": Color("#ffb04a"), "boom": Color("#ff5b4a"), "monster": Color("#ffd166"), "step": Color("#ffffff"), "pad": Color("#7fe3ff")}
 const NICON := {"gun": "枪", "boom": "爆", "monster": "怪", "step": "脚", "pad": "弹"}
 const GICON := {"frag": "雷", "molotov": "火", "flash": "闪", "mine": "地", "sentry": "炮", "eshield": "盾", "smoke": "烟", "flare": "照",
-	"decoy": "饵", "jetpack": "飞", "medkit": "医", "freeze": "冰", "beacon": "信"}
-const THROWN := {"frag": 130.0, "molotov": 95.0, "flash": 290.0, "smoke": 150.0, "flare": 470.0, "freeze": 140.0}
+	"decoy": "饵", "jetpack": "飞", "medkit": "医", "freeze": "冰", "beacon": "信",
+	"cam": "眼", "trap": "夹", "cover": "掩", "regen": "愈", "holo": "影", "guardgun": "哨", "signal": "援", "reflector": "反",
+	"adren": "燃", "bubble": "罩", "warp": "传", "goggles": "夜", "sonar": "声", "gcdx": "速", "gcap": "+"}
+const THROWN := {"frag": 130.0, "molotov": 95.0, "flash": 290.0, "smoke": 150.0, "flare": 470.0, "freeze": 140.0, "cam": 24.0}
 const PET_ICON := {"chick": "鸡", "firefly": "萤", "hedgehog": "刺"}
 
 var mv: MatchView
@@ -36,6 +38,9 @@ var paused := false
 var _reload_hint := 0.0
 var board := false          # 按住 Tab（手柄 Select）显示比分板
 var board_force := false    # 截图脚本用：强制显示比分板
+var touch_mode := false     # 触屏：画 Q / E 两个独立的大按钮（手机，或截图 / 测试强制打开）
+var slot_rects := {}        # q / e -> Rect2：HUD 上的道具槽（触屏时是按钮）
+var _touch_flash := {}      # 按钮按下的反馈
 
 
 func setup(m: MatchView, ham: SimHamster = null, camera: GameCamera = null, inp: PlayerInput = null, split_: bool = false) -> void:
@@ -60,6 +65,7 @@ func setup(m: MatchView, ham: SimHamster = null, camera: GameCamera = null, inp:
 		if ResourceLoader.exists(p):
 			icons[w] = load(p)
 	_setup_portrait()
+	touch_mode = OS.has_feature("mobile") or DisplayServer.is_touchscreen_available()
 	if me == m.local:
 		Input.mouse_mode = Input.MOUSE_MODE_HIDDEN if not mv.autoplay else Input.MOUSE_MODE_VISIBLE
 
@@ -181,6 +187,8 @@ func refresh(delta: float) -> void:
 	white = maxf(0.0, white - delta * 1.2)
 	cards_t += delta
 	cards_out = maxf(0.0, cards_out - delta)
+	for k in _touch_flash.keys():
+		_touch_flash[k] = maxf(0.0, float(_touch_flash[k]) - delta * 5.0)
 	for t in toasts:
 		t.t = float(t.t) + delta
 	while not toasts.is_empty() and float(toasts[0].t) > float(toasts[0].dur):
@@ -322,31 +330,8 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 	if icons.has(h.weapon_id):
 		var ic: Texture2D = icons[h.weapon_id]
 		c.draw_texture_rect(ic, Rect2(pc + Vector2(-8, 26) * s, Vector2(84, 84) * s), false)
-	# 道具冷却
-	var gpos := pc + Vector2(58, 52) * s
-	var gr := 21.0 * s
-	c.draw_circle(gpos, gr, Color(0.086, 0.063, 0.15, 0.95))
-	var gcd := float(h.gadget.cd)
-	var gmax := float(Data.gadgets().get(String(h.gadget.id), {"cd": 7}).cd) * float(h.st.get("gcd", 1.0))
-	if gcd > 0.0 and gcd / maxf(0.1, gmax) > 0.02:     # 扇形太窄时三角化会失败
-		var k := clampf(gcd / maxf(0.1, gmax), 0.0, 0.995)
-		var pts := PackedVector2Array([gpos])
-		for i in 33:
-			var a := -PI * 0.5 + TAU * k * float(i) / 32.0
-			pts.append(gpos + Vector2(cos(a), sin(a)) * gr)
-		c.draw_colored_polygon(pts, Color(0.04, 0.02, 0.08, 0.7))
-	c.draw_arc(gpos, gr, 0, TAU, 40, Color(1, 1, 1, 0.3) if gcd > 0.0 else Color("#c77dff"), 3 * s, true)
-	var gid := String(h.gadget.id)
-	var gic := UiTheme.icon("gad_" + gid)
-	if gic:
-		c.draw_texture_rect(gic, Rect2(gpos - Vector2(gr, gr) * 1.15, Vector2(gr, gr) * 2.3), false, Color(1, 1, 1, 0.55 if gcd > 0.0 else 1.0))
-	else:
-		_txt(c, gpos + Vector2(-gr, 8 * s), String(GICON.get(gid, "?")), 20 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, true, gr * 2.0)
-	_txt(c, gpos + Vector2(12, 24) * s, pin.gadget_key(), 15 * s, UiTheme.CREAM)
-	for d in int(h.gadget.lvl) - 1:
-		c.draw_circle(gpos + Vector2(-gr + 4 * s + d * 7 * s, -gr - 3 * s), 2.6 * s, Color("#c77dff"))
-	if gid == "beacon" and not h.beacon.is_empty():
-		c.draw_arc(gpos, gr + 4 * s, 0, TAU, 32, Color("#7fe3ff"), 2.0 * s, true)
+	# 道具：Q / E 两个槽并列在面板下方（触屏时另画右下角的大按钮）
+	_draw_gadget_slots(c, s, h, x, y + ph + 10 * s)
 	# 右键武器技能：冷却扇形 + 按键提示（武器没有技能就不画）
 	var SD: Dictionary = h.weapon().get("skill", {})
 	if not SD.is_empty():
@@ -466,6 +451,155 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 		_txt(c, Vector2(bx, y + 176 * s), pin.card_hint(), 16 * s, UiTheme.GOLD)
 	else:
 		_txt(c, Vector2(bx, y + 176 * s), "击败 %d    阵亡 %d" % [h.kills, h.deaths], 16 * s, UiTheme.SUB)
+
+
+func _draw_gadget_slots(c: Control, s: float, h: SimHamster, x: float, y: float) -> void:
+	## Q / E 两个道具槽：图标、按键提示、冷却进度（充能中的那一格）、剩余充能数、名字；触屏时右下角两个独立的大按钮
+	slot_rects.clear()
+	var sz := 74.0 * s
+	for i in SimGadgets.SLOTS.size():
+		var slot: String = SimGadgets.SLOTS[i]
+		var r := Rect2(x + i * (sz + 150 * s), y, sz, sz)
+		_draw_gadget_slot(c, s, h, slot, r, false)
+		var G := Data.gadget(String(h.gad[slot].id))
+		_txt(c, Vector2(r.end.x + 10 * s, r.position.y + 26 * s), String(G.get("name", "")), 18 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_LEFT, false, -1, 5)
+		_txt(c, Vector2(r.end.x + 10 * s, r.position.y + 50 * s), String(Data.gadgets().slots[slot].name), 14 * s, UiTheme.SLOT_COLORS[slot], HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
+		var st := _slot_status(h, slot)
+		if not st.is_empty():
+			_txt(c, Vector2(r.end.x + 10 * s, r.position.y + 70 * s), st, 13 * s, UiTheme.GOLD, HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
+		if not touch_mode:
+			slot_rects[slot] = r
+	if touch_mode:
+		var bs := 128.0 * s
+		var gap := 26.0 * s
+		var bx := root.size.x - 2.0 * bs - gap - 40.0 * s
+		var by := root.size.y - bs - 200.0 * s
+		for i in SimGadgets.SLOTS.size():
+			var slot2: String = SimGadgets.SLOTS[i]
+			var rb := Rect2(bx + i * (bs + gap), by + (0.0 if i == 1 else 50.0 * s), bs, bs)
+			slot_rects[slot2] = rb
+			_draw_gadget_slot(c, s, h, slot2, rb, true)
+
+
+func _slot_status(h: SimHamster, slot: String) -> String:
+	## 正在生效的道具状态（写在槽旁边）
+	var id := String(h.gad[slot].id)
+	match String(SimGadgets.fx_of(id).get("type", id)):
+		"buff":
+			if h.buff_t > 0.0:
+				return "生效 %.1f 秒" % h.buff_t
+			if h.after_t > 0.0:
+				return "乏力 %.1f 秒" % h.after_t
+		"shield", "eshield":
+			if h.eshield_t > 0.0 and h.eshield > 0.0 and h.eshield_id == id:
+				return "护盾 %d" % ceili(h.eshield)
+		"teleport":
+			if h.tp_t > 0.0:
+				return "读条 %.1f 秒" % h.tp_t
+		"vision":
+			if h.nvg_t > 0.0:
+				return "夜视 %d 秒" % ceili(h.nvg_t)
+		"beacon":
+			if not h.beacon.is_empty():
+				return "再按传回"
+		"deploy":
+			var n := 0
+			for st in mv.world.structs:
+				if st.kind == "dep" and st.dep == id and st.owner == h and not st.dead:
+					n += 1
+			if n > 0:
+				return "场上 %d 个" % n
+	return ""
+
+
+func _draw_gadget_slot(c: Control, s: float, h: SimHamster, slot: String, r: Rect2, big: bool) -> void:
+	var S: Dictionary = h.gad[slot]
+	var id := String(S.id)
+	var col: Color = UiTheme.SLOT_COLORS[slot]
+	var ch := int(S.ch)
+	var mx := SimGadgets.max_charges(h, id)
+	var ready := SimGadgets.ready(mv.world, h, slot)
+	var press := float(_touch_flash.get(slot, 0.0))
+	var rr := r.grow(-4.0 * s * press)
+	var rad := rr.size.x * (0.5 if big else 0.22)
+	var sb := UiTheme.panel_box(Color(0.086, 0.063, 0.15, 0.94 if not big else 0.7), int(rad), col if ready else Color(1, 1, 1, 0.25), int(3 * s))
+	c.draw_style_box(sb, rr)
+	var ic := UiTheme.icon("gad_" + id)
+	var pad := rr.size.x * 0.1
+	if ic:
+		c.draw_texture_rect(ic, Rect2(rr.position + Vector2(pad, pad), rr.size - Vector2(pad, pad) * 2.0), false, Color(1, 1, 1, 1.0 if ready else 0.45))
+	else:
+		_txt(c, rr.position + Vector2(0, rr.size.y * 0.66), String(GICON.get(id, "?")), rr.size.y * 0.45, col.lightened(0.3) if ready else UiTheme.SUB, HORIZONTAL_ALIGNMENT_CENTER, true, rr.size.x, 4)
+	# 冷却进度：正在充能的那一格（从上方顺时针变亮）
+	var full := SimGadgets.cd_full(h, id)
+	var cd := float(S.cd)
+	if ch < mx and cd > 0.0 and full > 0.0:
+		var k := clampf(cd / full, 0.0, 0.995)
+		var cc := rr.get_center()
+		var cr := rr.size.x * 0.5 - 3.0 * s
+		if ch == 0 and k > 0.02:     # 一格都没有：盖一层暗色扇形（太窄时三角化会失败）
+			var pts := PackedVector2Array([cc])
+			for i in 33:
+				var a := -PI * 0.5 + TAU * k * float(i) / 32.0
+				pts.append(cc + Vector2(cos(a), sin(a)) * cr)
+			c.draw_colored_polygon(pts, Color(0.04, 0.02, 0.08, 0.62))
+		c.draw_arc(cc, cr + 1.5 * s, -PI * 0.5, -PI * 0.5 + TAU * (1.0 - k), 40, Color(col.r, col.g, col.b, 0.9), 3.5 * s, true)
+		if ch == 0:
+			_txt(c, rr.position + Vector2(0, rr.size.y * 0.62), str(ceili(cd)), rr.size.y * 0.34, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, true, rr.size.x, 5)
+	# 按键提示（左上）
+	var key := "Q" if slot == "q" else "E"
+	if not big:
+		key = pin.gadget_key(slot)
+	var kb := Rect2(rr.position + Vector2(-6, -8) * s, Vector2(maxf(26.0, 12.0 + 11.0 * key.length()), 24) * s)
+	var sbk := StyleBoxFlat.new()
+	sbk.bg_color = col if ready else Color(0.3, 0.27, 0.36)
+	sbk.set_corner_radius_all(int(8 * s))
+	sbk.anti_aliasing = true
+	c.draw_style_box(sbk, kb)
+	_txt(c, kb.position + Vector2(0, 18 * s), key, 16 * s, UiTheme.INK, HORIZONTAL_ALIGNMENT_CENTER, true, kb.size.x, 0)
+	# 剩余充能（右下）
+	var cb := rr.end - Vector2(14, 14) * s
+	c.draw_circle(cb, 13 * s, Color(0.1, 0.07, 0.16, 0.95))
+	c.draw_arc(cb, 13 * s, 0, TAU, 24, col if ch > 0 else Color(1, 1, 1, 0.3), 2.0 * s, true)
+	_txt(c, cb + Vector2(-13, 6) * s, str(ch), 17 * s, UiTheme.CREAM if ch > 0 else UiTheme.SUB, HORIZONTAL_ALIGNMENT_CENTER, true, 26 * s, 2)
+	if mx > 1:
+		for i in mx:
+			c.draw_circle(rr.position + Vector2(rr.size.x - 10 * s - i * 8 * s, 6 * s), 2.8 * s, col if i < ch else Color(1, 1, 1, 0.22))
+	if big:
+		_txt(c, Vector2(rr.position.x, rr.end.y + 22 * s), String(Data.gadget(id).get("name", "")), 17 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, false, rr.size.x, 5)
+
+
+func touch_slot(p: Vector2) -> String:
+	## 触屏按到了哪个道具按钮（q / e / ""）
+	if not touch_mode:
+		return ""
+	for slot in slot_rects:
+		var r: Rect2 = slot_rects[slot]
+		if r.grow(10.0).has_point(p):
+			return String(slot)
+	return ""
+
+
+func _input(ev: InputEvent) -> void:
+	## 手机：Q / E 是两个独立按钮
+	if not touch_mode or me == null or not me.alive or mv.autoplay:
+		return
+	var st := ev as InputEventScreenTouch
+	if st == null or not st.pressed:
+		return
+	var slot := touch_slot(st.position)
+	if slot.is_empty():
+		return
+	press_slot(slot)
+	get_viewport().set_input_as_handled()
+
+
+func press_slot(slot: String) -> void:
+	_touch_flash[slot] = 1.0
+	if slot == "q":
+		me.inp.gadget = true
+	else:
+		me.inp.gadget2 = true
 
 
 func _ability_badge(c: Control, p: Vector2, r: float, id: String, lv: int) -> void:
@@ -673,6 +807,22 @@ func _draw_minimap(c: Control, s: float) -> void:
 		if mn.team == team:
 			var mq: Vector2 = to.call(float(mn.x), float(mn.y))
 			c.draw_rect(Rect2(mq - Vector2(2, 2) * s, Vector2(4, 4) * s), Color("#ffd166"))
+	# 己方部署物；摄像头发现敌人时标红闪烁
+	for dp in w.structs:
+		if dp.kind != "dep" or dp.dead or dp.team != team:
+			continue
+		var dq: Vector2 = to.call(dp.x, dp.y)
+		var dsz := 3.5 * s
+		c.draw_colored_polygon(PackedVector2Array([dq + Vector2(0, -dsz), dq + Vector2(dsz, 0), dq + Vector2(0, dsz), dq + Vector2(-dsz, 0)]), UiTheme.BLUE.lightened(0.3) if team == "blue" else UiTheme.RED.lightened(0.3))
+		if dp.dep == "cam":
+			var ago := w.t - dp.alert_t
+			var alert_dur := float(dp.cfg.parts.watch.get("alert", 2.5))
+			if ago < alert_dur:
+				var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() / 1000.0 * 12.0)
+				c.draw_circle(dq, float(dp.cfg.parts.watch.r) * k, Color(1.0, 0.2, 0.25, 0.18 + 0.2 * pulse))
+				c.draw_arc(dq, float(dp.cfg.parts.watch.r) * k, 0, TAU, 32, Color("#ff4d5e"), 2.0 * s, true)
+			else:
+				c.draw_arc(dq, float(dp.cfg.parts.watch.r) * k, 0, TAU, 32, Color(1, 1, 1, 0.25), 1.0 * s, true)
 	for hh in w.hams:
 		if not hh.alive or not (hh.team == team or w.vis[team].has(hh.id)):
 			continue
@@ -765,12 +915,22 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		if st2.kind == "sentry" and not st2.dead and mv.team_reveals(st2) and st2.hp < st2.max_hp:
 			var ps: Vector2 = proj.call(st2.x, st2.y, 0.42)
 			_bar(c, Rect2(ps.x - 18 * s, ps.y, 36 * s, 5 * s), st2.hp / st2.max_hp, UiTheme.BLUE if st2.team == "blue" else UiTheme.RED, Color(0.05, 0.03, 0.08, 0.75))
+		elif st2.kind == "dep" and not st2.dead and (st2.team == team or mv.team_sees(st2)):
+			# 道具部署物：阵营色耐久条 + 剩余时间细条（己方的一直显示，敌方的看得见就显示）
+			var hd := 0.75 if st2.dep == "cover" else 0.42
+			var pd2: Vector2 = proj.call(st2.x, st2.y, hd)
+			var tcol := UiTheme.BLUE if st2.team == "blue" else UiTheme.RED
+			_bar(c, Rect2(pd2.x - 22 * s, pd2.y, 44 * s, 6 * s), st2.hp / st2.max_hp, tcol, Color(0.05, 0.03, 0.08, 0.8))
+			if st2.life_max > 0.0:
+				c.draw_rect(Rect2(pd2.x - 22 * s, pd2.y + 7 * s, 44 * s * clampf(st2.life / st2.life_max, 0.0, 1.0), 2 * s), Color(1, 1, 1, 0.55))
+			if st2.dep == "cam" and w.t - st2.alert_t < float(st2.cfg.parts.watch.get("alert", 2.5)) and st2.team == team:
+				_txt(c, Vector2(pd2.x - 40 * s, pd2.y - 6 * s), "发现敌人！", 15 * s, Color("#ff4d5e"), HORIZONTAL_ALIGNMENT_CENTER, true, 80 * s, 5)
 	for d in w.decoys:
 		if d.dead or not mv.team_reveals(d):
 			continue
 		var pd: Vector2 = proj.call(d.x, d.y, 0.62)
 		if d.team == team:
-			_txt(c, Vector2(pd.x - 60 * s, pd.y - 2 * s), "诱饵", 17 * s, Color(1, 1, 1, 0.7), HORIZONTAL_ALIGNMENT_CENTER, false, 120 * s, 5)
+			_txt(c, Vector2(pd.x - 60 * s, pd.y - 2 * s), "全息分身" if d.look == "holo" else "诱饵", 17 * s, Color(0.6, 0.95, 1.0, 0.8) if d.look == "holo" else Color(1, 1, 1, 0.7), HORIZONTAL_ALIGNMENT_CENTER, false, 120 * s, 5)
 		else:
 			# 敌人看到的诱饵和真仓鼠一样：名字 + 血条
 			var on := d.owner.name if d.owner != null else "?"
@@ -818,13 +978,19 @@ func _draw_world_ui(c: Control, s: float) -> void:
 			_bar(c, Rect2(p4.x - bw * 0.5, p4.y + 9 * s, bw * clampf(h.eshield / h.max_hp, 0.05, 1.0), 4 * s), 1.0, Color("#7fe3ff"), Color(0, 0, 0, 0))
 		if h.crown_t > 0.0:
 			_txt(c, Vector2(p4.x - 100 * s, p4.y - 30 * s), "♛", 20 * s, Color("#ffd166"), HORIZONTAL_ALIGNMENT_CENTER, false, 200 * s, 5)
+		if h.tp_t > 0.0:
+			# 传送读条
+			var tk := 1.0 - h.tp_t / maxf(0.01, float(SimGadgets.fx_of(h.tp_id).get("cast", 1.0)))
+			_bar(c, Rect2(p4.x - bw * 0.5, p4.y - 34 * s, bw, 6 * s), tk, Color("#7fe3ff"), Color(0.05, 0.03, 0.08, 0.8))
+		if h.root_t > 0.0:
+			_txt(c, Vector2(p4.x - 100 * s, p4.y + 30 * s), "被夹住！", 16 * s, Color("#ff8a7a"), HORIZONTAL_ALIGNMENT_CENTER, true, 200 * s, 5)
 	# 本地玩家：射程圈、投掷落点圈
 	if me != null and me.alive and not mv.autoplay:
 		var shown: = mv.prediction.ham if mv.prediction != null and me == mv.local else me
-		var gid := String(me.gadget.id)
+		var gid := String(me.gad.q.id)
 		var land_r := 0.0
 		var land := Vector2.ZERO
-		if THROWN.has(gid) and float(me.gadget.cd) <= 0.0:
+		if THROWN.has(gid) and int(me.gad.q.ch) > 0:
 			land = SimGadgets.target(w, shown)
 			land_r = float(THROWN[gid])
 		if me.weapon_id == "gl":
@@ -898,17 +1064,17 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 	if h.choices.is_empty() or not h.alive:
 		return
 	var n := h.choices.size()
-	var gap := 18.0 * s
-	var cw := 300.0 * s
+	var gap := 16.0 * s
+	var cw := minf(300.0 * s, (root.size.x - 40.0 * s - (n - 1) * gap) / maxf(1.0, n))
 	var ch := 178.0 * s
 	var tw := n * cw + (n - 1) * gap
 	var x0 := root.size.x * 0.5 - tw * 0.5
 	var y0 := root.size.y - ch - 40 * s
-	var title := "天赋解锁！三选一" if String(h.choices[0].t) == "tal" else ("升级！选一个（还剩 %d 次）" % h.pending if h.pending > 1 else "升级！选一个奖励")
+	var title := "天赋解锁！选一个" if String(h.choices[0].t) == "tal" else ("升级！选一个（还剩 %d 次）" % h.pending if h.pending > 1 else "升级！选一个奖励")
 	var ta := clampf(cards_t * 5.0, 0.0, 1.0)
 	_txt(c, Vector2(0, y0 - 20 * s), title, 30 * s, Color(1, 0.82, 0.4, ta), HORIZONTAL_ALIGNMENT_CENTER, true, root.size.x, 8)
 	var mouse := c.get_local_mouse_position()
-	var keys := ["1", "2", "3"] if pin.device == "kbm" else ["X", "Y", "B"]
+	var keys := pin.card_keys()
 	for i in n:
 		var cd: Dictionary = h.choices[i]
 		var L := SimCards.label(h, cd)
@@ -927,7 +1093,7 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 			sb.shadow_size = int(18 * s)
 		c.draw_style_box(sb, r)
 		# 类型标签
-		var tag := Rect2(r.position + Vector2(16, 14) * s, Vector2(70, 26) * s)
+		var tag := Rect2(r.position + Vector2(16, 14) * s, Vector2(maxf(70.0, 18.0 * String(L.type).length() + 16.0), 26) * s)
 		var sbt := StyleBoxFlat.new()
 		sbt.bg_color = col
 		sbt.set_corner_radius_all(int(13 * s))
@@ -959,7 +1125,7 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 				# 道具 / 道具升级 / 宠物 / 天赋：路线色圆底 + 一个字
 				var glyph := "?"
 				match String(cd.t):
-					"gad", "glvl":
+					"gad", "gup":
 						glyph = String(GICON.get(String(cd.id), "道"))
 					"pet":
 						glyph = String(PET_ICON.get(String(cd.id), "宠"))
@@ -976,6 +1142,11 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 		var tx := r.position.x + 108 * s
 		_txt(c, Vector2(tx, r.position.y + 78 * s), String(L.name), 26 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_LEFT, true)
 		var lines := _wrap(String(L.desc), cw - 124 * s, int(17 * s))
+		if String(cd.t) == "gad":
+			# 新道具卡：槽位角标（Q 战术 / E 强化）
+			var sc: Color = UiTheme.SLOT_COLORS[String(L.slot)]
+			c.draw_circle(ic_c + Vector2(26, 26) * s, 13 * s, sc)
+			_txt(c, ic_c + Vector2(13, 33) * s, String(L.slot).to_upper(), 17 * s, UiTheme.INK, HORIZONTAL_ALIGNMENT_CENTER, true, 26 * s, 0)
 		for li in mini(3, lines.size()):
 			_txt(c, Vector2(tx, r.position.y + 110 * s + li * 24 * s), lines[li], 17 * s, Color(1, 0.95, 0.88, 0.82), HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
 		if L.has("pathColor"):

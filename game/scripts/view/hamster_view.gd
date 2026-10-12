@@ -282,16 +282,20 @@ func _set_weapon(h: SimHamster) -> void:
 
 
 func _sync_accessories(h: SimHamster) -> void:
-	var sig := ",".join(h.ab.keys())
+	# 强化挂件 + 正在生效的道具外观（夜视仪道具戴上夜视镜）
+	var ids: Array = h.ab.keys()
+	if h.nvg_t > 0.0 and not ids.has("nvg"):
+		ids.append("nvg")
+	var sig := ",".join(ids)
 	if sig == _acc_sig or skel == null:
 		return
 	_acc_sig = sig
 	for id in _acc.keys():
-		if not h.ab.has(id):
+		if not ids.has(id):
 			for n in _acc[id]:
 				(n as Node).queue_free()
 			_acc.erase(id)
-	for id in h.ab.keys():
+	for id in ids:
 		if _acc.has(id) or not ACC.has(id):
 			continue
 		var nodes: Array = []
@@ -481,6 +485,7 @@ func sync(h: SimHamster, alpha: float, delta: float, visible_to_local: bool, pos
 		spin_node.rotation.y = _spin_a
 	eshield.visible = h.eshield_t > 0.0 and h.alive
 	if eshield.visible:
+		(eshield.material_override as ShaderMaterial).set_shader_parameter("color", Color("#ffcf7f") if h.eshield_id == "bubble" else Color("#7fe3ff"))
 		var ek := clampf(h.eshield / maxf(1.0, h.max_hp), 0.2, 1.0)
 		eshield.scale = Vector3.ONE * h.r * 0.024 * (0.9 + 0.1 * sin(Time.get_ticks_msec() * 0.01))
 		(eshield.material_override as ShaderMaterial).set_shader_parameter("hit", 0.3 * ek)

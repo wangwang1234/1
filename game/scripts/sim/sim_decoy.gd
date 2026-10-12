@@ -8,3 +8,5 @@ var weapon_id := "pistol"
 var t := 0.0
 var life := 8.0
 var step_t := 0.0
+var lure := 1.0      # 吸引系数：越小敌方越优先打它（全息诱饵）
+var look := "balloon"   # balloon 充气诱饵 / holo 全息分身（和主人一模一样）

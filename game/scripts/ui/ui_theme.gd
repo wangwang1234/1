@@ -12,7 +12,10 @@ const BLUE := Color("#4fa3ff")
 const RED := Color("#ff5b5b")
 const GREEN := Color("#7ee08a")
 const SUB := Color(1.0, 0.953, 0.878, 0.62)
-const CARD_COLORS := {"进化": Color("#ff9a3c"), "强化": Color("#5fb0ff"), "道具": Color("#c77dff"), "天赋": Color("#ff6fd0"), "宠物": Color("#5fd38a"), "换武器": Color("#d9d4e2")}
+const CARD_COLORS := {"进化": Color("#ff9a3c"), "强化": Color("#5fb0ff"), "道具": Color("#c77dff"), "战术道具": Color("#c77dff"), "强化道具": Color("#ffb347"), "道具升级": Color("#e7a6ff"),
+	"天赋": Color("#ff6fd0"), "宠物": Color("#5fd38a"), "换武器": Color("#d9d4e2")}
+## 道具槽颜色：Q 战术道具（紫）/ E 强化道具（橙），和 gadgets.json 的 slots 一致
+const SLOT_COLORS := {"q": Color("#c77dff"), "e": Color("#ffb347")}
 const PATH_COLORS := [Color("#ff9a3c"), Color("#5fb0ff"), Color("#c77dff")]
 
 static var body_font: Font
@@ -178,6 +181,8 @@ static func card_icon(t: String, id: String, weapon_id: String = "", path_idx: i
 	match t:
 		"gad", "glvl":
 			return icon("gad_" + id)
+		"gup":
+			return icon("gup_" + id)
 		"pet":
 			return icon("pet_" + id)
 		"tal":

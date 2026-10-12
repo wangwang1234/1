@@ -9,6 +9,7 @@ var port: SpinBox
 var team: OptionButton
 var skin: OptionButton
 var weapon: OptionButton
+var gadget_picks := {}     # 开局道具：开局池里有 2 个以上道具的槽才有（q / e -> OptionButton）
 var map_pick: OptionButton
 var roster_label: Label
 var team_lists: = {}
@@ -53,6 +54,13 @@ func _ready() -> void :
 	for id in Data.active_weapons():
 		weapons.append([id, Data.weapon(id).name])
 	weapon = _pick(_row(v, "初始武器"), weapons)
+	for slot: String in ["q", "e"]:
+		var pool := Data.gadget_pool(slot, "start")
+		if pool.size() >= 2:
+			var gl: Array = []
+			for id in pool:
+				gl.append([id, Data.gadget(id).name])
+			gadget_picks[slot] = _pick(_row(v, "开局%s（%s）" % [Data.gadgets().slots[slot].name, slot.to_upper()]), gl)
 	map_pick = _pick(_row(v, "房主地图"), [["full", "完整地图（三条兵线）"], ["slice", "中路小图"]])
 	var ip_row: = _row(v, "房主 IP")
 	address = LineEdit.new()
@@ -132,6 +140,9 @@ func _ready() -> void :
 		_select(team, String(p.team))
 		_select(skin, String(p.skin))
 		_select(weapon, String(p.weapon))
+		for slot in gadget_picks:
+			if p.has("g" + slot):
+				_select(gadget_picks[slot], String(p["g" + slot]))
 	_select(map_pick, String(LanSession.room_options.mode))
 	_refresh()
 
@@ -180,7 +191,10 @@ func _button(row: HBoxContainer, title: String, cb: Callable) -> Button:
 
 
 func _profile() -> Dictionary:
-	return {"name": nickname.text, "team": _value(team), "skin": _value(skin), "weapon": _value(weapon)}
+	var out := {"name": nickname.text, "team": _value(team), "skin": _value(skin), "weapon": _value(weapon)}
+	for slot in gadget_picks:
+		out["g" + slot] = _value(gadget_picks[slot])
+	return out
 
 
 func _profile_changed() -> void :

@@ -1,10 +1,11 @@
 class_name SimCards
 extends RefCounted
 ## 升级卡：抽卡、卡面文字、应用、AI 选择。对应原型 n2c.js 的 rollChoices / choiceLabel / applyChoice / aiPick。
-## 批次 1 的卡池范围由 rules.json 的 scope 控制。
+## 批次 1 的卡池范围由 rules.json 的 scope 控制；每次 rules.json cards.count 张（4 张），类别权重在 cards.weights。
+## 道具卡：gad 新道具（只替换它所属的 Q / E 槽），gup 道具通用升级（冷却缩短 / 携带上限，同时作用于 Q 和 E）。卡面不显示等级数字。
 
 const PK := ["a", "b", "c"]
-const TYPE_COLOR := {"进化": "#ff9a3c", "强化": "#5fb0ff", "道具": "#c77dff", "天赋": "#ff6fd0", "宠物": "#5fd38a", "换武器": "#d9d4e2"}
+const TYPE_COLOR := {"进化": "#ff9a3c", "强化": "#5fb0ff", "战术道具": "#c77dff", "强化道具": "#ffb347", "道具升级": "#e7a6ff", "天赋": "#ff6fd0", "宠物": "#5fd38a", "换武器": "#d9d4e2"}
 
 
 static func _scope_weapons() -> Array:
@@ -17,13 +18,14 @@ static func _scope_abilities() -> Array:
 
 static func roll(w: SimWorld, h: SimHamster) -> void:
 	var C: Dictionary = w.R.cards
+	var n_cards := int(C.get("count", 4))
 	if h.talent_pend > 0 and bool(Data.rule("scope.talents", true)):
 		var tp: Array = []
 		for k in Data.talents().keys():
 			if not h.tal.has(k):
 				tp.append(k)
 		var o: Array = []
-		while o.size() < 3 and not tp.is_empty():
+		while o.size() < n_cards and not tp.is_empty():
 			o.append({"t": "tal", "id": tp.pop_at(int(w.rnd() * tp.size()) % tp.size())})
 		if not o.is_empty():
 			h.choices = o
@@ -83,58 +85,86 @@ static func roll(w: SimWorld, h: SimHamster) -> void:
 		if ws.is_empty():
 			return null
 		return {"t": "weap", "id": ws[int(w.rnd() * ws.size()) % ws.size()]}
+	# 新道具卡：Q / E 两个升级池里身上没装的（同一次不重复）
+	var gads: Array = []
+	if bool(Data.rule("scope.gadgetCards", true)):
+		for slot in SimGadgets.SLOTS:
+			for id in Data.gadget_pool(slot, "upgrade"):
+				if id != String(h.gad[slot].id):
+					gads.append(id)
+	var pick_gad := func() -> Variant:
+		if gads.is_empty():
+			return null
+		return {"t": "gad", "id": gads.pop_at(int(w.rnd() * gads.size()) % gads.size())}
+	# 道具通用升级卡（冷却缩短 / 携带上限）：没满的
+	var gups: Array = []
+	var U: Dictionary = Data.gadgets().upgrades
+	for uid in ["gcdx", "gcap"]:
+		if int(h.gup.get(uid, 0)) < int(U[uid].max):
+			gups.append(uid)
+	var pick_gup := func() -> Variant:
+		if gups.is_empty():
+			return null
+		return {"t": "gup", "id": gups.pop_at(int(w.rnd() * gups.size()) % gups.size())}
+	var pick_pet := func() -> Variant:
+		if not bool(Data.rule("scope.pets", true)):
+			return null
+		var ps: Array = []
+		var pmax := int(w.R.pets.maxLevel)
+		for id in Data.pets().keys():
+			var lvl := 0
+			for p in h.pet_list:
+				if p.type == id:
+					lvl = p.lvl
+			var taken := out.any(func(x): return x.t == "pet" and x.id == id)
+			if lvl < pmax and not taken:
+				ps.append(id)
+		if ps.is_empty():
+			return null
+		return {"t": "pet", "id": ps[int(w.rnd() * ps.size()) % ps.size()]}
+	# 第 1 张：进化（手枪：换武器）；第 2 张：通用强化
 	add.call(pick_weap.call() if no_evo else pick_evo.call())
 	add.call(pick_gen.call([]))
+	# 其余按类别权重抽（rules.json cards.weights + weaponSwap 阶段权重）
 	var ev_tot := h.evo_total()
 	var WS: Dictionary = C.weaponSwap
 	var pw := float(WS.fresh) if (ev_tot == 0 and h.lvl < int(WS.freshLevel)) else (float(WS.early) if ev_tot < int(WS.earlyEvoTotal) else float(WS.late))
 	if no_evo:
-		pw = float(WS.get("noEvo", pw))     # 拿着手枪时第三张也常是换武器
-	var B: Dictionary = C.branches
-	var r := w.rnd()
-	var gad_on := bool(Data.rule("scope.gadgetCards", true))
-	var pets_on := bool(Data.rule("scope.pets", true))
-	var third: Variant = null
-	if r < pw:
-		third = pick_weap.call()
-	elif r < pw + float(B.gadget):
-		if gad_on:
-			if w.rnd() < float(C.gadgetUpgradeChance) and int(h.gadget.lvl) < 4:
-				third = {"t": "glvl", "id": h.gadget.id}
-			else:
-				var gs: Array = []
-				for id in Data.rule("scope.gadgets", Data.gadgets().keys()):
-					if id != h.gadget.id:
-						gs.append(id)
-				third = {"t": "gad", "id": gs[int(w.rnd() * gs.size()) % gs.size()]}
-	elif r < pw + float(B.gadget) + float(B.pet):
-		if pets_on:
-			var ps: Array = []
-			var pmax := int(w.R.pets.maxLevel)
-			for id in Data.pets().keys():
-				var lvl := 0
-				for p in h.pet_list:
-					if p.type == id:
-						lvl = p.lvl
-				if lvl < pmax:
-					ps.append(id)
-			if not ps.is_empty():
-				third = {"t": "pet", "id": ps[int(w.rnd() * ps.size()) % ps.size()]}
-	elif r < pw + float(B.gadget) + float(B.pet) + float(B.evo):
-		third = pick_evo.call()
-	else:
-		third = pick_gen.call(C.visionAbilities)
-		if third == null:
-			third = pick_gen.call([])
-	add.call(third)
-	while out.size() < 3:
-		var c: Variant = pick_evo.call()
-		if c == null:
-			c = pick_gen.call([])
-		if c == null:
+		pw = float(WS.get("noEvo", pw))
+	var CW: Dictionary = C.weights
+	var cats := {"evo": float(CW.evo), "abil": float(CW.abil), "vision": float(CW.get("vision", 0.0)), "gad": float(CW.gad), "gup": float(CW.gup), "pet": float(CW.pet), "weap": pw}
+	var draw := func(cat: String) -> Variant:
+		match cat:
+			"evo": return pick_evo.call()
+			"abil": return pick_gen.call([])
+			"vision": return pick_gen.call(C.visionAbilities)
+			"gad": return pick_gad.call()
+			"gup": return pick_gup.call()
+			"pet": return pick_pet.call()
+			"weap": return pick_weap.call()
+		return null
+	var guard := 0
+	while out.size() < n_cards and guard < 24:
+		guard += 1
+		var tot := 0.0
+		for k in cats:
+			tot += float(cats[k])
+		if tot <= 0.0:
 			break
-		add.call(c)
-	h.choices = out.slice(0, 3)
+		var r := w.rnd() * tot
+		var cat := ""
+		for k in cats:
+			r -= float(cats[k])
+			if r <= 0.0:
+				cat = k
+				break
+		if cat.is_empty():
+			cat = String(cats.keys().back())
+		var before := out.size()
+		add.call(draw.call(cat))
+		if out.size() == before:
+			cats[cat] = 0.0     # 这一类抽不出新卡了
+	h.choices = out.slice(0, n_cards)
 	w.emit({"t": "choices", "id": h.id})
 
 
@@ -158,11 +188,19 @@ static func label(h: SimHamster, c: Dictionary) -> Dictionary:
 			var W := Data.weapon(c.id)
 			return {"type": "换武器", "name": W.name, "badge": "换上", "desc": String(W.get("desc", "")) + "（进化清零）", "weapon": c.id}
 		"gad":
-			var G: Dictionary = Data.gadgets()[c.id]
-			return {"type": "道具", "name": G.name, "badge": "换上", "desc": G.desc}
-		"glvl":
-			var G2: Dictionary = Data.gadgets()[c.id]
-			return {"type": "道具", "name": G2.name, "badge": "", "desc": "冷却更短，效果更强"}
+			# 卡面标明是战术道具（Q）还是强化道具（E），换上只替换那个槽
+			var G: Dictionary = Data.gadget(c.id)
+			var slot := String(G.slot)
+			var SL: Dictionary = Data.gadgets().slots[slot]
+			var cur := String(Data.gadget(String(h.gad[slot].id)).get("name", ""))
+			return {"type": String(SL.name), "name": G.name, "badge": "换 " + slot.to_upper(), "desc": "%s（替换 %s）" % [G.desc, cur], "slot": slot, "gadget": c.id}
+		"gup":
+			var U: Dictionary = Data.gadgets().upgrades[c.id]
+			var n := int(h.gup.get(c.id, 0))
+			var now := ""
+			if n > 0:
+				now = "（已 −%d%%）" % roundi(-100.0 * float(U.per) * n) if c.id == "gcdx" else "（已 +%d）" % (int(U.per) * n)
+			return {"type": "道具升级", "name": U.name, "badge": "Q+E", "desc": String(U.desc) + now, "gup": c.id}
 		"abil":
 			var A: Dictionary = Data.abilities()[c.id]
 			var l := int(h.ab.get(c.id, 0)) + 1
@@ -207,10 +245,9 @@ static func apply(w: SimWorld, h: SimHamster, i: int) -> void:
 			h.flame_t = 0.0
 			h.fire_cd = 0.0    # 换上新枪立刻能开火（不继承旧枪的射击冷却）
 		"gad":
-			h.gadget = {"id": c.id, "lvl": 1, "cd": 0.0}
-			h.beacon = {}
-		"glvl":
-			h.gadget.lvl = mini(int(w.R.gadgets.maxLevel), int(h.gadget.lvl) + 1)
+			SimGadgets.equip(w, h, String(c.id))
+		"gup":
+			SimGadgets.add_upgrade(h, String(c.id))
 		"tal":
 			h.tal[c.id] = true
 			h.talent_pend = maxi(0, h.talent_pend - 1)
@@ -256,7 +293,7 @@ static func ai_pick(w: SimWorld, h: SimHamster) -> int:
 		match String(c.t):
 			"evo": base = float(PW.evo)
 			"abil": base = float(PW.abil)
-			"glvl": base = float(PW.glvl)
+			"gup": base = float(PW.gup)
 			"gad": base = float(PW.gad)
 			"pet": base = float(PW.pet)
 			"weap": base = float(PW.weapFresh) if ev_tot == 0 else float(PW.weap)

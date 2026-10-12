@@ -1,16 +1,17 @@
 class_name PlayerInput
 extends RefCounted
 ## 玩家输入 → SimHamster.HamInput。三种方案：
-## - kbm：WASD 移动、鼠标瞄准（开火时带轻微辅助瞄准，强度见设置）、左键射击、空格翻滚、R 换弹、Q 道具、1/2/3 选卡（单人时也接手柄 0 号）
-## - pad：左摇杆移动、右摇杆瞄准（不推右摇杆时自动瞄准最近的敌人）、RT 射击、A 翻滚、X 换弹、LB 道具、X/Y/B 选卡
-## - keys2（本地 2P 方向键）：方向键移动、回车射击（自动瞄准）、右 Shift 翻滚、/ 换弹、. 道具、8/9/0 选卡
+## - kbm：WASD 移动、鼠标瞄准（开火时带轻微辅助瞄准，强度见设置）、左键射击、右键武器技能、空格翻滚、R 换弹、Q 战术道具、E 强化道具、1/2/3/4 选卡（单人时也接手柄 0 号）
+## - pad：左摇杆移动、右摇杆瞄准（不推右摇杆时自动瞄准最近的敌人）、RT 射击、LT 武器技能、A 翻滚、X 换弹、LB 战术道具、RB 强化道具、十字键 ←↑→↓ 选卡（X/Y/B 也能选前三张）
+## - keys2（本地 2P 方向键）：方向键移动、回车射击（自动瞄准）、右 Shift 翻滚、/ 换弹、. 战术道具、; 强化道具、, 武器技能、8/9/0/- 选卡
+## 手机 / 触屏：HUD 上的 Q、E 两个独立按钮（Hud.touch_slot）直接写 inp.gadget / gadget2
 
 const ACTIONS := {
 	"move_up": [KEY_W, KEY_UP], "move_down": [KEY_S, KEY_DOWN], "move_left": [KEY_A, KEY_LEFT], "move_right": [KEY_D, KEY_RIGHT],
-	"dash": [KEY_SPACE], "reload": [KEY_R], "gadget": [KEY_Q], "card_1": [KEY_1], "card_2": [KEY_2], "card_3": [KEY_3], "pause": [KEY_ESCAPE, KEY_P],
+	"dash": [KEY_SPACE], "reload": [KEY_R], "gadget": [KEY_Q], "gadget2": [KEY_E], "card_1": [KEY_1], "card_2": [KEY_2], "card_3": [KEY_3], "card_4": [KEY_4], "pause": [KEY_ESCAPE, KEY_P],
 }
-const KEYS_P1 := {"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "dash": KEY_SPACE, "reload": KEY_R, "gadget": KEY_Q, "skill": KEY_E, "card": [KEY_1, KEY_2, KEY_3]}
-const KEYS_P2 := {"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "fire": KEY_ENTER, "dash": KEY_SHIFT, "reload": KEY_SLASH, "gadget": KEY_PERIOD, "skill": KEY_COMMA, "card": [KEY_8, KEY_9, KEY_0]}
+const KEYS_P1 := {"up": KEY_W, "down": KEY_S, "left": KEY_A, "right": KEY_D, "dash": KEY_SPACE, "reload": KEY_R, "gadget": KEY_Q, "gadget2": KEY_E, "card": [KEY_1, KEY_2, KEY_3, KEY_4]}
+const KEYS_P2 := {"up": KEY_UP, "down": KEY_DOWN, "left": KEY_LEFT, "right": KEY_RIGHT, "fire": KEY_ENTER, "dash": KEY_SHIFT, "reload": KEY_SLASH, "gadget": KEY_PERIOD, "gadget2": KEY_SEMICOLON, "skill": KEY_COMMA, "card": [KEY_8, KEY_9, KEY_0, KEY_MINUS]}
 
 var scheme := "kbm"      # kbm / pad / keys2
 var device := "kbm"      # 当前实际在用的设备（kbm 方案里接上手柄会切到 pad）
@@ -44,7 +45,7 @@ static func ensure_actions() -> void:
 		rt.axis = JOY_AXIS_TRIGGER_RIGHT
 		rt.axis_value = 1.0
 		InputMap.action_add_event("fire", rt)
-	var pad := {"dash": JOY_BUTTON_A, "reload": JOY_BUTTON_X, "gadget": JOY_BUTTON_LEFT_SHOULDER, "pause": JOY_BUTTON_START}
+	var pad := {"dash": JOY_BUTTON_A, "reload": JOY_BUTTON_X, "gadget": JOY_BUTTON_LEFT_SHOULDER, "gadget2": JOY_BUTTON_RIGHT_SHOULDER, "pause": JOY_BUTTON_START}
 	for a in pad:
 		var jb := InputEventJoypadButton.new()
 		jb.button_index = pad[a]
@@ -121,7 +122,7 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool
 		"keys2":
 			fire = _key(KEYS_P2.fire)
 		"pad":
-			fire = Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4 or Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER)
+			fire = Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4
 		_:
 			fire = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or (use_pad and Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_RIGHT) > 0.4)
 	# 选卡期间照样能射击：只有在升级卡上按下的那一下算选卡；从卡外按住开火、准星扫过卡片时不会断火
@@ -137,16 +138,19 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool
 	var dash := (kb and kb_dash) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_A))
 	var reload := (kb and _key(K.reload)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_X) and h.choices.is_empty())
 	var gadget := (kb and _key(K.gadget)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_LEFT_SHOULDER))
-	# 右键武器技能：鼠标右键（键鼠方案）/ E（1P 键盘）/ 逗号（2P 方向键方案）/ 手柄左扳机；按住时冷却一好就放
+	var gadget2 := (kb and _key(K.gadget2)) or (use_pad and Input.is_joy_button_pressed(pad_index, JOY_BUTTON_RIGHT_SHOULDER))
+	# 右键武器技能：鼠标右键（键鼠方案）/ 逗号（2P 方向键方案）/ 手柄左扳机；按住时冷却一好就放（E 键 2026-10-12 起归强化道具）
 	var mouse_skill := scheme == "kbm" and Input.is_mouse_button_pressed(MOUSE_BUTTON_RIGHT)
-	inp.skill = mouse_skill or (kb and _key(K.skill)) or (use_pad and Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_LEFT) > 0.4)
+	inp.skill = mouse_skill or (kb and K.has("skill") and _key(K.skill)) or (use_pad and Input.get_joy_axis(pad_index, JOY_AXIS_TRIGGER_LEFT) > 0.4)
 	if _pressed_edge("dash", dash):
 		inp.dash = true
 	if _pressed_edge("reload", reload):
 		inp.reload = true
 	if _pressed_edge("gadget", gadget):
 		inp.gadget = true
-	for i in 3:
+	if _pressed_edge("gadget2", gadget2):
+		inp.gadget2 = true
+	for i in (K.card as Array).size():
 		var down := kb and _key(int(K.card[i]))
 		if _pressed_edge("card%d" % i, down):
 			inp.card = i
@@ -154,6 +158,11 @@ func poll(h: SimHamster, cam: GameCamera, mouse_screen: Vector2, over_card: bool
 		var btns := [JOY_BUTTON_X, JOY_BUTTON_Y, JOY_BUTTON_B]
 		for i in 3:
 			if _pressed_edge("pcard%d" % i, Input.is_joy_button_pressed(pad_index, btns[i])):
+				inp.card = i
+				device = "pad"
+		var dpad := [JOY_BUTTON_DPAD_LEFT, JOY_BUTTON_DPAD_UP, JOY_BUTTON_DPAD_RIGHT, JOY_BUTTON_DPAD_DOWN]
+		for i in dpad.size():
+			if _pressed_edge("dcard%d" % i, Input.is_joy_button_pressed(pad_index, dpad[i])):
 				inp.card = i
 				device = "pad"
 
@@ -171,10 +180,10 @@ static func track_key(ev: InputEvent) -> void:
 func card_hint() -> String:
 	match device:
 		"pad":
-			return "按 X / Y / B 选升级，不耽误射击"
+			return "按十字键 ← ↑ → ↓ 选升级，不耽误射击"
 		"keys2":
-			return "按 8 / 9 / 0 选升级，不耽误射击"
-	return "按 1 / 2 / 3 选升级，不耽误射击"
+			return "按 8 / 9 / 0 / - 选升级，不耽误射击"
+	return "按 1 / 2 / 3 / 4 选升级，不耽误射击"
 
 
 func skill_key() -> String:
@@ -186,10 +195,19 @@ func skill_key() -> String:
 	return "右键"
 
 
-func gadget_key() -> String:
+func gadget_key(slot: String = "q") -> String:
 	match device:
 		"pad":
-			return "LB"
+			return "LB" if slot == "q" else "RB"
 		"keys2":
-			return "."
-	return "Q"
+			return "." if slot == "q" else ";"
+	return "Q" if slot == "q" else "E"
+
+
+func card_keys() -> Array:
+	match device:
+		"pad":
+			return ["←", "↑", "→", "↓"]
+		"keys2":
+			return ["8", "9", "0", "-"]
+	return ["1", "2", "3", "4"]

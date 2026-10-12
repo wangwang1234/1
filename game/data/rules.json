@@ -12,6 +12,7 @@
   "spawnOffset": 165,
   "spawnJitter": [30, 110],
   "spawnIframes": 2,
+  "gadgetStartCd": 2.0,
   "respawnBase": 4,
   "respawnPerLevel": 0.6,
   "respawnMax": 14,
@@ -112,6 +113,8 @@
   "maxNoises": 90
  },
  "minion": {
+  "followGap": 70,
+  "followSpeedK": 1.25,
   "speed": 95,
   "slowMul": 0.6,
   "accel": 6,
@@ -205,9 +208,8 @@
   "autoTarget": 520,
   "autoTargetMax": 560,
   "noTargetDist": 300,
-  "cdPerLevel": -0.15,
+  "_doc": "旧道具（frag … beacon）的效果参数，保持原效果。道具等级已取消（*PerLevel 按 1 级算），成长改为 gadgets.json 的通用升级；新道具的参数直接写在 gadgets.json 的 fx 里",
   "frag": {"speed": 420, "fuse": 1.5, "aoe": 130, "dmg": 70, "dmgPerLevel": 0.2, "kb": 380},
-  "maxLevel": 4,
   "molotov": {"speed": 420, "r": 95, "rPerLevel": 10, "life": 4.5, "lifePerLevel": 0.5, "dps": 12, "dpsPerLevel": 0.25},
   "flash": {"speed": 460, "fuse": 1.0, "r": 290, "blind": 2.0, "blindAi": 2.2, "kBase": 1.2, "kMin": 0.4, "stun": 1.6},
   "mine": {
@@ -290,7 +292,8 @@
   "waypointRadius": 130,
   "gadgetRate": 0.9,
   "gadgetRange": [140, 480],
-  "gadgetWant": {"_doc": "AI 什么时候用道具（原型 aiWantGadget）：hp 项是生命比例，其余是到目标的距离", "eshieldHp": 0.7, "medkitHp": 0.5, "beaconSetHp": 0.8, "beaconBackHp": 0.3, "mine": 220, "sentry": 460, "jetpack": [260, 480], "decoy": 520},
+  "gadgetItem": {"_doc": "道具 AI 的公共参数（每个道具什么时候用写在 gadgets.json 的 ai）：every 秒判定一次，命中后按 rate × 难度 gadgetK × every 的概率真正使用；prio 两个槽同时想用时的优先级（保命 > 交战 > 情报）；junglePR 野区附近的距离；lockFacing / lockRange 真人敌人“正对着我”的角度和距离；spotSpacing 同种部署物的间隔；coverNear 已有己方掩体算“有掩体”的距离", "every": 0.25, "rate": 2.2, "junglePR": 520, "lockFacing": 0.3, "lockRange": 520, "spotSpacing": 700, "coverNear": 120, "prio": {"save": 3, "fight": 2, "intel": 1}},
+  "gadgetWant": {"_doc": "（旧版 AI 用道具的阈值，已改为 gadgets.json 每个道具的 ai 条件，保留备查）", "eshieldHp": 0.7, "medkitHp": 0.5, "beaconSetHp": 0.8, "beaconBackHp": 0.3, "mine": 220, "sentry": 460, "jetpack": [260, 480], "decoy": 520},
   "_skillRateDoc": "skillRate：右键武器技能——目标进了技能距离（weapons.json 的 skill.aiRange）且冷却好时，每秒放技能的概率（再乘难度的 gadgetK）",
   "dim": {"_doc": "AI 对暗处（在视线内但没被照亮）的敌人：只在 see 距离内察觉，换到这样的目标后反应时间 × reactK、瞄准误差 × aimK；难度里的 dimSee / dimReactK / dimAimK 会覆盖", "see": 340, "reactK": 1.7, "aimK": 1.6},
   "skillRate": 1.2,
@@ -304,7 +307,7 @@
   "pushInSudden": true,
   "suddenHamRange": 260,
   "suddenStructWeight": 0.15,
-  "pickWeights": {"evo": 3, "abil": 2, "glvl": 1.8, "gad": 1.9, "pet": 2.3, "weapFresh": 1.2, "weap": 0.3, "random": 1.5},
+  "pickWeights": {"evo": 3, "abil": 2, "gup": 1.8, "gad": 1.9, "pet": 2.3, "weapFresh": 1.2, "weap": 0.3, "random": 1.5},
   "jungle": {
    "every": [25, 45],
    "maxLevel": 9,
@@ -320,16 +323,16 @@
  },
  "cards": {
   "evoWeightPerLevel": 0.35,
-  "weaponSwap": {"_doc": "第三张卡是换武器的概率；noEvo = 拿着不升级的起手武器（手枪）时（第一张固定是换武器）", "freshLevel": 6, "fresh": 0.35, "early": 0.1, "earlyEvoTotal": 6, "late": 0.05, "noEvo": 0.5},
-  "branches": {"gadget": 0.3, "pet": 0.15, "evo": 0.3},
-  "gadgetUpgradeChance": 0.45,
+  "_doc": "升级卡（2026-10-12 改为 4 张）。count 每次展示几张；第 1 张是进化（拿着不升级的手枪时是换武器），第 2 张是通用强化，其余按 weights 抽类别：evo 武器进化、abil 通用强化、vision 视野类强化（visionAbilities）、gad 新道具卡（Q / E 升级池里身上没有的）、gup 道具通用升级（冷却缩短 / 携带上限，见 gadgets.json 的 upgrades）、pet 宠物；换武器的类别权重按 weaponSwap 的阶段取。抽不到的类别自动跳过",
+  "count": 4,
+  "weights": {"evo": 2.6, "abil": 2.0, "vision": 0.6, "gad": 2.2, "gup": 1.4, "pet": 1.1},
+  "weaponSwap": {"_doc": "换武器卡的类别权重（和 weights 一起抽）：还没点进化且等级 < freshLevel 时 fresh，进化总级数 < earlyEvoTotal 时 early，之后 late；noEvo = 拿着不升级的起手武器（手枪）时（第一张固定是换武器）", "freshLevel": 6, "fresh": 1.6, "early": 0.45, "earlyEvoTotal": 6, "late": 0.2, "noEvo": 3.0},
   "visionAbilities": ["torch", "wide", "ears", "nvg", "recon", "binoc"]
  },
  "scope": {
-  "_doc": "卡池范围。weapons：2026-10-11 导演定的精简方案 A（10 把）；沙漠之鹰、左轮、双持、轻机枪、自动霰弹、反器材狙、电磁炮、榴弹发射器的代码和数据保留，加回来把 id 写回这个列表",
+  "_doc": "卡池范围。weapons：2026-10-11 导演定的精简方案 A（10 把）；沙漠之鹰、左轮、双持、轻机枪、自动霰弹、反器材狙、电磁炮、榴弹发射器的代码和数据保留，加回来把 id 写回这个列表。道具的开局池 / 升级池写在 gadgets.json 每个道具的 pool 里；abilities 去掉了 gcd（道具大师，道具冷却改由道具通用升级卡负责，代码和数据保留）",
   "weapons": ["pistol", "smg", "ak47", "minigun", "shotgun", "sniper", "rocket", "katana", "flame", "laser"],
-  "abilities": ["strong", "armor", "regen", "vamp", "speed", "dash", "magnet", "torch", "wide", "ears", "nvg", "recon", "rage", "crit", "rate", "frost", "chain", "scholar", "scav", "gcd", "aura", "banner", "binoc"],
-  "gadgets": ["frag", "molotov", "flash", "mine", "sentry", "eshield", "smoke", "flare", "decoy", "jetpack", "medkit", "freeze", "beacon"],
+  "abilities": ["strong", "armor", "regen", "vamp", "speed", "dash", "magnet", "torch", "wide", "ears", "nvg", "recon", "rage", "crit", "rate", "frost", "chain", "scholar", "scav", "aura", "banner", "binoc"],
   "talents": true,
   "pets": true,
   "gadgetCards": true

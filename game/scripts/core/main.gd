@@ -168,6 +168,12 @@ func make_cfg(o: Dictionary) -> Dictionary:
 		for p in players:
 			hum[p.team] = int(hum.get(p.team, 0)) + 1
 		ai = {"blue": maxi(0, size - int(hum.get("blue", 0))), "red": maxi(0, size - int(hum.get("red", 0)))}
+	# 开局道具（开局池里有 2 个以上时在大厅选；两个玩家各自一套）
+	for i in players.size():
+		var pre := "" if i == 0 else "p2_"
+		for slot: String in ["q", "e"]:
+			if o.has(pre + "g" + slot):
+				players[i]["g" + slot] = String(o[pre + "g" + slot])
 	return {"mode": mode, "seed": sd, "autoplay": bool(o.get("autoplay", false)), "players": players, "ai": ai, "difficulty": String(o.get("difficulty", "normal"))}
 
 

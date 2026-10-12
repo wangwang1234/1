@@ -16,6 +16,7 @@ extends Node
 ##   materials  实际引擎材质审阅：四种皮肤 × 两队、组合装备、家具分件
 ##   identity   画面个性化（2026-10-11）：光岛、画面外巨物投影、手机、彩灯、袜子脚印、光束灰尘（--spots a,b 只拍部分）
 ##   skills     右键武器专属技能：开放的 10 把武器各放一次技能（--weapons a,b 只拍部分）
+##   qe         道具 Q / E 双槽（2026-10-12）：HUD 两个槽 + 4 张升级卡、全部部署物、掩体挡子弹、反射器弹火箭、全息分身、捕鼠夹、声呐 / 传送 / 护盾碎裂、触屏按钮
 ##   fb3        导演反馈第三轮：拿手枪时的升级卡（换武器）、Tab 比分板、大瓜子和金瓜子、望远镜前后视野、满级宠物
 ##   dim        暗处可见（2026-10-11）：同一画面里黑处 / 月光里 / 手电里的敌人对比，带 HUD 和无 HUD；再把手电转向黑处那只
 ##   b3map      批次 3：七个美术区域各一张 + 建筑破损阶段 + 整张地图俯瞰 + 新特效（--parts zones,structs,overview,fx）
@@ -95,6 +96,8 @@ func _run() -> void:
 			await _fb3()
 		"skills":
 			await _skills()
+		"qe":
+			await _qe()
 		"lighting_walk":
 			await _lighting_walk()
 		"materials":
@@ -428,12 +431,11 @@ func _b2world() -> void:
 	foe.stun = 999.0
 	var plan := [["sentry", 0, 0], ["decoy", 0, 0], ["mine", 0, 0], ["smoke", 420, -160], ["molotov", 300, 140], ["flare", 120, -60], ["eshield", 0, 0]]
 	for g in plan:
-		h.gadget = {"id": g[0], "lvl": 1, "cd": 0.0}
 		h.inp.aim_x = spot.x + float(g[1])
 		h.inp.aim_y = spot.y + float(g[2])
 		h.aim = 0.3 if g[0] == "sentry" else (-0.4 if g[0] == "decoy" else 0.0)
 		h.inp.aim = h.aim
-		SimGadgets.use(w, h)
+		SimGadgets.force_use(w, h, String(g[0]))
 		if g[0] == "mine":
 			w.mines[-1].x = spot.x - 60.0
 		await _steps(8)
@@ -515,12 +517,11 @@ func _b3map() -> void:
 			h.px = h.x
 			h.py = h.y
 			h.hp = h.max_hp * 0.5
-			h.gadget = {"id": g[0], "lvl": 1, "cd": 0.0}
 			h.inp.aim_x = spot.x + float(g[1])
 			h.inp.aim_y = spot.y + float(g[2])
 			h.aim = 0.0
 			h.inp.aim = 0.0
-			SimGadgets.use(w, h)
+			SimGadgets.force_use(w, h, String(g[0]))
 			await _steps(int(g[3]))
 			await shot("b3_fx_" + String(g[0]))
 		# 传送光柱 + 升级光柱 + 闪电（直接发表现层事件）
@@ -1425,3 +1426,157 @@ func _skills() -> void:
 		h.sk_free_t = 0.0
 		h.sk_rate_t = 0.0
 		h.sk_spin_t = 0.0
+
+
+func _qe() -> void:
+	## 道具双槽审阅：玩家站在空地，其余仓鼠暂时退场；逐个摆出部署物和效果，在最明显的时刻截图
+	args["mode"] = "full"
+	var mv := await _start(true)
+	var w := mv.world
+	var h := mv.local
+	h.ctl = "player"
+	h.ai = null
+	h.iframes = 9999.0
+	for o in w.hams:
+		if o != h:
+			o.alive = false
+			o.respawn_t = 9999.0
+	for e in w.mobs:
+		e.dead = true
+	var p := _free_near(w, Vector2(2050.0, 1560.0), h.r)
+	var place := func() -> void:
+		h.x = p.x
+		h.y = p.y
+		h.px = p.x
+		h.py = p.y
+		h.vx = 0.0
+		h.vy = 0.0
+	place.call()
+	h.aim = 0.0
+	h.inp.aim = 0.0
+	h.inp.has_aim_point = true
+	var hud: Hud = mv.hud_of(h.id)
+	# 1) HUD：两个槽（Q 掩体 2 格、E 护盾展开器冷却中）+ 4 张升级卡
+	h.gup = {"gcdx": 1, "gcap": 1}
+	h.gad.q = SimGadgets.new_slot("cover", h)
+	h.gad.e = SimGadgets.new_slot("bubble", h)
+	h.gad.e.ch = 0
+	h.gad.e.cd = 7.0
+	h.lvl = 6
+	h.pending = 1
+	h.choices = [{"t": "gad", "id": "cam"}, {"t": "gad", "id": "adren"}, {"t": "gup", "id": "gcdx"}, {"t": "gup", "id": "gcap"}]
+	hud.show_cards()
+	await _steps(40)
+	await shot("qe_hud_cards")
+	h.choices = []
+	h.pending = 0
+	# 2) 全部部署物：摄像头（远处墙边）、捕鼠夹、掩体、再生力场、哨戒炮、反射器，外加全息分身
+	var mate := w.hams.filter(func(o): return o.team == h.team and o != h)[0] as SimHamster
+	mate.alive = true
+	mate.hp = mate.max_hp * 0.35
+	mate.x = p.x - 70.0
+	mate.y = p.y + 40.0
+	mate.px = mate.x
+	mate.py = mate.y
+	mate.ai = null
+	mate.ctl = "player"
+	var plan := [["cam", 0.0, 320.0, -200.0], ["trap", PI, 0.0, 0.0], ["regen", 0.0, 0.0, 0.0], ["guardgun", -0.9, 0.0, 0.0], ["reflector", 0.9, 0.0, 0.0], ["cover", 0.0, 0.0, 0.0], ["holo", 2.3, 0.0, 0.0]]
+	for it: Array in plan:
+		place.call()
+		h.aim = float(it[1])
+		h.inp.aim = h.aim
+		h.inp.aim_x = p.x + float(it[2])
+		h.inp.aim_y = p.y + float(it[3])
+		if String(it[0]) == "trap":
+			h.x = p.x - 110.0
+			h.px = h.x
+		SimGadgets.force_use(w, h, String(it[0]))
+		await _steps(6)
+	place.call()
+	h.aim = 0.0
+	h.inp.aim = 0.0
+	for k in 3:
+		var m := w.spawn_minion("red", w.map.lanes.keys()[0])
+		m.x = p.x + 300.0 + k * 40.0
+		m.y = p.y - 60.0 + k * 60.0
+		m.px = m.x
+		m.py = m.y
+		m.hp = 9999.0
+		m.max_hp = 9999.0
+	await _steps(50)
+	await shot("qe_deploy_all")
+	hud.visible = false
+	await _steps(2)
+	await shot("qe_deploy_all_nohud")
+	hud.visible = true
+	# 3) 反射器弹回火箭
+	var foe := w.hams.filter(func(o): return o.team != h.team)[0] as SimHamster
+	var rf: Array = w.structs.filter(func(q): return q.kind == "dep" and q.dep == "reflector" and not q.dead)
+	if not rf.is_empty():
+		var r: SimStructure = rf[0]
+		var b := w.new_bullet("rocket", foe, r.x + 260.0, r.y + 120.0, 16.0, atan2(-120.0, -260.0), 650.0, 40.0, 900.0)
+		b.team = foe.team
+		w.bullets.append(b)
+		await _steps(26)
+		await shot("qe_reflect")
+	# 4) 捕鼠夹夹住敌人
+	var tp: Array = w.structs.filter(func(q): return q.kind == "dep" and q.dep == "trap" and not q.dead)
+	if not tp.is_empty():
+		foe.alive = true
+		foe.ai = null
+		foe.ctl = "player"
+		foe.x = tp[0].x + 4.0
+		foe.y = tp[0].y
+		foe.px = foe.x
+		foe.py = foe.y
+		foe.iframes = 0.0
+		await _steps(14)
+		await shot("qe_trap_snap")
+		foe.alive = false
+		foe.respawn_t = 9999.0
+	# 5) 声呐脉冲 + 肾上腺素 + 护盾展开器碎裂 + 传送读条
+	for o in w.structs:
+		if o.kind == "dep":
+			o.life = 0.01
+	for d in w.decoys:
+		d.life = 0.01
+	for m in w.minions:
+		m.dead = true
+	await _steps(30)
+	place.call()
+	var sonar_foe := foe
+	sonar_foe.alive = true
+	sonar_foe.x = p.x + 520.0
+	sonar_foe.y = p.y + 260.0
+	sonar_foe.px = sonar_foe.x
+	sonar_foe.py = sonar_foe.y
+	SimGadgets.force_use(w, h, "sonar")
+	await _steps(16)
+	await shot("qe_sonar")
+	sonar_foe.alive = false
+	SimGadgets.force_use(w, h, "adren")
+	await _steps(10)
+	await shot("qe_adren")
+	SimGadgets.force_use(w, h, "bubble")
+	await _steps(30)
+	await shot("qe_bubble")
+	h.iframes = 0.0
+	w.deal_dmg(h, h.max_hp * 0.5, {"team": "red", "owner": null, "x": h.x, "y": h.y})
+	h.hp = h.max_hp
+	h.iframes = 9999.0
+	await _steps(4)
+	await shot("qe_bubble_break")
+	SimGadgets.force_use(w, h, "warp")
+	await _steps(36)
+	await shot("qe_warp_cast")
+	await _steps(40)
+	await shot("qe_warp_done")
+	# 6) 触屏：Q / E 两个独立按钮
+	place.call()
+	h.gad.q = SimGadgets.new_slot("signal", h)
+	h.gad.e = SimGadgets.new_slot("goggles", h)
+	hud.touch_mode = true
+	SimGadgets.force_use(w, h, "signal")
+	await _steps(20)
+	await shot("qe_touch_signal")
+	hud.touch_mode = false

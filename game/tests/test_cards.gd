@@ -1,5 +1,5 @@
 extends "res://tests/test_case.gd"
-## 升级卡规则：三张不重复、第一张是进化、不出满级路线、换武器清零进化、范围限制、换武器概率。
+## 升级卡规则：四张不重复、第一张是进化、不出满级路线、换武器清零进化、范围限制、换武器概率；新道具卡只出升级池里身上没有的。
 ## 起手手枪（weapons.json 的 noEvo）不出进化卡，第一张固定是换武器（2026-10-11 导演）；其余规则用 AK 测。
 
 
@@ -10,18 +10,19 @@ func test_roll_basic() -> void:
 	for i in 200:
 		h.choices = []
 		SimCards.roll(w, h)
-		eq(h.choices.size(), 3, "三张卡")
+		eq(h.choices.size(), int(Data.rule("cards.count")), "四张卡")
 		eq(String(h.choices[0].t), "evo", "第一张是进化")
 		var keys := {}
 		for c in h.choices:
 			var k := "%s_%s_%s" % [c.t, c.id, c.get("k", "")]
 			check(not keys.has(k), "卡不重复")
 			keys[k] = true
-			check(c.t in ["evo", "abil", "weap", "gad", "glvl", "pet"], "卡片类型未知：%s" % c.t)
+			check(c.t in ["evo", "abil", "weap", "gad", "gup", "pet"], "卡片类型未知：%s" % c.t)
 			if c.t == "weap":
 				check(Data.rule("scope.weapons").has(c.id), "换武器只在开放范围内")
 			if c.t == "gad":
-				check(Data.rule("scope.gadgets").has(c.id) and c.id != h.gadget.id, "换道具在开放范围内且不是当前道具")
+				var slot := String(Data.gadget(c.id).slot)
+				check(Data.gadget_pool(slot, "upgrade").has(c.id) and c.id != String(h.gad[slot].id), "新道具在升级池里且不是身上那个")
 			if c.t == "abil":
 				check(Data.rule("scope.abilities").has(c.id), "强化在开放范围内")
 		if not failures.is_empty():
@@ -53,6 +54,7 @@ func test_weapon_swap_resets_evo() -> void:
 
 
 func test_swap_probability() -> void:
+	## 换武器按 weaponSwap 阶段权重：刚开局（没点进化、等级 < 6）常见，进化多了以后少见
 	var w := make_world("slice", 14, 1, 0)
 	var h := w.hams[0]
 	h.weapon_id = "ak47"
@@ -65,8 +67,8 @@ func test_swap_probability() -> void:
 		for c in h.choices:
 			if c.t == "weap":
 				swaps += 1
-	var p := float(swaps) / n
-	check(absf(p - 0.35) < 0.04, "没点进化且等级<6 时换武器约 35%%（实际 %.3f）" % p)
+	var p_fresh := float(swaps) / n
+	check(p_fresh > 0.25 and p_fresh < 0.7, "没点进化且等级<6 时换武器常见（实际 %.3f）" % p_fresh)
 	h.evo = {"a": 6, "b": 1, "c": 0}
 	swaps = 0
 	for i in n:
@@ -75,8 +77,9 @@ func test_swap_probability() -> void:
 		for c in h.choices:
 			if c.t == "weap":
 				swaps += 1
-	p = float(swaps) / n
-	check(absf(p - 0.05) < 0.02, "进化总等级≥6 时约 5%%（实际 %.3f）" % p)
+	var p_late := float(swaps) / n
+	check(p_late < 0.15 and p_fresh > p_late * 3.0, "进化总等级≥6 时少见（实际 %.3f）" % p_late)
+	note = "换武器卡出现率：刚开局 %.2f，后期 %.2f" % [p_fresh, p_late]
 
 
 func test_label_hides_level_numbers() -> void:

@@ -12,7 +12,7 @@ static func finite_number(v: Variant) -> bool:
 
 
 static func pack_actions(i: SimHamster.HamInput, choices: Array, input_seq: int) -> Dictionary:
-	return {"dash": i.dash, "reload": i.reload, "gadget": i.gadget, "skill": i.skill, "card": i.card,
+	return {"dash": i.dash, "reload": i.reload, "gadget": i.gadget, "gadget2": i.gadget2, "skill": i.skill, "card": i.card,
 		"choices": hash(choices), "input_seq": input_seq, "input": pack(i)}
 
 
@@ -26,6 +26,8 @@ static func apply_actions(i: SimHamster.HamInput, p: Dictionary, choices: Array)
 	for key in ["dash", "reload", "gadget", "skill"]:
 		if not p.get(key) is bool:
 			return false
+	if p.has("gadget2") and not p.gadget2 is bool:
+		return false
 	if not p.get("card") is int or not p.get("choices") is int:
 		return false
 	var card: int = p.card
@@ -42,6 +44,7 @@ static func apply_actions(i: SimHamster.HamInput, p: Dictionary, choices: Array)
 	i.dash = i.dash or p.dash
 	i.reload = i.reload or p.reload
 	i.gadget = i.gadget or p.gadget
+	i.gadget2 = i.gadget2 or p.get("gadget2", false)
 	i.skill = i.skill or p.skill
 	if card >= 0 and p.choices == hash(choices):
 		i.card = card
@@ -79,5 +82,6 @@ static func clear(i: SimHamster.HamInput) -> void :
 	i.dash_direction = Vector2.ZERO
 	i.reload = false
 	i.gadget = false
+	i.gadget2 = false
 	i.skill = false
 	i.card = -1
