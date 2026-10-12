@@ -32,8 +32,14 @@ func test_scope_abilities_exist() -> void:
 		check(Data.rules().abilities.has(id), "rules.abilities 缺少 %s" % id)
 
 
-func test_xp_curve_matches_formula() -> void:
-	for L in range(1, 31):
-		# 2026-10-11：前 9 级打折 min(1, 0.45 + 0.055L)，第 10 级起和原公式一致
-		var base := 24.0 + 15.0 * L + 2.4 * L * L
-		eq(Data.xp_need(L), int(round(round(base) * minf(1.0, 0.45 + 0.055 * L))), "Lv%d 升级经验" % L)
+func test_xp_curve_matches_50_level_table() -> void:
+	var curve: Array = Data.progression().xpNeed
+	var thresholds: Array = Data.progression().cumulativeThresholds
+	eq(curve.size(), 49, "开局1级到50级共49次升级")
+	eq(thresholds.size(), 50, "累计门槛含开局0")
+	var total := 0
+	for i in curve.size():
+		total += int(curve[i])
+		eq(Data.xp_need(i + 1), int(curve[i]), "数据入口一致")
+		eq(total, int(thresholds[i + 1]), "增量与累计门槛一致")
+	eq(total, 1560, "满级总计1560")

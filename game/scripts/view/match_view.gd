@@ -63,6 +63,7 @@ var render_buffer: NetRenderBuffer
 var _network_time: = 0.0
 var _prediction_offset: = Vector2.ZERO
 var _finished_sent: = false
+var kill_debug: KillDebugPanel
 
 
 func start(cfg: Dictionary) -> void:
@@ -72,6 +73,7 @@ func start(cfg: Dictionary) -> void:
 	PlayerInput.right_shift_down = false
 	world = SimWorld.new()
 	world.setup(cfg)
+	world.authoritative = not networked or LanSession.is_host()
 	autoplay = bool(cfg.get("autoplay", false))
 	var pcfg: Array = cfg.get("players", [])
 	var pi := 0
@@ -172,6 +174,9 @@ func start(cfg: Dictionary) -> void:
 		hud = players[0].hud
 	Audio.play_ambience(true)
 	Audio.play_music("match", 1.5)
+	kill_debug = KillDebugPanel.new()
+	kill_debug.source_world = world
+	add_child(kill_debug)
 
 
 	if networked:
@@ -638,6 +643,9 @@ func _dispatch(events: Array) -> void:
 	for ev: Dictionary in events:
 		var t := String(ev.t)
 		match t:
+			"kill_event":
+				if kill_debug != null:
+					kill_debug.observe(ev)
 			"fire":
 				_on_fire(ev)
 			"minion_fire":
@@ -1214,7 +1222,7 @@ func _music_tick() -> void:
 func _stats() -> Dictionary:
 	var out := {"time": world.t, "winner": world.winner, "players": []}
 	for h in world.hams:
-		out.players.append({"name": h.name, "team": h.team, "lvl": h.lvl, "kills": h.kills, "deaths": h.deaths, "dmg": int(h.dmg_dealt), "bdmg": int(h.bdmg), "local": is_local_id(h.id if h != null else -1)})
+		out.players.append({"name": h.name, "team": h.team, "seed_total": int(h.seed_total), "kills": h.kills, "deaths": h.deaths, "dmg": int(h.dmg_dealt), "bdmg": int(h.bdmg), "local": is_local_id(h.id if h != null else -1)})
 	return out
 
 

@@ -65,6 +65,7 @@ static func place_at_base(w: SimWorld, h: SimHamster) -> void:
 
 static func respawn(w: SimWorld, h: SimHamster) -> void:
 	h.alive = true
+	h.alive_since = w.t
 	calc_stats(h)
 	h.hp = h.max_hp
 	place_at_base(w, h)
@@ -112,11 +113,15 @@ static func respawn(w: SimWorld, h: SimHamster) -> void:
 	w.toast(h, "复活！", "#8de0a6", 1.2)
 
 
-static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void:
-	var maxl := int(Data.progression().get("maxLevel", 30))
-	if h == null or h.lvl >= maxl:
+static func give_xp(w: SimWorld, h: SimHamster, n: float, apply_multiplier: bool = true) -> void:
+	if not w.authoritative or h == null or n <= 0.0:
 		return
-	h.xp += n * float(h.st.get("xpK", 1.0))
+	var received := n * float(h.st.get("xpK", 1.0)) if apply_multiplier else n
+	h.seed_total += received
+	var maxl := int(Data.progression().get("maxLevel", 30))
+	if h.lvl >= maxl:
+		return
+	h.xp += received
 	var talent_levels: Array = Data.progression().get("talentLevels", [10, 20, 30])
 	var talents_on := bool(Data.rule("scope.talents", true))
 	var leveled := 0
@@ -133,9 +138,9 @@ static func give_xp(w: SimWorld, h: SimHamster, n: float) -> void:
 		w.emit({"t": "levelup", "id": h.id, "lvl": h.lvl, "talent": is_talent})
 		leveled += 1
 		if is_talent:
-			w.toast(h, "Lv%d！解锁一个强大天赋" % h.lvl, "#ff9ff0", 2.2)
+			w.toast(h, "解锁一个强大天赋！", "#ff9ff0", 2.2)
 		else:
-			w.toast(h, "咕咚！升到 Lv%d，选一个奖励" % h.lvl, "#ffd166", 2.2)
+			w.toast(h, "咕咚！成长了，选一个奖励", "#ffd166", 2.2)
 	if leveled > 0:
 		# 一次连升几级（比如打鼠王）也只冒一个“+HP”，不然几个字叠在一起
 		w.emit({"t": "pop", "x": h.x, "y": h.y, "h": h.r * 3.2, "text": "+HP", "color": "#8de0a6", "size": 15})
@@ -234,7 +239,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 	h.pad_cd = maxf(0.0, h.pad_cd - dt)
 	h.invis_t = maxf(0.0, h.invis_t - dt)
 	h.reveal_t = maxf(0.0, h.reveal_t - dt)
-	h.puff = 1.0 if h.lvl >= 30 else clampf(h.xp / float(h.xp_next), 0.0, 1.0)
+	h.puff = 1.0 if h.lvl >= int(Data.progression().maxLevel) else clampf(h.xp / float(h.xp_next), 0.0, 1.0)
 	if h.tal.has("squad"):
 		h.squad_t -= dt
 		if h.squad_t <= 0.0:
@@ -245,7 +250,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 		var ar := float(Data.rule("abilities.aura.auraRadius", 220))
 		for o in w.hams:
 			if o.alive and o.team == h.team and o.hp < o.max_hp and Vector2(o.x - h.x, o.y - h.y).length() < ar:
-				o.hp = minf(o.max_hp, o.hp + float(st.aura) * dt)
+				w.heal_player(h, o, float(st.aura) * dt)
 	# 眩晕
 	if h.stun_t > 0.0:
 		h.stun_t -= dt

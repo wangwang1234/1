@@ -1,0 +1,36 @@
+{
+  "engine": "Godot 4.6.3 stable",
+  "date": "2026-10-12",
+  "base_commit": "c384c78",
+  "full_regression": {
+    "tests": 173,
+    "failures": 0,
+    "view_2min": "passed",
+    "view_weapons_gadgets_split": "passed",
+    "menu": "passed"
+  },
+  "final_core": {
+    "tests": 29,
+    "failures": 0
+  },
+  "lan_receipts": 40,
+  "lan_all_passed": true,
+  "kill_rpc_receipts": 4,
+  "kill_rpc_all_passed": true,
+  "capture": {
+    "engine_rendered": true,
+    "width": 1600,
+    "height": 900
+  },
+  "active_config": {
+    "BASE": 20,
+    "RATIO": 0.1,
+    "CAP": 120,
+    "D_round_decimals": 2
+  },
+  "stage": "1",
+  "later_stages": "awaiting user confirmation",
+  "real_wifi_three_devices": "not tested",
+  "new_gadget_gameplay_controllers": "not implemented; authoritative contribution APIs provided",
+  "exit_resource_statistics": "filtered by existing tools/test.sh; raw logs retained"
+}

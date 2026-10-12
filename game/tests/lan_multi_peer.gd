@@ -122,13 +122,13 @@ func _physics_process(dt: float) -> void:
 			var bytes := LanSession.snapshot_bytes - start_bytes
 			print("METRIC ", JSON.stringify({"snapshots": sent, "avg_snapshot_bytes": bytes / maxi(1, sent),
 				"host_upload_kbps_per_client": float(bytes) / maxf(1.0, match_age - 1.0) / 1024.0 * 8.0,
-				"clients": LanSession.peer_hams.size() - 1, "tick": w.tick}))
-			verdict = {"ok": seen_reserved and quitter.size() == 1 and quitter[0].ctl == "ai" and LanSession.peer_hams.size() == 9 and LanSession.roster.size() == 9}
+				"clients": multiplayer.get_peers().size(), "tick": w.tick}))
+			verdict = {"ok": seen_reserved and quitter.size() == 1 and quitter[0].ctl == "ai" and LanSession.peer_hams.size() == 10 and LanSession.roster.size() == 10}
 			_host_checkpoint.rpc()
 		# Stay up until every client has checked its own movement.
 		# On a CPU-limited runner the clients' physics clocks can lag behind the host.
 		# Each client leaves in _finish(); wait for those checks instead of closing early.
-		if match_age > 18.0 and LanSession.roster.size() == 1:
+		if match_age > 18.0 and multiplayer.get_peers().is_empty():
 			_finish(bool(verdict.get("ok", false)), "9 seats still human, dropped seat played by AI, match continues")
 		return
 	local_ham.inp.mx = dir.x

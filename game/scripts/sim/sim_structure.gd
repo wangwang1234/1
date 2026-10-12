@@ -1,4 +1,5 @@
 class_name SimStructure
+## owner_contributor_id 在放置时固定，防止 AI 接管领取断线者的哨戒炮赏金。
 extends SimEntity
 ## 鼠窝（base）/ 炮台（turret）。对应原型 mkStruct / updStruct。
 
@@ -12,4 +13,5 @@ var alt := 0
 var muzzle_h := 60.0
 var alt_off := 0.0
 var owner: SimHamster = null
+var owner_contributor_id := 0
 var life := 0.0

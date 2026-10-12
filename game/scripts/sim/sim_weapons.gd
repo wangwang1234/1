@@ -704,7 +704,7 @@ static func on_bullet_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 		if FS.has("structDmg") and (e.kind == "turret" or e.kind == "base"):
 			dm *= 1.0 + float(FS.structDmg)
 	var dealt := w.deal_dmg(e, dm, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y, "critAdd": float(f.get("crit", 0.0)), "forceCrit": force,
-		"pvpCap": float(Data.weapon(b.weapon).get("pvpCap", 0.0)) if b.weapon != "" else 0.0})
+		"pvpCap": float(Data.weapon(b.weapon).get("pvpCap", 0.0)) if b.weapon != "" else 0.0, "method": "reflect" if b.reflected else "normal", "contributor_id": b.contributor_id})
 	if dealt > 0.0 and o != null:
 		w.emit({"t": "hitmark", "id": o.id, "target": e.id, "kill": e.dead or (e is SimHamster and not (e as SimHamster).alive)})
 	var l := maxf(0.001, Vector2(b.vx, b.vy).length())
@@ -718,6 +718,7 @@ static func on_bullet_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 	if float(f.get("ign", 0.0)) > 0.0 and w.rnd() < float(f.ign):
 		e.burn_t = maxf(e.burn_t, float(Data.rule("combat.burnTime", 2.2)))
 		e.burn_by = o
+		e.burn_contributor_id = b.contributor_id
 		e.burn_k = float(f.get("ignK", 1.0))
 		if FS.has("burnSlow"):
 			w.slow_e(e, 1.0)
@@ -741,14 +742,14 @@ static func on_bullet_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 	if float(o.st.get("recon", 0.0)) > 0.0:
 		w.mark_e(e, o.team, float(o.st.recon))
 	if bool(f.get("expl", false)):
-		w.mini_blast(b.x, b.y, float(FS.get("blastR", 45)), dm * float(FS.get("blastDmg", 0.5)), b.team, o)
+		w.mini_blast(b.x, b.y, float(FS.get("blastR", 45)), dm * float(FS.get("blastDmg", 0.5)), b.team, o, b.contributor_id)
 	if FS.has("wallSlam"):
 		wall_slam(w, e, ux, uy, o, FS)
 	if FS.has("pointBlank") and Vector2(e.x - o.x, e.y - o.y).length() < float(FS.pointBlank) + e.r:
 		w.knock(e, ux, uy, float(FS.pbKb))
 		w.stun_e(e, float(FS.pbStun))
 	if float(FP.get("fragChance", 0.0)) > 0.0 and w.rnd() < float(FP.fragChance):
-		w.mini_blast(b.x, b.y, float(FP.fragR), dm * float(FS.get("fragDmg", 0.5)), b.team, o)
+		w.mini_blast(b.x, b.y, float(FP.fragR), dm * float(FS.get("fragDmg", 0.5)), b.team, o, b.contributor_id)
 		if FS.has("fragBits"):
 			for k in [-1, 1]:
 				var nb := w.new_bullet(b.kind, o, b.x, b.y, b.h, atan2(uy, ux) + k * float(FS.fragAng), float(FS.fragSpd), dm * float(FS.fragBitDmg), float(FS.fragRange))
@@ -757,6 +758,8 @@ static func on_bullet_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 				nb.hit[e.id] = true
 				nb.fx = {}
 				nb.weapon = src
+				nb.contributor_id = b.contributor_id
+				nb.reflected = b.reflected
 				w.bullets.append(nb)
 	if FS.has("reloadJam") and e is SimHamster and (e as SimHamster).reload_t > 0.0:
 		(e as SimHamster).reload_t += float(FS.reloadJam)
@@ -790,6 +793,7 @@ static func hit_status(w: SimWorld, o: SimHamster, e: SimEntity, P: Dictionary) 
 	if float(P.ign) > 0.0 and w.rnd() < float(P.ign):
 		e.burn_t = maxf(e.burn_t, float(Data.rule("combat.burnTime", 2.2)))
 		e.burn_by = o
+		e.burn_contributor_id = w.kill_system.identity(o)
 		e.burn_k = float(P.ignK)
 	if float(P.slow) > 0.0:
 		w.slow_e(e, float(P.slow))
@@ -826,6 +830,8 @@ static func ricochet(w: SimWorld, b: SimBullet, e: SimEntity, dm: float) -> void
 	nb.fx.rico = int(b.fx.get("rico", 0)) + 1
 	nb.fx.expl = false
 	nb.weapon = b.weapon
+	nb.contributor_id = b.contributor_id
+	nb.reflected = b.reflected
 	w.bullets.append(nb)
 	w.emit({"t": "ricochet", "x": e.x, "y": e.y, "h": b.h, "tx": best.x, "ty": best.y})
 
@@ -917,13 +923,13 @@ static func on_kill(w: SimWorld, tg: SimEntity, src: Dictionary) -> void:
 		K.haste_t = maxf(K.haste_t, float(S.killHaste))
 	if S.has("killChain") and not _in_kill_chain:
 		_in_kill_chain = true     # 被连锁闪电劈死的不再触发连锁（否则一群小兵会无限递归到栈溢出）
-		w.chain_lightning(tg, float(S.killChain) * float(K.st.dmg), K)
+		w.chain_lightning(tg, float(S.killChain) * float(K.st.dmg), K, w.source_contributor(src, K))
 		_in_kill_chain = false
 	if S.has("killHeal"):
 		K.hp = minf(K.max_hp, K.hp + K.max_hp * float(S.killHeal))
 	if S.has("killBlast") and not _in_kill_blast and not (tg.kind in ["base", "turret"]):
 		_in_kill_blast = true     # 炸死的不再连锁炸（否则一窝小兵会无限连爆）
-		w.blast(tg.x, tg.y, float(S.killBlast), float(S.get("killBlastDmg", 30)) * float(K.st.dmg), K.team, K, 160.0, {"src": "kill_blast"})
+		w.blast(tg.x, tg.y, float(S.killBlast), float(S.get("killBlastDmg", 30)) * float(K.st.dmg), K.team, K, 160.0, {"src": "kill_blast", "contributor_id": w.source_contributor(src, K)})
 		_in_kill_blast = false
 
 

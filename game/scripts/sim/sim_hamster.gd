@@ -59,7 +59,13 @@ var alive := true
 var respawn_t := 0.0
 var lvl := 1
 var xp := 0.0
-var xp_next := 41
+var seed_total := 0.0         # 累计经验，只增不减，满级后继续累计；赏金直接原额计入。
+var bounty_connected := true # AI / 本地玩家为 true；断线不因 alive=false 自动取消。
+var consecutive_deaths := 0
+var alive_since := 0.0
+var contributor_id := 0       # 当前控制身份；与稳定仓鼠实体 id 分开。
+var player_contributor_id := 0
+var xp_next := Data.xp_need(1)
 var pending := 0
 var talent_pend := 0
 var choices: Array = []       # [{t, id, k}]

@@ -1,0 +1,31 @@
+[gd_resource type="Resource" script_class="KillConfig" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/kill/kill_config.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+base = 20.0
+ratio = 0.1
+cap = 120.0
+kill_share = 0.6
+assist_share = 0.2
+decay = 0.7
+fade_min = 0.3
+fade_reset_time = 90.0
+d_min = 0.5
+d_max = 1.5
+d_round_decimals = 2
+shutdown_min = 4
+shutdown_step = 0.25
+shutdown_max = 2.0
+reward_min = 1
+assist_window = 10.0
+assist_min = 0.1
+control_per_second = 0.1
+recon_contribution = 0.05
+comparison_epsilon = 0.000000001
+debug_history_limit = 100
+debug_preview_streak_max = 999
+gold_seed_value = 5
+reward_projectile_max = 12
+gold_row_max = 4

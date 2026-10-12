@@ -117,7 +117,7 @@ func test_talent_squad_and_detonate() -> void:
 
 
 func test_full_match_5min_everything() -> void:
-	## 全图 5v5 AI 打 5 分钟：野区、鼠王、道具、宠物都会出现，不报错
+	## 全图5v5最多5分钟；50级新曲线允许游戏在鼠王计时到达前正常结束。
 	var w := make_world("full", 99, 5, 5)
 	var t0 := Time.get_ticks_msec()
 	var seen := {}
@@ -135,7 +135,11 @@ func test_full_match_5min_everything() -> void:
 		lv = maxi(lv, h.lvl)
 		pets += h.pet_list.size()
 		gads[h.gadget.id] = true
-	check(seen.has("boss_spawn"), "鼠王出现过")
+	if w.t >= float(Data.progression().bossFirst):
+		check(seen.has("boss_spawn"), "计时已到则鼠王必须出现")
+	else:
+		check(w.over and seen.has("match_over") and w.winner in SimWorld.TEAMS,
+			"计时未到时，只允许完整的合法基地胜利结束对局")
 	check(seen.has("gadget") or seen.has("throw"), "用过道具")
 	check(lv >= 8, "有人升到 8 级以上（%d）" % lv)
 	note = "full 5v5 5 分钟：%d ms，最高 Lv%d，宠物 %d，道具种类 %d，事件种类 %d，结束=%s" % [Time.get_ticks_msec() - t0, lv, pets, gads.size(), seen.size(), str(w.over)]

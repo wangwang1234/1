@@ -313,7 +313,7 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 	var tc := UiTheme.BLUE if h.team == "blue" else UiTheme.RED
 	c.draw_circle(pc, R, Color(tc.r, tc.g, tc.b, 0.16))
 	c.draw_arc(pc, R, 0, TAU, 64, Color(1, 1, 1, 0.14), 7 * s, true)
-	var xf := 1.0 if h.lvl >= 30 else clampf(h.xp / float(h.xp_next), 0.0, 1.0)
+	var xf := 1.0 if h.lvl >= int(Data.progression().maxLevel) else clampf(h.xp / float(h.xp_next), 0.0, 1.0)
 	c.draw_arc(pc, R, -PI * 0.5, -PI * 0.5 + TAU * maxf(0.001, xf), 64, UiTheme.GOLD, 7 * s, true)
 	if _portrait_tex:
 		var ps := R * 1.9
@@ -372,8 +372,8 @@ func _draw_panel(c: Control, s: float, h: SimHamster) -> void:
 	var bx := x + 182 * s
 	var bw := x + w - 18 * s - bx
 	_txt(c, Vector2(bx, y + 44 * s), _fmt_time(mv.world.t), 36 * s, UiTheme.CREAM, HORIZONTAL_ALIGNMENT_LEFT, true)
-	var lv := "Lv %d" % h.lvl
-	var lw := 74.0 * s
+	var lv := "%d 瓜子" % int(h.seed_total)
+	var lw := 130.0 * s
 	var lr := Rect2(x + w - 18 * s - lw, y + 16 * s, lw, 32 * s)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = tc
@@ -776,7 +776,7 @@ func _draw_world_ui(c: Control, s: float) -> void:
 			var on := d.owner.name if d.owner != null else "?"
 			var olv := d.owner.lvl if d.owner != null else 1
 			_bar(c, Rect2(pd.x - 31 * s, pd.y, 62 * s, 8 * s), d.hp / d.max_hp, Color("#ff6b5e"), Color(0.05, 0.03, 0.08, 0.8))
-			_txt(c, Vector2(pd.x - 100 * s, pd.y - 7 * s), "%s Lv%d" % [on, olv], 21 * s, (UiTheme.BLUE if d.team == "blue" else UiTheme.RED).lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, false, 200 * s, 6)
+			_txt(c, Vector2(pd.x - 100 * s, pd.y - 7 * s), on, 21 * s, (UiTheme.BLUE if d.team == "blue" else UiTheme.RED).lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, false, 200 * s, 6)
 	# 被标记的敌人：头顶红色菱形
 	for e2: SimEntity in w.foe_candidates(false):
 		if e2.team == team or e2.mark_team != team or w.t >= e2.mark_until:
@@ -811,7 +811,7 @@ func _draw_world_ui(c: Control, s: float) -> void:
 		var col := UiTheme.GREEN if h.team == team else Color("#ff6b5e")
 		_bar(c, Rect2(p4.x - bw * 0.5, p4.y, bw, 8 * s), hk, col, Color(0.05, 0.03, 0.08, 0.8))
 		var tc := UiTheme.BLUE if h.team == "blue" else UiTheme.RED
-		_txt(c, Vector2(p4.x - 100 * s, p4.y - 7 * s), "%s Lv%d" % [h.name, h.lvl], 21 * s, tc.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, false, 200 * s, 6)
+		_txt(c, Vector2(p4.x - 100 * s, p4.y - 7 * s), h.name, 21 * s, tc.lightened(0.3), HORIZONTAL_ALIGNMENT_CENTER, false, 200 * s, 6)
 		if h.shield > 0:
 			_txt(c, Vector2(p4.x + bw * 0.5 + 4 * s, p4.y + 9 * s), "◎".repeat(h.shield), 12 * s, Color("#9fe8ff"))
 		if h.eshield_t > 0.0 and h.eshield > 0.0:
@@ -1030,7 +1030,7 @@ func _no_line_start(tk: String) -> bool:
 func _draw_board(c: Control, s: float) -> void:
 	## 比分板（按住 Tab）：两队每只仓鼠的等级、武器、击败 / 倒下、伤害、状态；队伍总击败和剩余炮台
 	var w := mv.world
-	var cols := [["", 0.0], ["名字", 0.0], ["等级", 0.36], ["武器", 0.46], ["击败", 0.66], ["倒下", 0.74], ["伤害", 0.82], ["状态", 0.92]]
+	var cols := [["", 0.0], ["名字", 0.0], ["瓜子", 0.36], ["武器", 0.46], ["击败", 0.66], ["倒下", 0.74], ["伤害", 0.82], ["状态", 0.92]]
 	var bw := minf(root.size.x - 40.0 * s, 980.0 * s)
 	var row := 34.0 * s
 	var per_team: Dictionary = {"blue": [], "red": []}
@@ -1074,7 +1074,7 @@ func _draw_board(c: Control, s: float) -> void:
 			var nm := hh.name + ("（你）" if mine and hh.name != "你" else "")
 			var W: Dictionary = Data.weapons().get(hh.weapon_id, {})
 			var stat := "存活" if hh.alive else "%d 秒" % ceili(hh.respawn_t)
-			var vals := [nm, "Lv%d" % hh.lvl, String(W.get("name", hh.weapon_id)), str(hh.kills), str(hh.deaths), "%.1fk" % (hh.dmg_dealt / 1000.0) if hh.dmg_dealt >= 1000.0 else str(int(hh.dmg_dealt)), stat]
+			var vals := [nm, str(int(hh.seed_total)), String(W.get("name", hh.weapon_id)), str(hh.kills), str(hh.deaths), "%.1fk" % (hh.dmg_dealt / 1000.0) if hh.dmg_dealt >= 1000.0 else str(int(hh.dmg_dealt)), stat]
 			for i in vals.size():
 				var col := fc
 				if i == vals.size() - 1 and not hh.alive:

@@ -135,7 +135,7 @@ static func lob_boom(w: SimWorld, b: SimLob) -> void:
 		"molo":
 			var M: Dictionary = G.molotov
 			w.add_fire(b.x, b.y, float(M.r) + float(M.rPerLevel) * (L - 1), float(M.life) + float(M.lifePerLevel) * (L - 1), b.team, b.owner,
-				float(M.dps) * lvl_k(L, float(M.dpsPerLevel)), "molotov")
+				float(M.dps) * lvl_k(L, float(M.dpsPerLevel)), "molotov", b.contributor_id)
 			w.noise(b.x, b.y, "boom", 0.8, null)
 			w.emit({"t": "molotov", "x": b.x, "y": b.y})
 		"flsh":
@@ -203,7 +203,7 @@ static func _place_mine(w: SimWorld, h: SimHamster, L: int) -> void:
 	if own.size() >= int(M.max):
 		w.mines.erase(own[0])
 		w.emit({"t": "mine_gone", "mid": own[0].id})
-	var m := {"id": w.new_uid(), "x": h.x, "y": h.y, "team": h.team, "owner": h, "arm": float(M.arm), "lvl": L, "t": 0.0, "r": float(M.visR)}
+	var m := {"id": w.new_uid(), "x": h.x, "y": h.y, "team": h.team, "owner": h, "contributor_id": w.kill_system.identity(h), "arm": float(M.arm), "lvl": L, "t": 0.0, "r": float(M.visR)}
 	w.mines.append(m)
 	w.emit({"t": "mine", "mid": m.id, "x": h.x, "y": h.y, "team": h.team, "id": h.id})
 
@@ -229,7 +229,7 @@ static func update_mines(w: SimWorld, dt: float) -> void:
 			w.mines.remove_at(i)
 			w.emit({"t": "mine_gone", "mid": m.id})
 			var o: SimHamster = m.owner if is_instance_valid(m.owner) else null
-			w.blast(m.x, m.y, float(M.blastR), float(M.dmg) * lvl_k(int(m.lvl), float(M.dmgPerLevel)), m.team, o, float(M.kb), {"src": "mine"})
+			w.blast(m.x, m.y, float(M.blastR), float(M.dmg) * lvl_k(int(m.lvl), float(M.dmgPerLevel)), m.team, o, float(M.kb), {"src": "mine", "contributor_id": int(m.contributor_id)})
 		i -= 1
 
 
@@ -249,6 +249,7 @@ static func _place_sentry(w: SimWorld, h: SimHamster, L: int) -> void:
 	s2.kind = "sentry"
 	s2.team = h.team
 	s2.owner = h
+	s2.owner_contributor_id = w.kill_system.identity(h)
 	s2.x = h.x + cos(a) * float(S.dist)
 	s2.y = h.y + sin(a) * float(S.dist)
 	s2.r = float(S.r)

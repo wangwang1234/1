@@ -183,7 +183,7 @@
   "gemSpeedNear": 520,
   "gemLife": 50,
   "gemMax": 280,
-  "gemBigXp": 9, "gold": {"_doc": "金瓜子：一颗给 xp 经验（发光、闪烁、拾取有提示）；各来源掉一颗的概率，boss / bigCrate 是固定颗数", "xp": 45, "minion": 0.03, "roach": 0.05, "rat": 0.15, "crateSmall": 0.2, "crateBig": 2, "boss": 4},
+  "gemBigXp": 9, "gold": {"_doc": "金瓜子：一颗等价 5 颗累计经验；各来源掉一颗的概率，boss / bigCrate 是固定颗数", "xp": 5, "minion": 0.03, "roach": 0.05, "rat": 0.15, "crateSmall": 0.2, "crateBig": 2, "boss": 4},
   "pickupDelay": 0.4,
   "cheeseHeal": 35,
   "cheeseLife": 60,

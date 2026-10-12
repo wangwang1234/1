@@ -1,0 +1,26 @@
+[
+  {
+    "case": "reward",
+    "failures": [],
+    "ok": true,
+    "role": "host"
+  },
+  {
+    "case": "reward",
+    "failures": [],
+    "ok": true,
+    "role": "client"
+  },
+  {
+    "case": "takeover",
+    "failures": [],
+    "ok": true,
+    "role": "host"
+  },
+  {
+    "case": "takeover",
+    "failures": [],
+    "ok": true,
+    "role": "client"
+  }
+]

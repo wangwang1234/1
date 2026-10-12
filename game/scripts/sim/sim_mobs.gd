@@ -357,6 +357,7 @@ static func make_pet(w: SimWorld, type: String, owner: SimHamster) -> SimPet:
 	p.kind = "pet"
 	p.type = type
 	p.owner = owner
+	p.owner_contributor_id = w.kill_system.identity(owner)
 	p.team = owner.team
 	p.x = owner.x
 	p.y = owner.y
@@ -395,7 +396,7 @@ static func update_pet(w: SimWorld, p: SimPet, dt: float) -> void:
 				if e != null:
 					p.cd = maxf(float(F.cdMin), float(F.cdBase) - float(F.cdPer) * p.lvl)
 					var fd := (float(F.dmg) + float(F.dmgPer) * p.lvl) * float(o.st.dmg)
-					w.deal_dmg(e, fd, {"team": p.team, "owner": o, "x": p.x, "y": p.y})
+					w.deal_dmg(e, fd, {"team": p.team, "owner": o, "contributor_id": p.owner_contributor_id, "x": p.x, "y": p.y})
 					w.emit({"t": "zap", "x0": p.x, "y0": p.y, "h0": p.h, "x1": e.x, "y1": e.y, "h1": e.r, "pet": p.id})
 					if p.lvl >= int(F.get("chainFrom", 99)):
 						# 高等级萤火虫：电击跳到附近第二个敌人
@@ -409,7 +410,7 @@ static func update_pet(w: SimWorld, p: SimPet, dt: float) -> void:
 								bd = d2
 								best = c
 						if best != null:
-							w.deal_dmg(best, fd * float(F.chainK), {"team": p.team, "owner": o, "x": e.x, "y": e.y})
+							w.deal_dmg(best, fd * float(F.chainK), {"team": p.team, "owner": o, "contributor_id": p.owner_contributor_id, "x": e.x, "y": e.y})
 							w.emit({"t": "zap", "x0": e.x, "y0": e.y, "h0": e.r, "x1": best.x, "y1": best.y, "h1": best.r, "pet": p.id})
 		"chick":
 			var C: Dictionary = PD.chick
@@ -438,7 +439,7 @@ static func update_pet(w: SimWorld, p: SimPet, dt: float) -> void:
 				p.aim = atan2(dy, dx)
 			if p.target != null and d < p.target.r + float(C.reach) and p.cd <= 0.0:
 				p.cd = float(C.cd)
-				w.deal_dmg(p.target, (float(C.dmg) + float(C.dmgPer) * p.lvl) * float(o.st.dmg), {"team": p.team, "owner": o, "x": p.x, "y": p.y})
+				w.deal_dmg(p.target, (float(C.dmg) + float(C.dmgPer) * p.lvl) * float(o.st.dmg), {"team": p.team, "owner": o, "contributor_id": p.owner_contributor_id, "x": p.x, "y": p.y})
 				w.emit({"t": "peck", "pet": p.id, "x": p.target.x, "y": p.target.y})
 		_:
 			var Hh: Dictionary = PD.hedgehog

@@ -27,6 +27,7 @@ var burn_t := 0.0
 var burn_acc := 0.0
 var burn_k := 1.0
 var burn_by: SimEntity = null
+var burn_contributor_id := 0
 var reveal_t := 0.0
 var mark_team := ""
 var mark_until := 0.0

@@ -20,6 +20,7 @@ Settings="*res://scripts/core/settings.gd"
 Audio="*res://scripts/view/audio_manager.gd"
 Capture="*res://scripts/core/capture.gd"
 LanSession="*res://scripts/net/lan_session.gd"
+KillResolver="*res://scripts/kill/kill_resolver.gd"
 
 [display]
 

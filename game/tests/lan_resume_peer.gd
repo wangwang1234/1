@@ -211,7 +211,7 @@ func _physics_process(dt: float) -> void:
 		if scenario == "return" and matches == 2 and match_age > (2.0 if role == "host" else 1.0):
 			# Let the client finish its snapshot checks before the host closes the room.
 			# Different process clocks can otherwise end this test at exactly 20 packets.
-			if (role == "host" and LanSession.roster.size() == 1) or (role == "client" and received > 20):
+			if (role == "host" and multiplayer.get_peers().is_empty()) or (role == "client" and received > 20):
 				_finish(lobby_returns == 1 and resumes == 0 and (role == "host" or received > 20), "host returned during reconnect and both played second match")
 		if scenario == "resume" and role == "client" and matches == 1 and match_age > 1.0 + 1.7 * drops and drops < 2:
 			drops += 1
@@ -228,8 +228,10 @@ func _physics_process(dt: float) -> void:
 		seat_reserved = true
 	if scenario in ["expiry", "invalid"] and role == "host" and seat_reserved and LanSession._reserved.is_empty():
 		var takeover := w.hams.filter(func(h: SimHamster) -> bool: return h.name == "测试客户端")
-		_finish(LanSession.running and ended.is_empty() and LanSession.roster.size() == 1 and takeover.size() == 1 and takeover[0].ctl == "ai" and takeover[0].ai != null,
+		_finish(LanSession.running and ended.is_empty() and LanSession.roster.size() == 2 and takeover.size() == 1 and takeover[0].ctl == "ai" and takeover[0].ai != null,
 			"expired seat handed to AI while the match continues")
+	if scenario == "expiry" and role == "client" and LanSession.reconnecting and LanSession._reconnect_age > LanSession._net.reconnectGrace * 3.0:
+		_finish(resumes == 0 and ended.is_empty(), "AI takeover retains the seat and client keeps trying")
 	if scenario in ["expiry", "invalid"] and not ended.is_empty():
 		_finish(not LanSession.active() and resumes == 0, "expired or invalid seat rejected: " + ended)
 	if scenario == "mismatch" and (not ended.is_empty() or (role == "host" and elapsed > 3)):

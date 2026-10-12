@@ -121,7 +121,12 @@ func test_discovery_refreshes_map_and_version() -> void:
 	var host := LanDiscovery.new()
 	var scanner := LanDiscovery.new()
 	var row := {"name": "房间", "port": 28765, "mode": "slice", "state": "open", "count": 1, "capacity": 6, "signature": "a".repeat(64)}
-	check(host.start_host(row, 0) == OK, "discovery host")
+	# 此处验证协议/刷新；独立临时端口避免与真实联机测试争抢默认发现端口。
+	var probe := PacketPeerUDP.new()
+	check(probe.bind(0, "127.0.0.1") == OK, "allocate discovery test port")
+	var listen_port := probe.get_local_port()
+	probe.close()
+	check(host.start_host(row, listen_port) == OK, "discovery host")
 	check(scanner.start_scan() == OK, "discovery scanner")
 	var notifications := [0]
 	scanner.changed.connect(func() -> void: notifications[0] += 1)
