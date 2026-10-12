@@ -32,3 +32,10 @@ KillEvent的`victim_death_count`是服务端死亡次序快照，避免旧alive�
 按导演确认：全场横幅含首次击败、5连、每段6连和终结；超过四颗金瓜子合并为一颗×总数；无击败者信息条为“方式图标+受害者名+被击败”。同时触发的标签在同一个横幅中展示，后续事件排队。
 
 独立视觉预览：`res://scenes/dev/kill_preview.tscn`；场景验证：`res://tests/kill_ui_smoke.tscn`，已接入`tools/test.sh`。图标为程序占位；完整Tween动画、音效和正式部件按后续阶段替换。
+
+
+## 第三阶段Claude素材（当前展示）
+
+用户提供guazi_stamp.zip并明确采用徽章中心数字＋缎带文字：1～2普通、3～4银色、5及以上金色；红色仅作终结标签。此布局替代第二阶段私人瓜子排；服务端规则及事件路由不变。原PNG位于game/assets/ui/kill_stamp，资源目录为data/kill_art.tres。新增尺寸、字号及档位参数仍在kill_config*.tres。
+
+信息条方式基于同包瓜子／碎片／射线，由Godot程序叠加方法符号。刀斩使用原瓜子贴图的上下区域分离取样，原PNG不改写。所有文字数字由字体绘制；原包preview.png仅为审阅参考。

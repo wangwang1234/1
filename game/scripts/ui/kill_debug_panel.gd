@@ -54,11 +54,11 @@ func _build() -> void:
 	body.add_theme_constant_override("separation", 12)
 	margin.add_child(body)
 	var title := Label.new()
-	title.text = "击败 / 助攻 / 赏金 · 第二阶段调试"
+	title.text = "击败 / 助攻 / 赏金 · Claude 徽章调试"
 	title.add_theme_font_size_override("font_size", 28)
 	body.add_child(title)
 	var hint := Label.new()
-	hint.text = "沙盒测试不影响当前对局；预览占位播报后按 F8 返回。正式美术、动画和音效在后续阶段交付。"
+	hint.text = "沙盒测试不影响当前对局；采用 Claude 徽章素材，预览后按 F8 返回。动画与音效在下一阶段交付。"
 	body.add_child(hint)
 	var controls := HBoxContainer.new()
 	body.add_child(controls)
@@ -116,7 +116,7 @@ func _build() -> void:
 		preview_method.add_item(method)
 	tags.add_child(preview_method)
 	preview = Label.new()
-	preview.text = "当前预览：占位瓜子排、文字、信息条和全场横幅。"
+	preview.text = "当前预览：徽章中心数字、缎带文字、信息条和全场横幅。"
 	body.add_child(preview)
 	output = RichTextLabel.new()
 	output.size_flags_vertical = Control.SIZE_EXPAND_FILL

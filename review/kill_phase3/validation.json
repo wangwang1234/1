@@ -1,0 +1,26 @@
+{
+  "stage": 3,
+  "date": "2026-10-12",
+  "asset_source": "User upload guazi_stamp.zip, credited to Claude",
+  "png_source_files": 42,
+  "transparent_runtime_textures": 41,
+  "source_hashes_unchanged": true,
+  "ui_checks": 45,
+  "ui_failures": 0,
+  "kill_logic_tests": 34,
+  "kill_logic_failures": 0,
+  "view_smoke": "passed",
+  "kill_rpc_receipts": 4,
+  "kill_rpc_all_passed": true,
+  "review_screenshots": 10,
+  "renderer": "Godot 4.6.3 CPU Vulkan Forward+",
+  "native_texture_sizes_preserved": true,
+  "layout": "medal with centered streak number and ribbon text",
+  "tiers": {
+    "1-2": "normal",
+    "3-4": "silver",
+    "5+": "gold",
+    "shutdown_tag": "red"
+  },
+  "animation_and_audio": "awaiting stage 4 confirmation"
+}
