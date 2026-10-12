@@ -6,6 +6,7 @@ extends RefCounted
 var kind := "frag"
 var team := "neutral"
 var owner: SimHamster = null
+var contributor_id := 0
 var x := 0.0
 var y := 0.0
 var z := 20.0
@@ -41,7 +42,7 @@ var gas_slow := 0.0
 
 func clone() -> SimLob:
 	var L := SimLob.new()
-	for p in ["kind", "team", "owner", "x", "y", "z", "vx", "vy", "vz", "fuse", "aoe", "dmg", "kb", "impact", "t", "rot", "lvl", "sticky", "stuck",
+	for p in ["kind", "team", "owner", "contributor_id", "x", "y", "z", "vx", "vy", "vz", "fuse", "aoe", "dmg", "kb", "impact", "t", "rot", "lvl", "sticky", "stuck",
 			"slow_stick", "bounce_n", "split_on_bounce", "split_ang", "split_vz", "special", "gas_r", "gas_life", "gas_dps", "gas_slow"]:
 		L.set(p, get(p))
 	return L

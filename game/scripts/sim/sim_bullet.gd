@@ -32,6 +32,7 @@ var min_f := 1.0
 var max_d := 600.0
 var fx := {}               # 进化效果：src, lv, ign, ignK, slow, stun, mark, crit, force, expl
 var weapon := ""
+var contributor_id := 0
 var home := 0.0            # 追踪转向速度（弧度/秒，>0 = 追踪）
 var home_after := 0.0      # 第一次反弹后开始追踪
 var home_t := 0.0
@@ -47,7 +48,7 @@ var id := 0
 func clone() -> SimBullet:
 	var b := SimBullet.new()
 	for p in ["kind", "team", "by", "owner", "x", "y", "h", "px", "py", "vx", "vy", "dmg", "r", "life", "pierce", "kb", "aoe", "aoe_dmg",
-			"bounce", "bounce_k", "wall_pierce", "x0", "y0", "eff", "min_f", "max_d", "fx", "weapon", "home", "home_after", "home_t", "home_tgt", "split_at", "wr", "big", "reflected"]:
+			"bounce", "bounce_k", "wall_pierce", "x0", "y0", "eff", "min_f", "max_d", "fx", "weapon", "reflected", "contributor_id", "home", "home_after", "home_t", "home_tgt", "split_at", "wr", "big"]:
 		b.set(p, get(p))
 	b.hit = hit.duplicate()
 	return b

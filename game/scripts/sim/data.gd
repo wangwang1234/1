@@ -86,10 +86,13 @@ static func rule(path: String, default: Variant = null) -> Variant:
 
 
 static func xp_need(level: int) -> int:
+	if level >= int(progression().maxLevel):
+		return 0 # 50级表没有“50升51”，不得套旧公式生成额外门槛。
 	var arr: Array = progression().get("xpNeed", [])
 	if level >= 1 and level <= arr.size():
 		return int(arr[level - 1])
-	return int(round(24.0 + 15.0 * level + 2.4 * level * level))
+	push_error("成长档位不在升级表内：%d" % level)
+	return 0
 
 
 static func skin_ids() -> Array:

@@ -17,7 +17,7 @@ func test_gold_seeds_drop_and_give_lots_of_xp() -> void:
 	w.drop_gold_chance(2520.0, 1548.0, "boss")
 	var golds := w.items.filter(func(it): return it.gold)
 	eq(golds.size(), int(G.boss), "鼠王固定掉金瓜子")
-	check(float(G.xp) >= 4.0 * float(w.R.minion.drop.gemXp), "金瓜子经验要远多于普通瓜子")
+	eq(int(G.xp), w.kill_system.config.gold_seed_value, "金瓜子等价5颗瓜子")
 	var h := w.hams[0]
 	h.x = 2520.0
 	h.y = 1548.0
@@ -45,9 +45,9 @@ func test_early_levels_are_faster() -> void:
 	var need: Array = Data.progression().xpNeed
 	check(float(need[0]) <= 25.0, "升到 2 级只要很少经验（%s）" % str(need[0]))
 	check(float(need[4]) < 130.0, "前 5 级都打折")
-	eq(int(need[9]), 414, "第 10 级起和原来一样")
+	eq(int(need[9]), 7, "50级表：10升11需要7颗")
 	for i in range(1, need.size()):
-		check(float(need[i]) > float(need[i - 1]), "经验需求要递增")
+		check(float(need[i]) >= float(need[i - 1]), "经验需求非递减")
 
 
 func test_holding_fire_keeps_shooting() -> void:

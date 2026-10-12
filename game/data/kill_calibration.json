@@ -1,0 +1,17 @@
+{
+  "description": "用户估算的平均收入锚点；仅用于数值校验，尚未代表真人局实测收入",
+  "target_seconds_min": 15,
+  "target_seconds_max": 20,
+  "previous_deaths": 0,
+  "victim_streak": 0,
+  "presets": [
+    {"name": "默认", "path": "res://data/kill_config.tres"},
+    {"name": "建议校准（实战启用）", "path": "res://data/kill_config_calibrated.tres"},
+    {"name": "收入锚点候选（未启用）", "path": "res://data/kill_config_income_candidate.tres"}
+  ],
+  "samples": [
+    {"phase": "初期", "internal_stage": 1, "income_per_second": 1},
+    {"phase": "中期", "internal_stage": 25, "income_per_second": 2},
+    {"phase": "后期", "internal_stage": 45, "income_per_second": 3}
+  ]
+}

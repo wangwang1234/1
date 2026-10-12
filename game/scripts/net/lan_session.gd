@@ -48,6 +48,8 @@ var _last_action: = {}
 var _input_age: = {}
 var _snapshot_frames: = 0
 var _pending_events: Array = []
+var _kill_events: Array = []
+var _last_kill_event := 0
 var _signature: = ""
 var _net: Dictionary
 var chunk_buffer := NetSnapshotChunks.new()
@@ -103,6 +105,8 @@ func signature() -> String:
 		var parts: = PackedStringArray([str(_net.protocol), str(ProjectSettings.get_setting("application/config/version", ""))])
 		for file in ["rules", "weapons", "evolutions", "abilities", "gadgets", "talents", "pets", "skins", "units", "progression", "map_layout", "network", "difficulty"]:
 			parts.append(JSON.stringify(Data.load_json(file), "", true))
+		for file in ["res://data/kill_config.tres", "res://data/kill_config_calibrated.tres"]:
+			parts.append(FileAccess.get_file_as_string(file))
 		_signature = "|".join(parts).sha256_text()
 	return _signature
 
@@ -353,6 +357,8 @@ func _begin(cfg: Dictionary) -> void :
 	_loaded.clear()
 	_baseline.clear()
 	event_buffer.clear()
+	_kill_events.clear()
+	_last_kill_event = 0
 	_pending_events.clear()
 	_last_input.clear()
 	_last_action.clear()
@@ -377,6 +383,7 @@ func _begin(cfg: Dictionary) -> void :
 
 func attach(w: SimWorld) -> void :
 	world = w
+	world.authoritative = is_host()
 	_baseline = NetSnapshot.baseline_index(NetSnapshot.capture(w))
 	peer_hams.clear()
 	# Seats are matched once by spawn order, then by hamster id (an AI takeover changes ctl).
@@ -497,8 +504,15 @@ func publish(events: Array) -> void :
 		_pending_events.clear()
 		_snapshot_frames = 0
 		return
-	# Enforce the receive budget before encoding/queueing transient effects.
-	_pending_events.append_array(events.slice(0, maxi(0, int(_net.eventBatchLimit) - _pending_events.size())))
+	# 击败事件同帧走独立可靠 RPC；不能因普通特效预算或快照节流被丢弃。
+	var transient: Array = []
+	for event: Dictionary in events:
+		if String(event.get("t", "")) == "kill_event":
+			for id in recipients:
+				_player_defeated.rpc_id(id, int(config.match_id), event)
+		else:
+			transient.append(event)
+	_pending_events.append_array(transient.slice(0, maxi(0, int(_net.eventBatchLimit) - _pending_events.size())))
 	_snapshot_frames += 1
 	if _snapshot_frames < maxi(1, roundi(60.0 / float(_net.snapshotHz))) and not world.over:
 		return
@@ -577,7 +591,21 @@ func _events(match_id: int, tick: int, events: Array) -> void :
 
 
 func drain_events() -> Array:
-	return event_buffer.take(world)
+	var out := _kill_events.duplicate()
+	_kill_events.clear()
+	out.append_array(event_buffer.take(world))
+	return out
+
+
+@rpc("authority", "call_remote", "reliable", 3)
+func _player_defeated(match_id: int, event: Dictionary) -> void:
+	if role != "client" or not running or match_id != int(config.get("match_id", -1)):
+		return
+	var sequence := int(event.get("event_id", 0))
+	if String(event.get("t", "")) != "kill_event" or sequence <= _last_kill_event:
+		return
+	_last_kill_event = sequence
+	_kill_events.append(event.duplicate(true))
 
 
 func return_to_room() -> void :
@@ -605,6 +633,8 @@ func _back() -> void :
 	_loaded.clear()
 	_baseline.clear()
 	event_buffer.clear()
+	_kill_events.clear()
+	_last_kill_event = 0
 	_pending_events.clear()
 	chunk_buffer.clear()
 	_probes.clear()
@@ -633,6 +663,8 @@ func _on_disconnected(id: int) -> void:
 	if not is_host() or not roster.has(id):
 		return
 	if running and peer_hams.has(id) and _tokens.has(id):
+		if (peer_hams[id] as SimHamster).ctl != "ai":
+			world.kill_system.mark_disconnected(peer_hams[id])
 		NetInput.clear(peer_hams[id].inp)
 		_reserved[id] = float(_net.reconnectGrace)
 		_resume_wait.erase(id)
@@ -737,6 +769,8 @@ func leave() -> void :
 	peer_hams.clear()
 	roster.clear()
 	event_buffer.clear()
+	_kill_events.clear()
+	_last_kill_event = 0
 	_pending_events.clear()
 	chunk_buffer.clear()
 	_probes.clear()
@@ -790,6 +824,7 @@ func _server_lost() -> void:
 	chunk_buffer.clear()
 	event_buffer.clear()
 	_probes.clear()
+	_kill_events.clear()
 	NetInput.clear(peer_hams.get(config.local_peer, world.hams[0]).inp)
 	_close_transport()
 	_status("连接中断，正在自动重连…")
@@ -798,9 +833,8 @@ func _reconnect_tick(dt: float) -> void:
 	_reconnect_age += dt
 	_retry_age += dt
 	_attempt_age += dt
-	if _reconnect_age >= float(_net.reconnectGrace):
-		_fail("重连超时：房主可能已退出，请重新加入房间")
-		return
+	if _reconnect_age >= float(_net.reconnectGrace) and _reconnect_age - dt < float(_net.reconnectGrace):
+		_status("仓鼠暂由 AI 接管，继续尝试重连；可主动返回菜单")
 	if multiplayer.multiplayer_peer is ENetMultiplayerPeer:
 		if _attempt_age > float(_net.connectTimeout):
 			_close_transport()
@@ -823,20 +857,14 @@ func _map_seats() -> void:
 
 ## A player who missed the reconnect window: their hamster keeps playing under AI control.
 func _hand_to_ai(id: int) -> void:
-	var who: = String(roster.get(id, {}).get("name", "玩家"))
+	var who := String(roster.get(id, {}).get("name", "玩家"))
 	_reserved.erase(id)
-	_tokens.erase(id)
-	roster.erase(id)
-	if peer_hams.has(id):
-		if world != null:
-			world.hand_to_ai(peer_hams[id])
-		peer_hams.erase(id)
+	# 对局结束前保留座位与重连 token；AI 接管后玩家仍可收回控制权。
+	if peer_hams.has(id) and world != null:
+		world.hand_to_ai(peer_hams[id])
 	for key in [_last_input, _last_action, _consumed_input, _consumed_action, _input_age]:
 		key.erase(id)
-	for p in config.get("players", []):
-		if int(p.peer_id) == id:
-			p.peer_id = -1
-	_status("%s 未在 %d 秒内重连，由 AI 接管" % [who, ceili(float(_net.reconnectGrace))])
+	_status("%s 暂由 AI 接管，仍可重连继续" % who)
 	discovery.advertisement = _room_advertisement()
 
 
@@ -905,5 +933,7 @@ func _resume_ack(match_id: int) -> void:
 	var sender := multiplayer.get_remote_sender_id()
 	if is_host() and running and match_id == int(config.get("match_id", -1)) and _resume_wait.has(sender):
 		_resume_wait.erase(sender)
+		if peer_hams.has(sender):
+			world.resume_player(peer_hams[sender])
 		_status("玩家已重连，对局继续")
 		discovery.advertisement = _room_advertisement()

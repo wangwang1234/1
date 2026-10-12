@@ -1,4 +1,5 @@
 class_name SimStructure
+## owner_contributor_id 在放置时固定，防止 AI 接管领取断线者的哨戒炮赏金。
 extends SimEntity
 ## 鼠窝（base）/ 炮台（turret）/ 旧道具自动炮台（sentry）/ 道具部署物（dep：摄像头、捕鼠夹、掩体、再生力场、哨戒炮、反射器）。对应原型 mkStruct / updStruct。
 
@@ -12,6 +13,7 @@ var alt := 0
 var muzzle_h := 60.0
 var alt_off := 0.0
 var owner: SimHamster = null
+var owner_contributor_id := 0
 var life := 0.0
 # 道具部署物（kind = dep，见 SimGadgets.update_dep）
 var dep := ""                 # 道具 id

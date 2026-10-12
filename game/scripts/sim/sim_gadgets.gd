@@ -266,6 +266,11 @@ static func tick_hamster(w: SimWorld, h: SimHamster, dt: float) -> void:
 		h.nvg_t -= dt
 	if h.root_t > 0.0:
 		h.root_t -= dt
+	for control: Dictionary in h.trap_controls.duplicate():
+		if h.root_t <= 0.0 or w.t >= float(control.until):
+			if w.authoritative:
+				w.kill_system.tracker(h.id).end_control(int(control.token), minf(w.t, float(control.until)))
+			h.trap_controls.erase(control)
 	if h.tp_t > 0.0:
 		h.tp_t -= dt
 		if h.tp_t <= 0.0:
@@ -346,6 +351,7 @@ static func _pulse(w: SimWorld, h: SimHamster, F: Dictionary) -> void:
 		e.ping_team = h.team
 		e.ping_until = w.t + float(F.dur)
 		if e is SimHamster:
+			w.record_recon(h, e as SimHamster, "sonar")
 			n += 1
 	w.emit({"t": "sonar", "id": h.id, "x": h.x, "y": h.y, "r": R, "team": h.team, "dur": float(F.dur)})
 	w.noise(h.x, h.y, "step", 0.6, h)
@@ -366,6 +372,8 @@ static func _summon(w: SimWorld, h: SimHamster, F: Dictionary) -> void:
 		m.px = m.x
 		m.py = m.y
 		m.wp = mini(int(lane.i) + 1, m.path.size() - 1)
+		m.owner = h
+		m.owner_contributor_id = w.kill_system.identity(h)
 		m.follow = h
 		m.follow_until = w.t + float(F.follow)
 		w.map.resolve_circle(m, m.r)
@@ -434,6 +442,7 @@ static func _deploy(w: SimWorld, h: SimHamster, id: String, F: Dictionary) -> vo
 	s.cfg = F
 	s.team = h.team
 	s.owner = h
+	s.owner_contributor_id = w.kill_system.identity(h)
 	s.x = px
 	s.y = py
 	s.r = float(F.get("r", 14))
@@ -472,7 +481,7 @@ static func update_dep(w: SimWorld, s: SimStructure, dt: float) -> void:
 		var rr := float(HP.r)
 		for o in w.hams:
 			if o.alive and o.team == s.team and o.hp < o.max_hp and Vector2(o.x - s.x, o.y - s.y).length() < rr + o.r:
-				o.hp = minf(o.max_hp, o.hp + o.max_hp * float(HP.hps) * dt)
+				w.heal_player(s.owner, o, o.max_hp * float(HP.hps) * dt, s.owner_contributor_id)
 	if P.has("watch"):
 		var WP: Dictionary = P.watch
 		var rr2 := float(WP.r)
@@ -484,6 +493,7 @@ static func update_dep(w: SimWorld, s: SimStructure, dt: float) -> void:
 				continue
 			inside[e.id] = true
 			if not s.inside.has(e.id) and e is SimHamster:
+				w.record_recon(s.owner, e as SimHamster, "camera", s.owner_contributor_id)
 				s.alert_t = w.t
 				w.emit({"t": "cam_alert", "id": s.id, "x": s.x, "y": s.y, "team": s.team, "foe": e.id})
 		s.inside = inside
@@ -499,10 +509,13 @@ static func update_dep(w: SimWorld, s: SimStructure, dt: float) -> void:
 					var th := e as SimHamster
 					th.root_t = maxf(th.root_t, float(SN.root))
 					th.roll_t = 0.0
+					var token := w.begin_assist_control(s.owner, th, "mousetrap", s.owner_contributor_id)
+					if token > 0:
+						th.trap_controls.append({"token": token, "until": w.t + float(SN.root)})
 				else:
 					e.stun = maxf(e.stun, float(SN.root))
 				var o: SimHamster = s.owner if is_instance_valid(s.owner) and s.owner.team == s.team else null
-				w.deal_dmg(e, float(SN.dmg), {"team": s.team, "owner": o, "x": s.x, "y": s.y})
+				w.deal_dmg(e, float(SN.dmg), {"team": s.team, "owner": o, "x": s.x, "y": s.y, "contributor_id": s.owner_contributor_id})
 				s.dead = true
 				w.emit({"t": "snare", "id": s.id, "x": s.x, "y": s.y, "team": s.team, "victim": e.id, "dur": float(SN.root)})
 				w.emit({"t": "kill", "id": s.id, "kind": "dep", "dep": s.dep, "x": s.x, "y": s.y, "team": s.team, "killer": -1, "quiet": true})
@@ -522,6 +535,7 @@ static func update_dep(w: SimWorld, s: SimStructure, dt: float) -> void:
 			b.team = s.team
 			b.by = s
 			b.owner = s.owner if is_instance_valid(s.owner) and s.owner.team == s.team else null
+			b.contributor_id = s.owner_contributor_id
 			b.hit.clear()
 			b.x0 = b.x
 			b.y0 = b.y
@@ -609,7 +623,7 @@ static func lob_boom(w: SimWorld, b: SimLob) -> void:
 		"molo":
 			var M: Dictionary = G.molotov
 			w.add_fire(b.x, b.y, float(M.r) + float(M.rPerLevel) * (L - 1), float(M.life) + float(M.lifePerLevel) * (L - 1), b.team, b.owner,
-				float(M.dps) * lvl_k(L, float(M.dpsPerLevel)), "molotov")
+				float(M.dps) * lvl_k(L, float(M.dpsPerLevel)), "molotov", b.contributor_id)
 			w.noise(b.x, b.y, "boom", 0.8, null)
 			w.emit({"t": "molotov", "x": b.x, "y": b.y})
 		"flsh":
@@ -677,7 +691,7 @@ static func _place_mine(w: SimWorld, h: SimHamster, L: int) -> void:
 	if own.size() >= int(M.max):
 		w.mines.erase(own[0])
 		w.emit({"t": "mine_gone", "mid": own[0].id})
-	var m := {"id": w.new_uid(), "x": h.x, "y": h.y, "team": h.team, "owner": h, "arm": float(M.arm), "lvl": L, "t": 0.0, "r": float(M.visR)}
+	var m := {"id": w.new_uid(), "x": h.x, "y": h.y, "team": h.team, "owner": h, "contributor_id": w.kill_system.identity(h), "arm": float(M.arm), "lvl": L, "t": 0.0, "r": float(M.visR)}
 	w.mines.append(m)
 	w.emit({"t": "mine", "mid": m.id, "x": h.x, "y": h.y, "team": h.team, "id": h.id})
 
@@ -703,7 +717,7 @@ static func update_mines(w: SimWorld, dt: float) -> void:
 			w.mines.remove_at(i)
 			w.emit({"t": "mine_gone", "mid": m.id})
 			var o: SimHamster = m.owner if is_instance_valid(m.owner) else null
-			w.blast(m.x, m.y, float(M.blastR), float(M.dmg) * lvl_k(int(m.lvl), float(M.dmgPerLevel)), m.team, o, float(M.kb), {"src": "mine"})
+			w.blast(m.x, m.y, float(M.blastR), float(M.dmg) * lvl_k(int(m.lvl), float(M.dmgPerLevel)), m.team, o, float(M.kb), {"src": "mine", "contributor_id": int(m.contributor_id)})
 		i -= 1
 
 
@@ -723,6 +737,7 @@ static func _place_sentry(w: SimWorld, h: SimHamster, L: int) -> void:
 	s2.kind = "sentry"
 	s2.team = h.team
 	s2.owner = h
+	s2.owner_contributor_id = w.kill_system.identity(h)
 	s2.x = h.x + cos(a) * float(S.dist)
 	s2.y = h.y + sin(a) * float(S.dist)
 	s2.r = float(S.r)

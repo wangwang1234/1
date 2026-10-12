@@ -52,7 +52,7 @@ static func explode_rocket(w: SimWorld, b: SimBullet) -> void:
 	var S: Dictionary = P.special
 	var R := b.aoe
 	b.aoe = 0.0   # 只炸一次
-	w.blast(b.x, b.y, R, b.aoe_dmg + b.dmg, b.team, b.owner, b.kb, {"slow": float(S.get("blastSlow", 0.0)), "src": "rocket", "h": b.h, "by": b.by})
+	w.blast(b.x, b.y, R, b.aoe_dmg + b.dmg, b.team, b.owner, b.kb, {"slow": float(S.get("blastSlow", 0.0)), "src": "rocket", "h": b.h, "by": b.by, "method": "reflect" if b.reflected else "explosion", "contributor_id": b.contributor_id})
 	if S.has("bombs"):
 		var C: Dictionary = Data.weapon("rocket").get("cluster", {})
 		var n := int(S.bombs)
@@ -61,9 +61,9 @@ static func explode_rocket(w: SimWorld, b: SimBullet) -> void:
 			var ang := float(i) / n * TAU + w.rand(-float(C.get("jitter", 0.3)), float(C.get("jitter", 0.3)))
 			var d := w.rand(float(dist[0]), float(dist[1]))
 			w.throw_lob_from(b.x, b.y, float(C.get("throwR", 6)), b.team, b.owner, "bomb", b.x + cos(ang) * d, b.y + sin(ang) * d,
-				{"sp": float(C.get("sp", 300)), "fuse": float(C.get("fuse", 0.55)), "aoe": float(C.get("aoe", 55)), "dmg": (b.aoe_dmg + b.dmg) * float(P.cluster), "kb": float(C.get("kb", 120)), "silent": true})
+				{"sp": float(C.get("sp", 300)), "fuse": float(C.get("fuse", 0.55)), "aoe": float(C.get("aoe", 55)), "dmg": (b.aoe_dmg + b.dmg) * float(P.cluster), "kb": float(C.get("kb", 120)), "silent": true, "contributor_id": b.contributor_id})
 	if S.has("crater"):
-		w.add_fire(b.x, b.y, R * float(S.crater), float(S.get("craterLife", 4)), b.team, b.owner, float(S.get("craterDps", 18)), "crater")
+		w.add_fire(b.x, b.y, R * float(S.crater), float(S.get("craterLife", 4)), b.team, b.owner, float(S.get("craterDps", 18)), "crater", b.contributor_id)
 
 
 # ---------------------------------------------------------------------------
@@ -168,7 +168,7 @@ static func swing(w: SimWorld, h: SimHamster, extra: bool) -> void:
 			continue
 		if not spin and absf(SimUtil.ang_diff(a0, atan2(e.y - h.y, e.x - h.x))) > arc * 0.5 and dd > e.r * 0.5:
 			continue
-		var dealt := w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": h.x, "y": h.y, "critAdd": float(ctx.crit)})
+		var dealt := w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": h.x, "y": h.y, "critAdd": float(ctx.crit), "method": "slash"})
 		if dealt > 0.0:
 			SimWeapons.hit_status(w, h, e, P)
 			SimWeapons.hit_extras(w, h, e, S, dealt, dmg)
@@ -232,6 +232,8 @@ static func deflect(w: SimWorld, h: SimHamster, P: Dictionary, perfect: bool) ->
 		bl.vy = sin(ang) * sp * float(W.get("deflectSpeed", 1.1))
 		bl.team = h.team
 		bl.owner = h
+		bl.reflected = true
+		bl.contributor_id = w.kill_system.identity(h)
 		bl.by = h
 		bl.dmg *= (float(W.get("deflectBase", 1.2)) + float(P.deflect)) * (float(S.get("perfectMul", 3)) if perfect else 1.0)
 		bl.hit = {}
@@ -259,14 +261,14 @@ static func iaido(w: SimWorld, h: SimHamster, P: Dictionary) -> void:
 			continue
 		if Vector2(e.x - h.x, e.y - h.y).length() < h.r + e.r + float(I.get("pad", 10)):
 			h.iaido_hit[e.id] = true
-			w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": h.x, "y": h.y})
+			w.deal_dmg(e, dmg, {"team": h.team, "owner": h, "x": h.x, "y": h.y, "method": "slash"})
 			w.emit({"t": "iaido_hit", "id": h.id, "target": e.id, "x": e.x, "y": e.y, "h": e.r, "a": atan2(h.rdy, h.rdx)})
 			w.emit({"t": "hitmark", "id": h.id, "target": e.id, "kill": e.dead or (e is SimHamster and not (e as SimHamster).alive)})
 
 
 static func wave_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 	var o := b.owner
-	var dealt := w.deal_dmg(e, b.dmg, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y})
+	var dealt := w.deal_dmg(e, b.dmg, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y, "method": "reflect" if b.reflected else "slash", "contributor_id": b.contributor_id})
 	if dealt > 0.0 and o != null and b.fx.has("P"):
 		SimWeapons.hit_status(w, o, e, b.fx.P)
 		SimWeapons.hit_extras(w, o, e, b.fx.S, dealt, b.dmg)
@@ -331,7 +333,7 @@ static func fire_flame(w: SimWorld, h: SimHamster, extra: bool) -> void:
 
 static func flame_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 	var o := b.owner
-	if w.deal_dmg(e, b.dmg, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y}) > 0.0 and o != null:
+	if w.deal_dmg(e, b.dmg, {"team": b.team, "owner": o, "by": b.by, "x": b.x, "y": b.y, "method": "burn", "contributor_id": b.contributor_id}) > 0.0 and o != null:
 		w.emit({"t": "hitmark", "id": o.id, "target": e.id, "kill": e.dead or (e is SimHamster and not (e as SimHamster).alive)})
 	var l := maxf(0.001, Vector2(b.vx, b.vy).length())
 	w.knock(e, b.vx / l, b.vy / l, b.kb)
@@ -339,6 +341,7 @@ static func flame_hit(w: SimWorld, b: SimBullet, e: SimEntity) -> void:
 		return
 	e.burn_t = maxf(e.burn_t, float(b.fx.get("burn", 2.5)))
 	e.burn_by = o
+	e.burn_contributor_id = b.contributor_id
 	if float(b.fx.get("slow", 0.0)) > 0.0:
 		w.slow_e(e, float(b.fx.slow))
 	if float(b.fx.get("spread", 0.0)) > 0.0:
@@ -613,6 +616,7 @@ static func laser_tick(w: SimWorld, h: SimHamster) -> void:
 					if S.has("focusIgnite") and ramp >= cap - 1e-6:
 						hit.burn_t = maxf(hit.burn_t, float(S.focusIgnite))
 						hit.burn_by = h
+						hit.burn_contributor_id = w.kill_system.identity(h)
 						h.ammo = mini(SimWeapons.mag_size(h), h.ammo + int(S.get("focusRefill", 1)))
 						w.emit({"t": "focus_max", "id": h.id, "target": hit.id})
 			var dealt := w.deal_dmg(hit, dm, {"team": h.team, "owner": h, "x": hit.x, "y": hit.y, "canCrit": true}, true)

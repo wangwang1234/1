@@ -4,6 +4,7 @@ extends SimEntity
 
 var type := "chick"
 var owner: SimHamster = null
+var owner_contributor_id := 0
 var h := 0.0                  # 离地高度
 var lvl := 1
 var cd := 0.5

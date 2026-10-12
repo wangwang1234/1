@@ -83,7 +83,7 @@ func show_result(local_team: String, stats: Dictionary) -> void:
 				tb += int(p.bdmg)
 		var head := UiTheme.label(("蓝队" if team == "blue" else "红队") + ("（胜）" if team == winner else ""), 26, tc, true, 5)
 		grid.add_child(head)
-		for hd: String in ["武器", "等级", "击倒", "倒下", "伤害", "拆塔", ""]:
+		for hd: String in ["武器", "瓜子", "击败", "倒下", "伤害", "拆塔", ""]:
 			grid.add_child(UiTheme.label(hd, 18, UiTheme.SUB, false, 4))
 		var rows := players.filter(func(p): return p.team == team)
 		rows.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.kills) > int(b.kills))
@@ -99,7 +99,7 @@ func show_result(local_team: String, stats: Dictionary) -> void:
 				if int(evo[i]) > 0:
 					evs += " %s%d" % [["A", "B", "C"][i], int(evo[i])]
 			grid.add_child(UiTheme.label(wn + evs, 18, UiTheme.CREAM, false, 4))
-			for k: String in ["lvl", "kills", "deaths", "dmg", "bdmg"]:
+			for k: String in ["seed_total", "kills", "deaths", "dmg", "bdmg"]:
 				grid.add_child(UiTheme.label(str(p.get(k, 0)), 23, UiTheme.GOLD if k == "kills" else UiTheme.CREAM, false, 5))
 			grid.add_child(UiTheme.label("MVP" if String(p.name) == mvp else "", 20, UiTheme.GOLD, true, 5))
 		if team == first_team:
