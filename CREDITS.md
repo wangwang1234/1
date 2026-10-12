@@ -18,3 +18,6 @@
 ## 引擎与工具
 - Godot Engine 4.7.2（MIT）— https://godotengine.org ，发布版需要在游戏内“关于”或随附文件里附上 Godot 的 MIT 许可声明（批次 5 做“关于”页面时加上）。
 - Blender 4.0（GPL，只用作工具，产出的模型不受 GPL 约束）。
+# 本轮追加素材来源（2026-10-12）
+
+`game/assets/ui/kill_stamp/`：用户提供的 `guazi_stamp.zip`，用户说明由 Claude 制作。41张透明PNG原样使用；中心数字与缎带文字由Godot字体叠加。原包的示意预览仅保存在本轮审阅目录，未作为带字游戏贴图使用。

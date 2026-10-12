@@ -1,0 +1,14 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+
+[audio] 载入 84 种音效
+[view_smoke] 挤压 / 后坐：60 FPS、5 FPS、1 秒卡帧均回稳
+[view_smoke] 18 把武器开火完成（含右键技能）
+[view_smoke] 26 种道具完成（Q / E 双槽、部署物、全息诱饵、触屏按钮、4 张卡）
+[view_smoke] 鼠王：true，野怪 28，宠物 12
+[view_smoke] 双人分屏：2 个镜头
+[view_smoke] 2P 手柄热插拔：切到手柄=true，拔掉切回=true
+[view_smoke] 完成 (done)
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2663)
+ERROR: 28 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

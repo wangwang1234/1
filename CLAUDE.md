@@ -95,6 +95,7 @@
 3. 直接开始批次 1。
 
 ## 当前进度
+- 2026-10-12 第三阶段Claude徽章接入（待导演验收）：采用导演上传guazi_stamp.zip的41张透明PNG；明确改为徽章中心数字＋缎带文字，1～2普通、3～4银色、5+金色、红色只作终结。原图SHA256保持，资源目录game/assets/ui/kill_stamp、配置data/kill_art.tres。审阅包review/kill_phase3/REPORT.md；第四阶段动作需按徽章结构适配后实现，等待确认。
 - 2026-10-12 击败/助攻/赏金第二阶段（待导演验收）：占位瓜子排、白色/金色标题、方式与标签信息条、客户端共享横幅、每视口私人播报、助攻与被击败提示；F8预览接入。按导演确认每段6连触发横幅，超过四颗金瓜子显示一颗×总数；新增死亡次数快照避免旧alive快照闪掉提示。审阅包 `review/kill_phase2/REPORT.md`，开发场景 `game/scenes/dev/kill_preview.tscn`。第三阶段先交完整瓜子风格图，第四阶段正式动画音效，均等待确认。
 - 2026-10-12 击败/助攻/赏金第一阶段（导演已确认继续，PR #9仍为草稿）：服务器贡献窗口、两轮助攻、赏金原额入累计S、50级/1560曲线、连续击败与阵亡衰减、断线/AI身份保留、可靠KillEvent RPC、F8无动画调试。审阅包 `review/kill_phase1/`，接入文档 `docs/KILL_SYSTEM.md`。默认与CAP120复现81/18/9，实战采用CAP120；收入候选32/0.065/100未启用。推送时同步主线28e705f并接入Q/E道具实际贡献（声呐、摄像头、捕鼠夹、再生、反射器、哨戒炮、信号弹召唤物）；保留双方实现。Godot 4.6.3验证；后续占位播报、美术、动画音效、真机Wi-Fi三端仍按导演五阶段顺序等待确认。
 - 2026-10-12 **道具系统重构：Q / E 双槽 + 新增 13 个道具**（分支 `claude/sleepy-wright-ejw897`，审阅包与汇报 `review/qe_gadgets/REPORT.md`）：Q 战术道具 / E 强化道具，开局 Q 破片手雷、E 医疗包；升级卡 4 张（权重 `rules.json` 的 `cards.weights`），新道具卡只替换所属槽，道具通用升级卡（冷却缩短 / 携带上限）作用于两槽且换道具保留；道具等级取消。全部道具数据在 `gadgets.json`（slot / pool / cd / charges / fx / ai），新道具组合已有效果类型和 AI 条件即可，不用改代码；部署物是 `SimStructure` kind = `dep`（`SimGadgets.update_dep`），表现在 `scripts/view/gadget_views.gd`；新模型 `tools/blender/assets/props/gadget_kit2.py`。9 个旧道具收起（`pool` 为空）。E 键从右键技能让给强化道具；手柄 LB / RB = Q / E，十字键选卡。

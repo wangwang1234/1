@@ -1,0 +1,133 @@
+[gd_resource type="Resource" script_class="KillArtConfig" load_steps=43 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/kill_art_config.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/medal_gold.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/medal_normal.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/medal_red.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/medal_silver.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/rays_burst.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/reward_seed.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/reward_seed_gold.png" id="8"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/ribbon_gold.png" id="9"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/ribbon_normal.png" id="10"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/ribbon_red.png" id="11"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/ribbon_silver.png" id="12"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_gold_1.png" id="13"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_gold_2.png" id="14"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_gold_3.png" id="15"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_gold_4.png" id="16"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_gold_5.png" id="17"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_gold_6.png" id="18"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_normal_1.png" id="19"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_normal_2.png" id="20"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_normal_3.png" id="21"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_normal_4.png" id="22"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_normal_5.png" id="23"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_normal_6.png" id="24"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_red_1.png" id="25"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_red_2.png" id="26"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_red_3.png" id="27"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_red_4.png" id="28"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_red_5.png" id="29"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_red_6.png" id="30"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_silver_1.png" id="31"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_silver_2.png" id="32"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_silver_3.png" id="33"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_silver_4.png" id="34"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_silver_5.png" id="35"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shard_silver_6.png" id="36"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shards_gold_sheet.png" id="37"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shards_normal_sheet.png" id="38"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shards_red_sheet.png" id="39"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shards_silver_sheet.png" id="40"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/shockwave_ring.png" id="41"]
+[ext_resource type="Texture2D" path="res://assets/ui/kill_stamp/sparkle.png" id="42"]
+
+[resource]
+script = ExtResource("1")
+textures = {
+"medal_gold": ExtResource("2"),
+"medal_normal": ExtResource("3"),
+"medal_red": ExtResource("4"),
+"medal_silver": ExtResource("5"),
+"rays_burst": ExtResource("6"),
+"reward_seed": ExtResource("7"),
+"reward_seed_gold": ExtResource("8"),
+"ribbon_gold": ExtResource("9"),
+"ribbon_normal": ExtResource("10"),
+"ribbon_red": ExtResource("11"),
+"ribbon_silver": ExtResource("12"),
+"shard_gold_1": ExtResource("13"),
+"shard_gold_2": ExtResource("14"),
+"shard_gold_3": ExtResource("15"),
+"shard_gold_4": ExtResource("16"),
+"shard_gold_5": ExtResource("17"),
+"shard_gold_6": ExtResource("18"),
+"shard_normal_1": ExtResource("19"),
+"shard_normal_2": ExtResource("20"),
+"shard_normal_3": ExtResource("21"),
+"shard_normal_4": ExtResource("22"),
+"shard_normal_5": ExtResource("23"),
+"shard_normal_6": ExtResource("24"),
+"shard_red_1": ExtResource("25"),
+"shard_red_2": ExtResource("26"),
+"shard_red_3": ExtResource("27"),
+"shard_red_4": ExtResource("28"),
+"shard_red_5": ExtResource("29"),
+"shard_red_6": ExtResource("30"),
+"shard_silver_1": ExtResource("31"),
+"shard_silver_2": ExtResource("32"),
+"shard_silver_3": ExtResource("33"),
+"shard_silver_4": ExtResource("34"),
+"shard_silver_5": ExtResource("35"),
+"shard_silver_6": ExtResource("36"),
+"shards_gold_sheet": ExtResource("37"),
+"shards_normal_sheet": ExtResource("38"),
+"shards_red_sheet": ExtResource("39"),
+"shards_silver_sheet": ExtResource("40"),
+"shockwave_ring": ExtResource("41"),
+"sparkle": ExtResource("42")
+}
+regions = {
+"medal_gold": Rect2(83, 45, 858, 849),
+"medal_normal": Rect2(83, 45, 858, 839),
+"medal_red": Rect2(83, 45, 858, 839),
+"medal_silver": Rect2(83, 45, 858, 839),
+"rays_burst": Rect2(35, 35, 954, 954),
+"reward_seed": Rect2(73, 99, 340, 340),
+"reward_seed_gold": Rect2(73, 99, 340, 340),
+"ribbon_gold": Rect2(31, 115, 962, 173),
+"ribbon_normal": Rect2(31, 115, 962, 173),
+"ribbon_red": Rect2(31, 115, 962, 173),
+"ribbon_silver": Rect2(31, 115, 962, 173),
+"shard_gold_1": Rect2(54, 101, 247, 153),
+"shard_gold_2": Rect2(39, 20, 243, 249),
+"shard_gold_3": Rect2(58, 17, 198, 255),
+"shard_gold_4": Rect2(30, 71, 278, 169),
+"shard_gold_5": Rect2(52, 35, 199, 270),
+"shard_gold_6": Rect2(26, 66, 262, 189),
+"shard_normal_1": Rect2(54, 101, 247, 153),
+"shard_normal_2": Rect2(39, 20, 243, 249),
+"shard_normal_3": Rect2(58, 17, 198, 255),
+"shard_normal_4": Rect2(30, 71, 278, 169),
+"shard_normal_5": Rect2(52, 35, 199, 270),
+"shard_normal_6": Rect2(26, 66, 262, 189),
+"shard_red_1": Rect2(54, 101, 247, 153),
+"shard_red_2": Rect2(39, 20, 243, 249),
+"shard_red_3": Rect2(58, 17, 198, 255),
+"shard_red_4": Rect2(30, 71, 278, 169),
+"shard_red_5": Rect2(52, 35, 199, 270),
+"shard_red_6": Rect2(26, 66, 262, 189),
+"shard_silver_1": Rect2(54, 101, 247, 153),
+"shard_silver_2": Rect2(39, 20, 243, 249),
+"shard_silver_3": Rect2(58, 17, 198, 255),
+"shard_silver_4": Rect2(30, 71, 278, 169),
+"shard_silver_5": Rect2(52, 35, 199, 270),
+"shard_silver_6": Rect2(26, 66, 262, 189),
+"shards_gold_sheet": Rect2(62, 49, 898, 608),
+"shards_normal_sheet": Rect2(62, 49, 898, 608),
+"shards_red_sheet": Rect2(62, 49, 898, 608),
+"shards_silver_sheet": Rect2(62, 49, 898, 608),
+"shockwave_ring": Rect2(60, 39, 926, 944),
+"sparkle": Rect2(26, 26, 204, 204)
+}

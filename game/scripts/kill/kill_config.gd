@@ -79,6 +79,16 @@ extends Resource
 @export var banner_stay: float = 2.0
 @export var five_streak: int = 5
 @export var unstoppable_streak: int = 6
+@export_group("第三阶段Claude徽章")
+@export var silver_streak: int = 3
+@export var stamp_height: float = 220.0
+@export var stamp_ribbon_width: float = 300.0
+@export var stamp_ribbon_height: float = 54.0
+@export var stamp_ribbon_overlap: float = 22.0
+@export var stamp_title_size: int = 36
+@export var stamp_number_size: int = 64
+@export var stamp_number_width_ratio: float = 0.28
+@export var stamp_subtitle_gap: float = 8.0
 
 
 func validation_errors() -> PackedStringArray:
@@ -112,4 +122,6 @@ func validation_errors() -> PackedStringArray:
 		errors.append("停留与淡出时长必须为正")
 	if five_streak < 1 or unstoppable_streak <= five_streak:
 		errors.append("高光播报门槛无效")
+	if silver_streak < 1 or silver_streak >= five_streak or stamp_height <= 0.0 or stamp_ribbon_width <= 0.0 or stamp_ribbon_height <= 0.0 or stamp_number_width_ratio <= 0.0 or stamp_number_width_ratio > 1.0:
+		errors.append("徽章尺寸及档位配置无效")
 	return errors

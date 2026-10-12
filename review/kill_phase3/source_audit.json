@@ -1,0 +1,792 @@
+[
+  {
+    "file": "medal_gold.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      83,
+      45,
+      941,
+      894
+    ],
+    "sha256": "2115995130af442b4031ac38e4108c490aad9d5dfeb158f1d4d828ac0bad7e1b"
+  },
+  {
+    "file": "medal_normal.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      83,
+      45,
+      941,
+      884
+    ],
+    "sha256": "2f9456b6f37c541688ed30ffe1c937c2c15d85475abc73c3aaabdf630d649eb4"
+  },
+  {
+    "file": "medal_red.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      83,
+      45,
+      941,
+      884
+    ],
+    "sha256": "9a7afbb60b5e7d2b5c6e435cd7e0e23367a77c1151dbd0a58e4e083c1c541bf7"
+  },
+  {
+    "file": "medal_silver.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      83,
+      45,
+      941,
+      884
+    ],
+    "sha256": "0711ca1c7b6242715c7f54ba42ceb0b29337691633fbd5cd7f1c9281f321b0be"
+  },
+  {
+    "file": "preview.png",
+    "size": [
+      2000,
+      620
+    ],
+    "mode": "RGB",
+    "alpha_extrema": null,
+    "bounds": null,
+    "sha256": "4892819d98dacfe974679ea48ee5b05189c05e4d7822e87ca8f7ed9e3a211be9"
+  },
+  {
+    "file": "rays_burst.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      35,
+      35,
+      989,
+      989
+    ],
+    "sha256": "897fcf9e2e9b8a54aa1320b389fe3dce699ef6f30d063a689f482e6e57520a82"
+  },
+  {
+    "file": "reward_seed.png",
+    "size": [
+      512,
+      512
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      73,
+      99,
+      413,
+      439
+    ],
+    "sha256": "a72f5bc2467b2f608b14ed28f56b9bddb0e4cd0ca81d294c5e71b5d1fcece88a"
+  },
+  {
+    "file": "reward_seed_gold.png",
+    "size": [
+      512,
+      512
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      73,
+      99,
+      413,
+      439
+    ],
+    "sha256": "2f3fb41a85db2869c015e66b79421b83e051ac786215bc8f3b2f590fb33998b6"
+  },
+  {
+    "file": "ribbon_gold.png",
+    "size": [
+      1024,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      31,
+      115,
+      993,
+      288
+    ],
+    "sha256": "a48ec2d0a85a14680984cced7a3bea62714cb7d399565e228f43a7d7c9044429"
+  },
+  {
+    "file": "ribbon_normal.png",
+    "size": [
+      1024,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      31,
+      115,
+      993,
+      288
+    ],
+    "sha256": "aeb3b7acc6b0e0507f933ce7207f319344b48a300f2053219b5d89fbaee8f520"
+  },
+  {
+    "file": "ribbon_red.png",
+    "size": [
+      1024,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      31,
+      115,
+      993,
+      288
+    ],
+    "sha256": "9d9e8f6ec7bff8e348f0abbdbc3b115c3465df3b4b929bdf918cd403cf348f02"
+  },
+  {
+    "file": "ribbon_silver.png",
+    "size": [
+      1024,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      31,
+      115,
+      993,
+      288
+    ],
+    "sha256": "87860a805e9c71bbc3261b4bb7b02e2242294c95eea1c43ce87f53ba5e50c34f"
+  },
+  {
+    "file": "shard_gold_1.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      54,
+      101,
+      301,
+      254
+    ],
+    "sha256": "d38784e436459d285369a00db6e67caca356f4935a04c2a199e303b811646116"
+  },
+  {
+    "file": "shard_gold_2.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      39,
+      20,
+      282,
+      269
+    ],
+    "sha256": "1cd076efaf9d96df66cd564d2c15a4a6898f09491d0e4c4b968b06c91fe8478e"
+  },
+  {
+    "file": "shard_gold_3.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      58,
+      17,
+      256,
+      272
+    ],
+    "sha256": "f3169f32235fd7f35c8d8ec69c77237cefb9a98b0f31949f10e64b7c6ab51564"
+  },
+  {
+    "file": "shard_gold_4.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      30,
+      71,
+      308,
+      240
+    ],
+    "sha256": "6c309220a8cb0cc1149f708c1e5cfd376eb0ba4b937e877188098bfb03a14da6"
+  },
+  {
+    "file": "shard_gold_5.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      52,
+      35,
+      251,
+      305
+    ],
+    "sha256": "51738244ca435485a3a484c7ada82c410db18dabe6fdb15373734fc73e968fac"
+  },
+  {
+    "file": "shard_gold_6.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      26,
+      66,
+      288,
+      255
+    ],
+    "sha256": "768871afbaea503dfacda3a3202bab095797d47fe6e365833b022343c152953c"
+  },
+  {
+    "file": "shard_normal_1.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      54,
+      101,
+      301,
+      254
+    ],
+    "sha256": "82ccad34854625f27d5c70180bcff0ab4aa5e90e5873affc9e2a2e223961161b"
+  },
+  {
+    "file": "shard_normal_2.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      39,
+      20,
+      282,
+      269
+    ],
+    "sha256": "9572e3aa23a9320230f80c4c19bc42eef96c416f118f6b7c1733f104c5bb70df"
+  },
+  {
+    "file": "shard_normal_3.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      58,
+      17,
+      256,
+      272
+    ],
+    "sha256": "0fc5eea20217f20e33e39b01d2b25fc185721a5088b09fa844af38230e000d9d"
+  },
+  {
+    "file": "shard_normal_4.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      30,
+      71,
+      308,
+      240
+    ],
+    "sha256": "ae9502ccba5f362fba89625968f83233caaff662502fd353c08b42080aecdd4e"
+  },
+  {
+    "file": "shard_normal_5.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      52,
+      35,
+      251,
+      305
+    ],
+    "sha256": "825ded48855c1d69dc8b49104d0c4dfec2076b299cc6ad42c81ab46806ed90b2"
+  },
+  {
+    "file": "shard_normal_6.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      26,
+      66,
+      288,
+      255
+    ],
+    "sha256": "2782b4b2b2cd3c070cff076d68fa4c4ee3dec4dbd0918f492f7ebb3ed0adcf13"
+  },
+  {
+    "file": "shard_red_1.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      54,
+      101,
+      301,
+      254
+    ],
+    "sha256": "784019bd7e055215afcb3c76fe36817cbf7b4159d46b4d8e57852f84212ff245"
+  },
+  {
+    "file": "shard_red_2.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      39,
+      20,
+      282,
+      269
+    ],
+    "sha256": "67488f40b7dc1521d7e41d4e77b234cbfa884d844ca2372ff2731a4510d86292"
+  },
+  {
+    "file": "shard_red_3.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      58,
+      17,
+      256,
+      272
+    ],
+    "sha256": "5b23b2500eabb38ec1d712f57e002bb4d7424c31e6150368523425e97154328b"
+  },
+  {
+    "file": "shard_red_4.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      30,
+      71,
+      308,
+      240
+    ],
+    "sha256": "6fbf55a96ec2e3a7d74a36786cd947146084721507e575a1481c321f2327918b"
+  },
+  {
+    "file": "shard_red_5.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      52,
+      35,
+      251,
+      305
+    ],
+    "sha256": "e81697ddd7215202a24b990c80880ff15a4e38bb3805c46464a727445b1b1cd3"
+  },
+  {
+    "file": "shard_red_6.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      26,
+      66,
+      288,
+      255
+    ],
+    "sha256": "6537a0a44fd2d445711db02c6959061d910b30174a7302d4175bfbbd1e855241"
+  },
+  {
+    "file": "shard_silver_1.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      54,
+      101,
+      301,
+      254
+    ],
+    "sha256": "7c3edffde77cc9de801ac97ab922c10d42b0e5616d11c6c450943923e3962405"
+  },
+  {
+    "file": "shard_silver_2.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      39,
+      20,
+      282,
+      269
+    ],
+    "sha256": "3f91c2b5e5401a7065175ac4d4991bbbda58076f57b25b6dc93f0646dfd1d1b1"
+  },
+  {
+    "file": "shard_silver_3.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      58,
+      17,
+      256,
+      272
+    ],
+    "sha256": "1deb913335233678ed008980aa26dd544d2ab9189d47d7f0c8b9559388271fcd"
+  },
+  {
+    "file": "shard_silver_4.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      30,
+      71,
+      308,
+      240
+    ],
+    "sha256": "573461675f46dc932be1a1fbbff8c8799f2e2ee859a81d3fc1f6a16a0ae81316"
+  },
+  {
+    "file": "shard_silver_5.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      52,
+      35,
+      251,
+      305
+    ],
+    "sha256": "81a4b78f64a7cb36717a72e093c8875ecc8e4f986908c9e14a2378d7fb43bbee"
+  },
+  {
+    "file": "shard_silver_6.png",
+    "size": [
+      320,
+      320
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      26,
+      66,
+      288,
+      255
+    ],
+    "sha256": "460c731b83ba09145b17be5f98551a3e8c1eae04d79a4366e370d3e4585f59d8"
+  },
+  {
+    "file": "shards_gold_sheet.png",
+    "size": [
+      1024,
+      704
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      62,
+      49,
+      960,
+      657
+    ],
+    "sha256": "6e9b99c1d51765377b18b3ebb46f0df2c2c0a641ba1779bc036307c645286170"
+  },
+  {
+    "file": "shards_normal_sheet.png",
+    "size": [
+      1024,
+      704
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      62,
+      49,
+      960,
+      657
+    ],
+    "sha256": "29aaf7f88c7dde2a24b72a69fc09d825004a2b344337731d5ab4b9e1e4f112fa"
+  },
+  {
+    "file": "shards_red_sheet.png",
+    "size": [
+      1024,
+      704
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      62,
+      49,
+      960,
+      657
+    ],
+    "sha256": "03d75ba0823569215e17d4a258c9c89e53eb66cfd45a2e2aeb285d8c6b0438ca"
+  },
+  {
+    "file": "shards_silver_sheet.png",
+    "size": [
+      1024,
+      704
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      62,
+      49,
+      960,
+      657
+    ],
+    "sha256": "5ed30c78e452e0041a1212df25d958148ff769954b962e8df3d3399e06feb28b"
+  },
+  {
+    "file": "shockwave_ring.png",
+    "size": [
+      1024,
+      1024
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      60,
+      39,
+      986,
+      983
+    ],
+    "sha256": "f287693a21553538dc3654c49f394f3282d3a0c2e142a9b0e64d08285818ccc3"
+  },
+  {
+    "file": "sparkle.png",
+    "size": [
+      256,
+      256
+    ],
+    "mode": "RGBA",
+    "alpha_extrema": [
+      0,
+      255
+    ],
+    "bounds": [
+      26,
+      26,
+      230,
+      230
+    ],
+    "sha256": "7d332e0f8ec71780dc62a1c666eb8d03bbbada5469441dae891438afa326d6fb"
+  }
+]

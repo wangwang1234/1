@@ -1,6 +1,6 @@
 class_name StreakBannerUI
 extends Control
-## 一个视口对应一名本地玩家。占位阶段只更新静态状态和停留，不实现第四阶段重动画。
+## 一个视口对应一名本地玩家。Claude徽章、中心数字和缎带文字；第四阶段再加入动作。
 
 var config: KillConfig
 var player_id: int = -1
@@ -18,6 +18,8 @@ var bottom_exclusion: float = 0.0 # 触控按钮/摇杆最上边界，以视口�
 var title_label: Label
 var number_label: Label
 var subtitle_label: Label
+var stamp_rect: Rect2
+var ribbon_rect: Rect2
 
 
 func setup(settings: KillConfig, owner: int) -> void:
@@ -94,49 +96,47 @@ func _layout() -> void:
 	var scale := size.y / config.reference_height
 	seed_center = Vector2(size.x * 0.5, size.y * (1.0 - config.seed_bottom_ratio))
 	if bottom_exclusion > 0.0:
-		seed_center.y = minf(seed_center.y, bottom_exclusion - (config.gold_seed_height * 0.5 + config.mobile_clearance) * scale)
+		var footer := 0.0
+		if not KillUIStyle.tags(event).is_empty():
+			footer = UiTheme.body_font.get_height(maxi(1, roundi(config.subtitle_size * scale))) + config.stamp_subtitle_gap * scale
+		seed_center.y = minf(seed_center.y, bottom_exclusion - config.mobile_clearance * scale - footer)
 	var showing := remaining > 0.0 and current_streak > 0
 	title_label.visible = showing
-	number_label.visible = showing and current_streak >= config.unstoppable_streak
+	number_label.visible = showing
 	subtitle_label.visible = showing and not KillUIStyle.tags(event).is_empty()
 	if not showing:
 		return
-	var highlight := current_streak >= config.five_streak
-	var font_size := maxi(1, roundi((config.highlight_title_size if highlight else config.title_size) * scale))
+	var height := config.stamp_height * scale
+	stamp_rect = Rect2(seed_center.x - height * 0.5, seed_center.y - height - config.stamp_ribbon_height * scale, height, height)
+	ribbon_rect = Rect2(seed_center.x - config.stamp_ribbon_width * scale * 0.5, stamp_rect.end.y - config.stamp_ribbon_overlap * scale, config.stamp_ribbon_width * scale, config.stamp_ribbon_height * scale)
 	title_label.text = KillUIStyle.title(current_streak, config)
-	title_label.add_theme_font_size_override("font_size", font_size)
-	title_label.add_theme_constant_override("outline_size", roundi(config.title_outline * scale))
+	title_label.add_theme_font_size_override("font_size", maxi(1, roundi(config.stamp_title_size * scale)))
+	title_label.add_theme_color_override("font_color", config.title_ink)
+	title_label.add_theme_constant_override("outline_size", 0)
+	title_label.material = null
+	title_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_label.position = ribbon_rect.position
+	title_label.size = ribbon_rect.size
 	number_label.text = str(current_streak)
-	number_label.add_theme_font_size_override("font_size", font_size)
-	number_label.add_theme_constant_override("outline_size", roundi(config.title_outline * scale))
+	var number_size := maxi(1, roundi(config.stamp_number_size * scale))
+	var number_width := height * config.stamp_number_width_ratio
+	while number_size > 1 and UiTheme.display_font.get_string_size(number_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, number_size).x > number_width:
+		number_size -= 1
+	number_label.add_theme_font_size_override("font_size", number_size)
+	number_label.add_theme_color_override("font_color", config.title_ink)
+	number_label.add_theme_constant_override("outline_size", 0)
+	number_label.material = null
+	number_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	number_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	number_label.size = Vector2(number_width, number_label.get_minimum_size().y)
+	number_label.position = stamp_rect.get_center() - number_label.size * 0.5
 	subtitle_label.text = " · ".join(KillUIStyle.tags(event))
 	subtitle_label.add_theme_font_size_override("font_size", maxi(1, roundi(config.subtitle_size * scale)))
 	subtitle_label.add_theme_color_override("font_color", config.subtitle_color)
 	subtitle_label.add_theme_constant_override("outline_size", roundi(config.subtitle_outline * scale))
-	var title_width := UiTheme.display_font.get_string_size(title_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x
-	var number_width := UiTheme.display_font.get_string_size(number_label.text, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size).x if number_label.visible else 0.0
-	var icons_width := KillUIStyle.tags(event).size() * (config.tag_icon_size + config.seed_gap) * scale
-	var total_width := title_width + icons_width + (number_width + config.seed_gap * scale if number_label.visible else 0.0)
-	var title_height := title_label.get_minimum_size().y
-	var subtitle_height := subtitle_label.get_minimum_size().y if subtitle_label.visible else 0.0
-	var top := seed_center.y - config.gold_seed_height * scale * 0.5 - config.title_gap * scale - subtitle_height - title_height
-	title_label.position = Vector2(seed_center.x - total_width * 0.5 + icons_width, top)
-	title_label.size = Vector2(title_width, title_height)
-	number_label.position = Vector2(title_label.position.x + title_width + config.seed_gap * scale, top)
-	number_label.size = Vector2(number_width, title_height)
 	subtitle_label.size = subtitle_label.get_minimum_size()
-	subtitle_label.position = Vector2(seed_center.x - subtitle_label.size.x * 0.5, top + title_height)
-	for label in [title_label, number_label]:
-		if highlight:
-			if label.material == null:
-				var mat := ShaderMaterial.new()
-				mat.shader = load("res://shaders/kill_title_gradient.gdshader")
-				label.material = mat
-			label.material.set_shader_parameter("top_color", config.gold_top)
-			label.material.set_shader_parameter("bottom_color", config.gold_bottom)
-			label.material.set_shader_parameter("gradient_height", maxf(1.0, title_height))
-		else:
-			label.material = null
+	subtitle_label.position = Vector2(seed_center.x - subtitle_label.size.x * 0.5, ribbon_rect.end.y + config.stamp_subtitle_gap * scale)
 
 
 func _draw() -> void:
@@ -144,25 +144,16 @@ func _draw() -> void:
 		return
 	var scale := size.y / config.reference_height
 	if remaining > 0.0 and current_streak > 0:
-		var counts := KillUIStyle.gold_counts(current_streak, config)
-		var normal_size := Vector2(config.seed_height * config.seed_width_ratio, config.seed_height) * scale
-		var gold_size := Vector2(config.gold_seed_height * config.seed_width_ratio, config.gold_seed_height) * scale
-		var gap := config.seed_gap * scale
-		var total: float = int(counts.visible) * gold_size.x + int(counts.normal) * normal_size.x + maxi(0, int(counts.visible) + int(counts.normal) - 1) * gap
-		var x: float = seed_center.x - total * 0.5
-		for i in int(counts.visible):
-			KillUIStyle.icon(self, Rect2(Vector2(x, seed_center.y - gold_size.y * 0.5), gold_size), "gold", config)
-			if int(counts.multiplier) > 0:
-				KillUIStyle.text(self, Vector2(x + gold_size.x * 0.6, seed_center.y - gold_size.y * 0.3), "×%d" % counts.multiplier, UiTheme.body_font, maxi(1, roundi(config.subtitle_size * scale)), config.gold_top, config, roundi(config.subtitle_outline * scale))
-			x += gold_size.x + gap
-		for i in int(counts.normal):
-			KillUIStyle.icon(self, Rect2(Vector2(x, seed_center.y - normal_size.y * 0.5), normal_size), "seed", config)
-			x += normal_size.x + gap
-		var icon_x := title_label.position.x - KillUIStyle.tags(event).size() * (config.tag_icon_size + config.seed_gap) * scale
+		var tier := KillUIStyle.stamp_tier(current_streak, config)
+		var art := KillUIStyle.stamp_art()
+		art.draw(self, stamp_rect, "medal_" + tier, 1.0, false)
+		art.draw(self, ribbon_rect, "ribbon_" + tier)
+		var tag_count := KillUIStyle.tags(event).size()
+		var icon_size := config.tag_icon_size * scale
+		var icon_x := ribbon_rect.position.x - tag_count * (config.tag_icon_size + config.seed_gap) * scale
 		for icon in ["first", "shutdown"]:
 			if bool(event.get("is_first_kill" if icon == "first" else "is_shutdown", false)):
-				var icon_size := config.tag_icon_size * scale
-				KillUIStyle.icon(self, Rect2(icon_x, title_label.position.y + (title_label.size.y - icon_size) * 0.5, icon_size, icon_size), icon, config)
+				KillUIStyle.icon(self, Rect2(icon_x, ribbon_rect.position.y, icon_size, icon_size), icon, config)
 				icon_x += (config.tag_icon_size + config.seed_gap) * scale
 	if assist_remaining > 0.0:
 		var font_size := maxi(1, roundi(config.toast_font_size * scale))
