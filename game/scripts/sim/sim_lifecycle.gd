@@ -11,6 +11,8 @@ static func release(e: Object) -> void:
 		e.pet_list.clear()
 	elif e is SimMinion:
 		e.target = null
+		e.follow = null
+		e.owner = null
 	elif e is SimStructure:
 		e.target = null
 		e.owner = null

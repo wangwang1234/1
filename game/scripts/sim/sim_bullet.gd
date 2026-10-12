@@ -32,7 +32,6 @@ var min_f := 1.0
 var max_d := 600.0
 var fx := {}               # 进化效果：src, lv, ign, ignK, slow, stun, mark, crit, force, expl
 var weapon := ""
-var reflected := false
 var contributor_id := 0
 var home := 0.0            # 追踪转向速度（弧度/秒，>0 = 追踪）
 var home_after := 0.0      # 第一次反弹后开始追踪
@@ -41,6 +40,7 @@ var home_tgt := 0          # 追踪目标 id
 var split_at := 0.0        # 飞出这么远后分裂
 var wr := 1.0              # 剑气宽度
 var big := false
+var reflected := false     # 被榴弹反射器弹回过（不会再被弹）
 var dead := false
 var id := 0
 

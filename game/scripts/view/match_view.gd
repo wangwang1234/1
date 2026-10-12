@@ -661,7 +661,7 @@ func _dispatch(events: Array) -> void:
 				if sv:
 					sv.on_fire()
 				var p2 := _wpos(float(ev.x), float(ev.y), float(ev.h))
-				if String(ev.kind) == "sentry":
+				if String(ev.kind) == "sentry" or String(ev.kind) == "dep":
 					wfx.sentry_fired(int(ev.id))
 					fx.spawn(p2, Vector3.ZERO, 0.04, 0.12, Color("#fff6c2"), FxSystem.S_STAR, true, 0, 0)
 					Audio.play3d("shot_sentry", p2, -10.0, 0.08, 0.05)
@@ -861,6 +861,8 @@ func _flush_quiet(delta: float) -> void:
 func _on_damage(ev: Dictionary) -> void:
 	var id := int(ev.id)
 	var e: SimEntity = world.entities.get(id)
+	if String(ev.get("kind", "")) == "dep":
+		wfx.dep_hit(id)
 	var p := _wpos(float(ev.x), float(ev.y), float(ev.r) * 2.4 + 12.0)
 	var seen := e == null or team_sees(e)
 	if e is SimHamster:
@@ -936,6 +938,19 @@ func _on_kill(ev: Dictionary) -> void:
 		"sentry":
 			fx.small_death(p, TEAM_COL.get(team, Color.WHITE), 10)
 			Audio.play3d("clank", p, -6.0)
+		"dep":
+			# 道具部署物：被打掉碎一地；到时间收起只闪一下；捕鼠夹触发由 snare 事件表现
+			if bool(ev.get("quiet", false)):
+				return
+			if bool(ev.get("broken", false)):
+				fx.small_death(p + Vector3(0, 0.1, 0), TEAM_COL.get(team, Color.WHITE), 14)
+				fx.shards(p + Vector3(0, 0.15, 0), 10, 2.0, Color("#cfd6e0"))
+				Audio.play3d("clank", p, -3.0)
+				Audio.play3d("glass", p, -10.0)
+			else:
+				fx.ring(p + Vector3(0, 0.03, 0), 0.05, 0.8, 0.25, TEAM_COL.get(team, Color.WHITE), 0.2)
+				fx.stars(p + Vector3(0, 0.15, 0), TEAM_COL.get(team, Color.WHITE), 5, 0.6)
+				Audio.play3d("beep", p, -12.0)
 		"decoy":
 			fx.small_death(p + Vector3(0, 0.2, 0), TEAM_COL.get(team, Color.WHITE), 12)
 			fx.ring(p + Vector3(0, 0.03, 0), 0.1, 1.6, 0.25, Color.WHITE, 0.25)
@@ -1033,8 +1048,95 @@ func _dispatch_b2(t: String, ev: Dictionary) -> void:
 				"decoy":
 					Audio.play3d("boing", p, -4.0)
 					fx.ring(_wpos(h.x, h.y, 3), 0.08, 1.4, 0.3, TEAM_COL[h.team], 0.3)
+				"holo":
+					Audio.play3d("holo", p, -3.0)
+					fx.ring(_wpos(h.x, h.y, 3), 0.08, 1.4, 0.3, Color("#7fe3ff"), 0.3)
+					fx.stars(_wpos(h.x, h.y, 24), Color("#9fe8ff"), 10, 1.0)
+				"cam", "trap", "cover", "regen", "guardgun", "reflector":
+					Audio.play3d("throw" if String(ev.gadget) == "cam" else "deploy", p, -5.0)
+				"adren":
+					Audio.play3d("inject", p, -2.0)
+					fx.stars(_wpos(h.x, h.y, 22), Color("#ff6b5e"), 10, 1.2)
+					fx.ring(_wpos(h.x, h.y, 3), 0.1, 1.3, 0.3, Color("#ff8a5a"), 0.25)
+				"bubble":
+					Audio.play3d("shield_up", p, -2.0)
+					fx.ring(p, 0.1, 1.6, 0.4, Color("#ffcf7f"), 0.3)
+					fx.hexes(_wpos(h.x, h.y, 5), 0.32, 12, Color("#ffcf7f"))
+				"warp":
+					pass     # 读条由 tp_cast 表现
+				"goggles":
+					Audio.play3d("nvg_on", p, -4.0)
+				"sonar", "signal":
+					pass     # 由 sonar / signal 事件表现
 				_:
 					Audio.play3d("throw", p, -6.0)
+		"spawn":
+			if String(ev.get("kind", "")) == "dep":
+				var sp := _wpos(float(ev.get("x", 0.0)), float(ev.get("y", 0.0)), 3)
+				fx.ring(sp, 0.05, 0.9, 0.3, TEAM_COL.get(String(ev.team), Color.WHITE), 0.25)
+				fx.dust(sp, Vector3.ZERO, 6, 0.8)
+		"cam_alert":
+			# 摄像头发现敌人：只提醒摄像头这一队
+			if players.any(func(q): return q.team == String(ev.team)):
+				Audio.play2d("alert", -10.0, 0.02, 0.6)
+		"snare":
+			var sv := GadgetViews.SnapFx.new()
+			var vic: SimEntity = world.entities.get(int(ev.victim))
+			var vp := _wpos(vic.x, vic.y, 0) if vic != null else _wpos(float(ev.x), float(ev.y), 0)
+			add_child(sv)
+			sv.setup(vp, String(ev.team), float(ev.dur))
+			fx.shards(vp + Vector3(0, 0.08, 0), 6, 1.4, Color("#e8e2d0"))
+			Audio.play3d("trap_snap", vp, -1.0)
+			if vic != null and is_local_id(vic.id):
+				player_of(vic.id).cam.add_trauma(0.25 * Settings.fx_strength)
+		"cover_hit":
+			var cp := _wpos(float(ev.x), float(ev.y), float(ev.h))
+			fx.hit(cp, Color("#cfe2ff"), false)
+			Audio.play3d("tink", cp, -10.0, 0.1, 0.04)
+			wfx.dep_hit(int(ev.id))
+		"reflect":
+			var rp := _wpos(float(ev.x), float(ev.y), 16)
+			fx.ring(rp, 0.05, 1.0, 0.25, Color("#7fe3ff"), 0.3)
+			fx.flash_light(rp, Color("#9fe8ff"), 2.5, 2.5, 0.12)
+			Audio.play3d("reflect", rp, -2.0)
+			wfx.dep_hit(int(ev.id))
+		"sonar":
+			var snp := _wpos(float(ev.x), float(ev.y), 6)
+			var sr := float(ev.r) * 0.01
+			for k in 3:
+				get_tree().create_timer(k * 0.18).timeout.connect(func() -> void:
+					if is_instance_valid(fx):
+						fx.ring(snp, 0.1, sr, 0.9, Color("#7fe3ff"), 0.08))
+			Audio.play3d("sonar", snp, -2.0)
+		"tp_cast":
+			var tp := _wpos(float(ev.x), float(ev.y), 0)
+			wfx.pillar(tp, Color("#c77dff"))
+			fx.ring(tp + Vector3(0, 0.03, 0), 0.5, -0.4, float(ev.dur), Color("#c77dff"), 0.15)
+			Audio.play3d("warp_charge", tp, -3.0)
+		"tp_cancel":
+			var tcp := _wpos(float(ev.x), float(ev.y), 20)
+			fx.stars(tcp, Color("#c77dff"), 8, 0.8)
+			fx.number(tcp + Vector3(0, 0.3, 0), "打断！", Color("#ff8a7a"), 1.0)
+			Audio.play3d("zap", tcp, -8.0)
+		"eshield_break":
+			var bp := _wpos(float(ev.x), float(ev.y), 18)
+			var bc := Color("#ffcf7f") if String(ev.get("gadget", "")) == "bubble" else Color("#7fe3ff")
+			fx.shards(bp, 18, 2.6, bc)
+			fx.ring(bp, 0.3, 1.2, 0.25, bc, 0.25)
+			Audio.play3d("shield_break", bp, -2.0)
+		"buff_after":
+			var ah := world.ham_by_id(int(ev.id))
+			if ah != null:
+				fx.number(_wpos(ah.x, ah.y, 40), "乏力…", Color("#b9b2c8"), 0.9)
+		"nvg_on":
+			pass
+		"signal":
+			var sgp := _wpos(float(ev.x), float(ev.y), 20)
+			for k in 10:
+				fx.spawn(sgp + Vector3(0, k * 0.25, 0), Vector3(0, 3.0, 0), 0.5 + k * 0.05, 0.12, Color("#ff7a5a"), FxSystem.S_STAR, true, 0.0, 0.5)
+			fx.flash_light(sgp + Vector3(0, 2.0, 0), Color("#ff7a5a"), 4.0, 6.0, 0.6)
+			fx.ring(_wpos(float(ev.x), float(ev.y), 3), 0.1, 1.6, 0.4, TEAM_COL.get(String(ev.team), Color.WHITE), 0.3)
+			Audio.play3d("signal_up", sgp, -1.0)
 		"teleport":
 			for k in 2:
 				var x := float(ev.x0) if k == 0 else float(ev.x1)

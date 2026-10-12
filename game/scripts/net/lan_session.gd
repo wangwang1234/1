@@ -193,8 +193,14 @@ static func clean_profile(p: Dictionary) -> Dictionary:
 	var skin: String = p.skin if p.get("skin") is String else "gold"
 	var weapon: String = p.weapon if p.get("weapon") is String else "pistol"
 	var nick: String = (p.name if p.get("name") is String else "玩家").strip_edges().substr(0, 16).replace("\n", " ").replace("\r", " ")
-	return {"name": nick if not nick.is_empty() else "玩家", "team": "red" if p.get("team") == "red" else "blue",
+	var out := {"name": nick if not nick.is_empty() else "玩家", "team": "red" if p.get("team") == "red" else "blue",
 		"skin": skin if Data.skins().has(skin) else "gold", "weapon": weapon if Data.active_weapons().has(weapon) else "pistol", "ready": false}
+	# 开局道具（开局池里有 2 个以上时在大厅选）：只收开局池里的 id
+	for slot: String in ["q", "e"]:
+		var g: Variant = p.get("g" + slot)
+		if g is String and Data.gadget_pool(slot, "start").has(g):
+			out["g" + slot] = g
+	return out
 
 
 func _on_connected() -> void :
@@ -435,7 +441,7 @@ func send_input(h: SimHamster) -> Dictionary:
 	var input: = NetInput.pack(h.inp)
 	var command: = {"seq": _send_seq, "input": input, "dash": h.inp.dash, "action": 0}
 	_controls.rpc_id(1, int(config.match_id), _send_seq, input)
-	if h.inp.dash or h.inp.reload or h.inp.gadget or h.inp.skill or h.inp.card >= 0:
+	if h.inp.dash or h.inp.reload or h.inp.gadget or h.inp.gadget2 or h.inp.skill or h.inp.card >= 0:
 		_action_seq += 1
 		command.action = _action_seq
 		_actions.rpc_id(1, int(config.match_id), _action_seq, NetInput.pack_actions(h.inp, h.choices, _send_seq))
@@ -443,6 +449,7 @@ func send_input(h: SimHamster) -> Dictionary:
 	h.inp.dash_direction = Vector2.ZERO
 	h.inp.reload = false
 	h.inp.gadget = false
+	h.inp.gadget2 = false
 	h.inp.skill = false
 	h.inp.card = -1
 	return command

@@ -100,6 +100,15 @@ static func respawn(w: SimWorld, h: SimHamster) -> void:
 	h.eshield_t = 0.0
 	h.med_t = 0.0
 	h.jet_t = 0.0
+	h.eshield_id = ""
+	h.buff_t = 0.0
+	h.buff_rate = 1.0
+	h.buff_speed = 1.0
+	h.after_t = 0.0
+	h.tp_t = 0.0
+	h.nvg_t = 0.0
+	h.root_t = 0.0
+	h.trap_controls.clear()
 	if h.ai != null:
 		h.ai.wp = 1
 		h.ai.state = "push"
@@ -177,8 +186,8 @@ static func gadget_target(w: SimWorld, h: SimHamster) -> Vector2:
 	return SimGadgets.target(w, h)
 
 
-static func use_gadget(w: SimWorld, h: SimHamster) -> void:
-	SimGadgets.use(w, h)
+static func use_gadget(w: SimWorld, h: SimHamster, slot: String = "q") -> void:
+	SimGadgets.use(w, h, slot)
 
 
 static func spawn_squad(w: SimWorld, h: SimHamster) -> void:
@@ -227,7 +236,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 	h.spit_t = maxf(0.0, h.spit_t - dt)
 	h.swing_t = maxf(0.0, h.swing_t - dt)
 	h.slow_t = maxf(0.0, h.slow_t - dt)
-	h.gadget.cd = maxf(0.0, float(h.gadget.cd) - dt)
+	SimGadgets.tick_charges(h, dt)
 	h.blind_t = maxf(0.0, h.blind_t - dt)
 	if h.crown_t > 0.0:
 		h.crown_t -= dt
@@ -312,7 +321,7 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 	if inp.assist > 0.0 and inp.fire:
 		h.aim = SimWeapons.aim_assist(w, h, inp.aim, inp.assist)
 	if inp.dash:
-		if h.dash_cd <= 0.0 and h.roll_t <= 0.0:
+		if h.dash_cd <= 0.0 and h.roll_t <= 0.0 and h.root_t <= 0.0:
 			start_dash(w, h)
 		inp.dash = false
 		inp.dash_direction = Vector2.ZERO
@@ -351,8 +360,12 @@ static func update(w: SimWorld, h: SimHamster, dt: float) -> void:
 		start_reload(w, h)
 	if inp.gadget:
 		inp.gadget = false
-		if float(h.gadget.cd) <= 0.0 and h.roll_t <= 0.0:
-			use_gadget(w, h)
+		if h.roll_t <= 0.0:
+			use_gadget(w, h, "q")
+	if inp.gadget2:
+		inp.gadget2 = false
+		if h.roll_t <= 0.0:
+			use_gadget(w, h, "e")
 	var can_shoot := h.roll_t <= 0.0 and h.reload_t <= 0.0 and (mag == 0 or h.ammo > 0)
 	if W.has("spinup"):
 		if inp.fire and h.reload_t <= 0.0:

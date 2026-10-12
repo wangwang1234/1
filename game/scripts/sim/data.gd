@@ -48,6 +48,32 @@ static func weapon(id: String) -> Dictionary:
 	return weapons().get(id, {})
 
 
+static func gadget_ids() -> Array:
+	## 全部道具 id（gadgets.json 里有 slot 的条目；_doc / slots / upgrades 不算）
+	var out: Array = []
+	var G := gadgets()
+	for k: String in G:
+		if G[k] is Dictionary and (G[k] as Dictionary).has("slot"):
+			out.append(k)
+	return out
+
+
+static func gadget(id: String) -> Dictionary:
+	var g: Variant = gadgets().get(id, {})
+	return g if g is Dictionary and (g as Dictionary).has("slot") else {}
+
+
+static func gadget_pool(slot: String, pool: String) -> Array:
+	## 某个槽（q / e）的某个池（start 开局池 / upgrade 升级池）里的道具 id，按 gadgets.json 里的顺序
+	return gadget_ids().filter(func(id): return String(gadget(id).slot) == slot and String(gadget(id).get("pool", "")) == pool)
+
+
+static func gadget_default(slot: String) -> String:
+	## 开局默认装备：开局池的第一个
+	var p := gadget_pool(slot, "start")
+	return String(p[0]) if not p.is_empty() else ""
+
+
 static func rule(path: String, default: Variant = null) -> Variant:
 	## rule("hamster.rollTime") 这样按点号取值
 	var cur: Variant = rules()

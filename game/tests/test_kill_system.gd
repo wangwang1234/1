@@ -406,3 +406,117 @@ func test_minimum_reward_and_config_validation() -> void:
 	c.kill_share = 1.0
 	c.assist_share = 0.5
 	check(not c.validation_errors().is_empty(), "拒绝份额和超过1的配置")
+
+
+func _deploy_at(w: SimWorld, owner: SimHamster, id: String, target: SimHamster) -> SimStructure:
+	SimGadgets._deploy(w, owner, id, SimGadgets.fx_of(id))
+	var dep: SimStructure = w.structs.back()
+	dep.x = target.x
+	dep.y = target.y
+	return dep
+
+
+func test_new_sonar_and_camera_record_actual_recon() -> void:
+	var w := _world()
+	var a := w.hams[1]
+	var v := w.hams[3]
+	a.x = v.x
+	a.y = v.y
+	SimGadgets._pulse(w, a, SimGadgets.fx_of("sonar"))
+	eq(_finish(w, w.hams[0]).assists.size(), 1, "真实声呐入口直接取得助攻")
+	w = _world()
+	a = w.hams[1]
+	v = w.hams[3]
+	var dep := _deploy_at(w, a, "cam", v)
+	var original := dep.owner_contributor_id
+	w.kill_system.takeover(w, a)
+	SimGadgets.update_dep(w, dep, 1.0 / 60.0)
+	var event := _finish(w, w.hams[0])
+	eq(event.assists.size(), 1, "真实摄像头进入范围记录侦察")
+	eq(event.assists[0].contributor_id, original, "摄像头保留部署来源")
+	eq(event.assists[0].reward, 0, "接管前摄像头按断线规则不发放")
+
+
+func test_new_regeneration_field_records_only_actual_team_healing() -> void:
+	var w := _world()
+	var a := w.hams[1]
+	var k := w.hams[0]
+	var dep := _deploy_at(w, a, "regen", k)
+	k.hp = k.max_hp - 5.0
+	SimGadgets.update_dep(w, dep, 1.0)
+	near(k.hp, k.max_hp, 0.00001, "力场实际恢复5生命")
+	var healed := 0.0
+	for row: Dictionary in w.kill_system.support.records:
+		if int(row.recipient_id) == k.id:
+			healed += float(row.amount)
+	near(healed, 5.0, 0.00001, "力场溢出治疗不计贡献")
+	w.t = 1.0
+	k.hp = k.max_hp - 10.0
+	SimGadgets.update_dep(w, dep, 1.0)
+	eq(_finish(w, k).assists.size(), 1, "实际恢复达到门槛的力场主人取得助攻")
+
+
+func test_new_trap_records_actual_control_and_early_release() -> void:
+	var w := _world()
+	var a := w.hams[1]
+	var v := w.hams[3]
+	var dep := _deploy_at(w, a, "trap", v)
+	w._hash_all()
+	SimGadgets.update_dep(w, dep, 1.0 / 60.0)
+	check(dep.dead and v.root_t > 0.0, "真实捕鼠夹触发")
+	w.t = 0.5
+	v.root_t = 0.0 # 提前解除实际控制
+	SimGadgets.tick_hamster(w, v, 0.0)
+	w.t = 5.0
+	var row: Dictionary = w.kill_system.tracker(v.id).aggregate(w.t, v.max_hp, _config())[a.id]
+	near(row.control_seconds, 0.5, 0.00001, "捕鼠夹提前解除后不继续计时")
+	w = _world()
+	a = w.hams[1]
+	v = w.hams[3]
+	dep = _deploy_at(w, a, "trap", v)
+	var old := dep.owner_contributor_id
+	w.kill_system.takeover(w, a)
+	w._hash_all()
+	SimGadgets.update_dep(w, dep, 1.0 / 60.0)
+	w.t = 2.0
+	SimGadgets.tick_hamster(w, v, 2.0)
+	row = w.kill_system.tracker(v.id).aggregate(w.t, v.max_hp, _config())[old]
+	near(row.control_seconds, float(dep.cfg.parts.snare.root), 0.00001, "自然结束严格裁剪实际控制时长")
+	var event := _finish(w, w.hams[0])
+	eq(event.assists[0].contributor_id, old, "陷阱伤害与控制保留旧身份")
+	eq(event.assists[0].reward, 0, "旧身份的实际捕鼠夹不得赏金")
+
+
+func test_new_reflector_keeps_placement_identity() -> void:
+	var w := _world()
+	var a := w.hams[0]
+	var v := w.hams[3]
+	var dep := _deploy_at(w, a, "reflector", v)
+	var old := dep.owner_contributor_id
+	w.kill_system.takeover(w, a)
+	var b := w.new_bullet("rocket", v, dep.x, dep.y, 20.0, 0.0, 100.0, 1000.0, 200.0)
+	w.bullets.append(b)
+	SimGadgets.update_dep(w, dep, 1.0 / 60.0)
+	check(b.reflected and b.owner == a and b.team == a.team, "真实反射器改变归属及反射标记")
+	eq(b.contributor_id, old, "反射器使用部署时身份")
+	var event := _finish(w, b.owner, "reflect", b.contributor_id)
+	eq(event.killer_id, a.id, "反射伤害归反射者")
+	eq(event.method, "reflect", "弹反图标优先")
+	eq(event.killer_reward, 0, "接管前反射器不向新AI发放")
+
+
+func test_signal_summoned_minion_retains_source_after_follow_ends() -> void:
+	var w := _world()
+	var a := w.hams[0]
+	SimGadgets._summon(w, a, SimGadgets.fx_of("signal"))
+	var m: SimMinion = w.minions.back()
+	var original := m.owner_contributor_id
+	w.kill_system.takeover(w, a)
+	SimGadgets.minion_follow_end(w, m)
+	var b := w.new_bullet("mpea", m, m.x, m.y, 10.0, 0.0, 100.0, 20.0, 200.0)
+	check(b.owner == a, "信号弹召唤物保留主人，普通兵线小兵无主人")
+	eq(b.contributor_id, original, "跟随结束与AI接管均不改召唤来源")
+	w._on_bullet_hit(b, w.hams[3])
+	var row: Dictionary = w.kill_system.tracker(w.hams[3].id).aggregate(w.t, 100.0, _config())[original]
+	near(row.damage, 20.0, 0.00001, "召唤小兵实际命中记录原主人贡献")
+	eq(_finish(w, b.owner, "normal", b.contributor_id).killer_reward, 0, "断线召唤物不向接管AI发赏金")

@@ -134,7 +134,8 @@ func test_full_match_5min_everything() -> void:
 	for h in w.hams:
 		lv = maxi(lv, h.lvl)
 		pets += h.pet_list.size()
-		gads[h.gadget.id] = true
+		gads[h.gad.q.id] = true
+		gads[h.gad.e.id] = true
 	if w.t >= float(Data.progression().bossFirst):
 		check(seen.has("boss_spawn"), "计时已到则鼠王必须出现")
 	else:

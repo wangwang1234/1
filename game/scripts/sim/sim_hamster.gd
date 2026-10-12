@@ -12,7 +12,8 @@ class HamInput:
 	var dash := false
 	var dash_direction := Vector2.ZERO # Reliable edge; zero uses current local input.
 	var reload := false
-	var gadget := false
+	var gadget := false    # Q：战术道具
+	var gadget2 := false   # E：强化道具
 	var skill := false    # 右键武器技能（按下即触发，冷却好了才生效）
 	var card := -1
 	var aim_x := 0.0      # 鼠标指向的地面点（投掷落点用）
@@ -49,6 +50,7 @@ class AiState:
 	var seen := {}           # 最后一次看到仓鼠目标的位置：{x, y}
 	var goal_t := 0.0        # 战术判断（捡东西 / 支援 / 被围）的下次检查倒计时
 	var pick := {}           # 正要去捡的东西 / 去支援的位置：{x, y, why}
+	var gad_t := 0.0         # 下次判定要不要用道具的倒计时
 
 
 var ctl := "ai"               # player / ai
@@ -84,7 +86,8 @@ var iframes := 0.0
 var hurt_t := 0.0
 var shield := 0
 var shield_t := 8.0
-var gadget := {"id": "frag", "lvl": 1, "cd": 2.0}
+var gad := {"q": {"id": "frag", "cd": 2.0, "ch": 0}, "e": {"id": "medkit", "cd": 2.0, "ch": 0}}   # Q / E 两个道具槽：{id, cd, ch}（SimGadgets）
+var gup := {}                 # 道具通用升级张数：gcdx 冷却缩短 / gcap 携带上限（换道具保留）
 var ab := {}                  # 通用强化 id -> 级
 var tal := {}                 # 天赋 id -> true
 var st := {}                  # calc_stats 结果
@@ -166,7 +169,19 @@ var eshield_t := 0.0
 var med_t := 0.0
 var med_rate := 0.0
 var jet_t := 0.0
-var beacon := {}              # {x, y, until}
+var beacon := {}              # {x, y, until, arm}
+var eshield_id := ""          # 护盾来自哪个道具（表现层区分能量护盾 / 护盾展开器）
+var buff_t := 0.0             # 增益道具（肾上腺素）：剩余时间、攻速 / 移速倍率
+var buff_rate := 1.0
+var buff_speed := 1.0
+var buff_id := ""
+var after_t := 0.0            # 增益结束后的减速
+var after_speed := 1.0
+var tp_t := 0.0               # 随机传送读条剩余
+var tp_id := ""
+var nvg_t := 0.0              # 夜视仪剩余时间 / 暗处可视半径
+var nvg_r := 0.0
+var root_t := 0.0             # 被捕鼠夹夹住：不能移动和翻滚（能开枪）
 var squad_t := 20.0
 var pet_list: Array = []      # SimPet
 
@@ -185,3 +200,6 @@ func evo_total() -> int:
 
 func weapon() -> Dictionary:
 	return Data.weapon(weapon_id)
+
+# 捕鼠夹控制来源独立计时；重叠时由 DamageTracker 取并集。
+var trap_controls: Array[Dictionary] = []

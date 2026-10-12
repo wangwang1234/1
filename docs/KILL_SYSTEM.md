@@ -17,3 +17,6 @@
 测试：tools/test.sh；python3 tools/test_kill_rpc.py；python3 tools/test_lan_resume.py。独立调试场景为res://scenes/dev/kill_debug.tscn，局内F8打开面板。
 
 上述治疗、护盾、侦察与控制开始接口都有可选的contributor_id参数；持久力场、护盾、摄像头、捕鼠夹必须传入放置时保存的来源。即时技能可省略。
+
+
+已同步主线Q/E道具：声呐、摄像头、捕鼠夹、再生力场、哨戒炮、反射器和信号弹召唤小兵接入上述服务器接口。部署物/召唤物保留 `owner_contributor_id`；捕鼠夹的 `trap_controls` 只保存token和结束时刻，根控提前解除也停止记录。当前护盾展开器仅自盾，无支援助攻；仓鼠球及队友护盾玩法仍需提供控制器。

@@ -1,17 +1,19 @@
 {
   "engine": "Godot 4.6.3 stable",
   "date": "2026-10-12",
-  "base_commit": "c384c78",
+  "base_commit": "28e705f",
   "full_regression": {
-    "tests": 173,
+    "tests": 203,
     "failures": 0,
     "view_2min": "passed",
     "view_weapons_gadgets_split": "passed",
-    "menu": "passed"
+    "menu": "passed",
+    "seconds": 273.1
   },
   "final_core": {
-    "tests": 29,
-    "failures": 0
+    "tests": 34,
+    "failures": 0,
+    "verification": "Included in final 203-test full regression; prior focused run also passed"
   },
   "lan_receipts": 40,
   "lan_all_passed": true,
@@ -31,6 +33,13 @@
   "stage": "1",
   "later_stages": "awaiting user confirmation",
   "real_wifi_three_devices": "not tested",
-  "new_gadget_gameplay_controllers": "not implemented; authoritative contribution APIs provided",
-  "exit_resource_statistics": "filtered by existing tools/test.sh; raw logs retained"
+  "new_gadget_gameplay_controllers": "Merged Q/E mainline. Actual sonar/camera/trap/regeneration/reflector/sentry/signal contributions integrated; hamster-ball and teammate-shield controllers absent",
+  "exit_resource_statistics": "filtered by existing tools/test.sh; raw logs retained",
+  "initial_base_commit": "c384c78",
+  "merge_conflicts_resolved": [
+    "CLAUDE.md",
+    "game/scripts/sim/sim_bullet.gd",
+    "game/tests/test_mobs.gd"
+  ],
+  "lan_verification": "Full LAN regression repeated after merging 28e705f"
 }

@@ -34,6 +34,8 @@ var pets: Array[SimPet] = []
 var decoys: Array[SimDecoy] = []
 var mines: Array = []            # {id, x, y, team, owner, arm, lvl, t, r}
 var smokes: Array = []           # {id, x, y, r, t, life}
+var covers: Array[SimStructure] = []   # 场上的展开式掩体（每步从 structs 里重收集，子弹检测用）
+var blackout := false            # “停电夜”活动进行中（夜视仪的 AI 条件；活动本身尚未实装）
 var flares: Array = []           # {id, x, y, h, t, life, team}
 var zones: Array = []            # 毒气 / 电流带：{id, x, y, r | seg, w, until, team, owner, dps, tick, gas, slow, kind}
 var corrs: Array = []            # 反器材 C 的侦察弹道：{x0, y0, x1, y1, w, until, team}
@@ -135,6 +137,7 @@ func setup(cfg: Dictionary) -> void:
 		if p.has("weapon"):
 			h.weapon_id = String(p.weapon)
 			h.ammo = SimWeapons.mag_size(h)
+		_start_gadgets(h, p)
 		idx += 1
 		names_used[h.name] = true
 	var ai_names := ["豆豆", "团子", "花卷", "年糕", "毛毛", "球球", "糯米", "芝麻", "可可", "饭团", "奶糖", "栗子", "汤圆", "麻薯", "米粒", "瓜子"]
@@ -157,6 +160,7 @@ func setup(cfg: Dictionary) -> void:
 				var wl: Array = forced[team]
 				h.weapon_id = String(wl[i % wl.size()])
 				h.ammo = SimWeapons.mag_size(h)
+			_start_gadgets(h, {})
 			idx += 1
 	_compute_vis()
 
@@ -247,7 +251,8 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 	h.skin = skin
 	h.aim = 0.0 if team == "blue" else PI
 	h.xp_next = Data.xp_need(1)
-	h.gadget = {"id": "frag", "lvl": 1, "cd": 2.0}
+	var gs := float(R.hamster.get("gadgetStartCd", 2.0))
+	h.gad = {"q": SimGadgets.new_slot(Data.gadget_default("q"), h, gs), "e": SimGadgets.new_slot(Data.gadget_default("e"), h, gs)}
 	if ctl == "ai":
 		_init_ai(h)
 	SimHamsterLogic.calc_stats(h)
@@ -258,6 +263,21 @@ func _make_ham(team: String, ctl: String, name: String, idx: int, skin: String) 
 	hams.append(h)
 	_register(h)
 	return h
+
+
+func _start_gadgets(h: SimHamster, p: Dictionary) -> void:
+	## 开局道具：玩家在开局界面从开局池里选的（p.gq / p.ge）；AI 在开局池里随机一个；不在开局池里的选择无效，用默认
+	var gs := float(R.hamster.get("gadgetStartCd", 2.0))
+	for slot in SimGadgets.SLOTS:
+		var pool := Data.gadget_pool(slot, "start")
+		if pool.is_empty():
+			continue
+		var id := String(p.get("g" + slot, ""))
+		if h.ctl == "ai" and id.is_empty() and pool.size() > 1:
+			id = String(pool[rng.randi() % pool.size()])
+		if not pool.has(id):
+			id = String(pool[0])
+		h.gad[slot] = SimGadgets.new_slot(id, h, gs)
 
 
 func ai_profile(team: String) -> Dictionary:
@@ -392,6 +412,10 @@ func step(dt: float) -> void:
 		_upd_minion(m, dt)
 	for e in mobs:
 		SimMobs.update(self, e, dt)
+	covers.clear()
+	for s in structs:
+		if s.kind == "dep" and not s.dead and s.cfg.get("parts", {}).has("block"):
+			covers.append(s)
 	for s in structs:
 		_upd_struct(s, dt)
 	_upd_pads(dt)
@@ -448,10 +472,10 @@ func step(dt: float) -> void:
 			else:
 				keep5.append(d)
 		decoys = keep5
-	if structs.any(func(q): return q.dead and q.kind == "sentry"):
+	if structs.any(func(q): return q.dead and (q.kind == "sentry" or q.kind == "dep")):
 		var keep6: Array[SimStructure] = []
 		for q in structs:
-			if q.dead and q.kind == "sentry":
+			if q.dead and (q.kind == "sentry" or q.kind == "dep"):
 				entities.erase(q.id)
 				SimLifecycle.release(q)
 			else:
@@ -675,7 +699,7 @@ func mark_e(e: SimEntity, team: String, d: float) -> void:
 
 
 func knock(e: SimEntity, dx: float, dy: float, kb: float) -> void:
-	if kb <= 0.0 or e.kind == "base" or e.kind == "turret" or e.kind == "sentry" or e.kind == "crate" or e.kind == "decoy" or e.is_prop:
+	if kb <= 0.0 or e.kind == "base" or e.kind == "turret" or e.kind == "sentry" or e.kind == "dep" or e.kind == "crate" or e.kind == "decoy" or e.is_prop:
 		return
 	if e is SimHamster:
 		var h := e as SimHamster
@@ -763,6 +787,12 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 			th.eshield -= ab
 			dmg -= ab
 			emit({"t": "eshield_hit", "id": th.id})
+			if th.eshield <= 0.01:
+				# 护盾被打碎（碎裂特效）
+				th.eshield = 0.0
+				th.eshield_t = 0.0
+				emit({"t": "eshield_break", "id": th.id, "x": th.x, "y": th.y, "gadget": th.eshield_id})
+				th.eshield_id = ""
 			if dmg <= 0.01:
 				return 0.0
 		if th.shield > 0:
@@ -810,6 +840,7 @@ func deal_dmg(tg: SimEntity, dmg: float, src: Dictionary, quiet: bool = false) -
 	tg.flash = float(R.hamster.flashTime)
 	if th != null:
 		th.hurt_t = float(R.hamster.hurtTime)
+		SimGadgets.on_hurt(self, th)
 		if o != null:
 			o.aggro_t = t + float(R.hamster.aggroTime)
 	if o != null:
@@ -919,6 +950,9 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 		"sentry":
 			tg.dead = true
 			emit({"t": "kill", "id": tg.id, "kind": "sentry", "x": tg.x, "y": tg.y, "team": tg.team, "killer": killer.id if killer != null else -1})
+		"dep":
+			tg.dead = true
+			emit({"t": "kill", "id": tg.id, "kind": "dep", "dep": (tg as SimStructure).dep, "x": tg.x, "y": tg.y, "team": tg.team, "killer": killer.id if killer != null else -1, "broken": true})
 		"crate":
 			tg.dead = true
 			var cr := tg as SimCrate
@@ -1078,6 +1112,9 @@ func new_bullet(kind: String, by: SimEntity, x: float, y: float, h: float, a: fl
 		b.contributor_id = (by as SimStructure).owner_contributor_id
 	elif by is SimPet:
 		b.contributor_id = (by as SimPet).owner_contributor_id
+	elif by is SimMinion:
+		b.owner = (by as SimMinion).owner
+		b.contributor_id = (by as SimMinion).owner_contributor_id
 	b.x = x; b.y = y; b.h = h; b.px = x; b.py = y
 	b.x0 = x; b.y0 = y
 	b.vx = cos(a) * spd
@@ -1156,6 +1193,16 @@ func _upd_bullets(dt: float) -> void:
 					break
 			else:
 				b.in_solid = null
+			if not covers.is_empty() and not flame:
+				var cv := SimGadgets.cover_block(self, b)
+				if cv != null:
+					# 展开式掩体挡住双方子弹；敌方子弹扣耐久
+					if cv.team != b.team:
+						deal_dmg(cv, b.dmg, {"team": b.team, "owner": b.owner, "by": b.by, "x": b.x, "y": b.y})
+					emit({"t": "cover_hit", "id": cv.id, "x": b.x, "y": b.y, "h": b.h})
+					dead = true
+					_bullet_end(b, true)
+					break
 			for e: SimEntity in hash_at(b.x, b.y):
 				if b.hit.has(e.id) or e == b.by or not can_hit(b.team, e):
 					continue
@@ -1195,11 +1242,11 @@ func _upd_bullets(dt: float) -> void:
 
 
 func _on_bullet_hit(b: SimBullet, e: SimEntity) -> void:
-	if b.owner != null:
+	if b.owner != null and not b.by is SimMinion:
 		SimWeapons.on_bullet_hit(self, b, e)
 		return
 	# 小兵、建筑、野怪的弹体
-	var d := deal_dmg(e, b.dmg, {"team": b.team, "owner": null, "by": b.by, "x": b.x, "y": b.y})
+	var d := deal_dmg(e, b.dmg, {"team": b.team, "owner": b.owner, "by": b.by, "x": b.x, "y": b.y, "contributor_id": b.contributor_id})
 	var l := maxf(0.001, Vector2(b.vx, b.vy).length())
 	knock(e, b.vx / l, b.vy / l, b.kb)
 	emit({"t": "bullet_hit", "x": b.x, "y": b.y, "h": b.h, "team": b.team, "kind": b.kind, "big": b.kind == "seed", "target": e.id})
@@ -1564,6 +1611,8 @@ func _minion_target(m: SimMinion) -> SimEntity:
 		if d > float(M.targetRange):
 			continue
 		var w := float(W.minion) if e.kind == "minion" else (float(W.ham) if e.kind == "ham" else float(W.other))
+		if e is SimDecoy:
+			w *= (e as SimDecoy).lure     # 全息诱饵更吸引火力
 		if d * w < bs:
 			bs = d * w
 			best = e
@@ -1593,6 +1642,11 @@ func _upd_minion(m: SimMinion, dt: float) -> void:
 	var tg := m.target
 	if tg != null and (tg.dead or (tg is SimHamster and not (tg as SimHamster).alive)):
 		tg = null
+	# 信号弹召来的小兵：跟着主人走，时间到（或主人倒下）回最近的兵线
+	var fol: SimHamster = m.follow
+	if fol != null and (t >= m.follow_until or not is_instance_valid(fol) or not fol.alive):
+		SimGadgets.minion_follow_end(self, m)
+		fol = null
 	var sp := float(M.speed) * (float(M.slowMul) if m.slow_t > 0.0 else 1.0)
 	var mx := 0.0
 	var my := 0.0
@@ -1614,6 +1668,17 @@ func _upd_minion(m: SimMinion, dt: float) -> void:
 			m.reveal_t = 0.4
 			noise(m.x, m.y, "gun", 0.35, m)
 			emit({"t": "minion_fire", "id": m.id, "x": m.x, "y": m.y, "aim": a, "team": m.team})
+	elif fol != null:
+		var fdx := fol.x - m.x
+		var fdy := fol.y - m.y
+		var fd := maxf(0.001, sqrt(fdx * fdx + fdy * fdy))
+		if fd > float(R.minion.get("followGap", 70)):
+			var F := PackedInt32Array() if map.has_los(m.x, m.y, fol.x, fol.y) else map.field_to(fol.x, fol.y)
+			var f := map.field_dir(F, m.x, m.y, fol.x, fol.y)
+			mx = f.x
+			my = f.y
+			m.aim = atan2(f.y, f.x) if f.length() > 0.0 else m.aim
+		sp *= float(R.minion.get("followSpeedK", 1.25))
 	else:
 		var wp := m.path[mini(m.wp, m.path.size() - 1)]
 		var dx := wp.x - m.x
@@ -1675,6 +1740,9 @@ func _upd_struct(s: SimStructure, dt: float) -> void:
 	s.t_t -= dt
 	if s.kind == "sentry":
 		SimGadgets.update_sentry(self, s, dt)
+		return
+	if s.kind == "dep":
+		SimGadgets.update_dep(self, s, dt)
 		return
 	if s.kind == "base":
 		var n := 0

@@ -10,3 +10,9 @@ var dmg := 6.0
 var target: SimEntity = null
 var t_t := 0.0
 var walk := 0.0
+var follow: SimHamster = null   # 信号弹召来的小兵：跟随这只仓鼠到 follow_until，之后回兵线
+var follow_until := 0.0
+
+# 玩家信号弹召唤的小兵保留召唤时贡献身份；兵线小兵为空。
+var owner: SimHamster = null
+var owner_contributor_id := 0
