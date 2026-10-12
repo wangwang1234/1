@@ -5,7 +5,7 @@
 ## 一、先看这几张图
 1. `qe_hud_cards.png` — 左上面板下方 Q / E 两个槽并列（图标、按键、冷却进度、剩余充能），下方 4 张升级卡：新道具卡（标“战术道具 / 强化道具”+ Q / E 角标）、两张道具通用升级卡。
 2. `qe_deploy_all.png` / `qe_deploy_all_nohud.png` — 全部部署物同屏：粘附摄像头、捕鼠夹、展开式掩体、再生力场、哨戒炮、榴弹反射器、全息分身。每个都有队伍色灯圈和耐久条。
-3. `qe_reflect.png`（火箭被弹回）、`qe_trap_snap.png`（敌人被夹住）、`qe_sonar.png`、`qe_bubble_break.png`、`qe_warp_cast.png`、`qe_touch_signal.png`（触屏两个独立按钮 + 信号弹援兵）。
+3. `qe_reflect.png`（火箭被弹回爆在远处）、`qe_trap_snap.png`（敌人被夹住）、`qe_sonar.png`（扫描波 + “声呐：1 只敌方仓鼠”）、`qe_adren.png`、`qe_bubble.png` / `qe_bubble_break.png`（暖黄护罩 / 打碎）、`qe_warp_cast.png` / `qe_warp_done.png`、`qe_touch_signal.png`（右下角触屏两个独立按钮 + 信号弹援兵跟上来）。
 4. `icons_sheet.png` — 13 个新道具图标 + 2 张通用升级卡图标；`models_sheet.png` — 新模型三视角预览。
 
 ## 二、盘点：项目里原有的道具（改动前）
@@ -80,6 +80,7 @@
 - 掩体只挡子弹（含火箭），不挡人走动、不挡投掷物的抛物线。
 - 再生力场 AI 用得少（7 分钟 10 只 AI 用了 3 次），条件是“附近 2 只以上受伤队友”，比较苛刻，是规格本意。
 - 截图在软件渲染下拍，颜色 / 帧率以目标 GPU 为准。
+- 截图构图：镜头跟着玩家，摆拍期间玩家会被小兵子弹击退几步，所以 `qe_trap_snap.png` 里被夹住的敌人在画面左边缘、`qe_warp_done.png` 里传送后的仓鼠被书桌挡住一半（落点在左下角区域，传送圈可见）。功能本身由 `test_gadget_slots.gd` 验证。
 
 ## 七、自动测试
 - `tools/test.sh`：**全部通过**——sim 测试 169 项、失败 0（用时约 11.5 分钟，含新加的 `tests/test_gadget_slots.gd` 24 项），表现层 2 分钟 AI 对局冒烟、18 把武器 + 26 种道具 + 双人分屏冒烟（新增：每个道具装进所属槽使用、部署物挨打和被打掉、护盾碎裂、传送打断、捕鼠夹夹人、触屏按钮、4 张卡）、主菜单冒烟。
