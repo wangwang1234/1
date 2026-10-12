@@ -16,6 +16,7 @@ var _mob_views := {}
 var _pet_views := {}
 var _decoy_views := {}
 var _sentry_views := {}
+var _dep_views := {}               # 道具部署物（GadgetViews.DepView）
 var _simple := {}                 # key -> SimpleNode（地雷、信标、照明弹）
 var _rng := RandomNumberGenerator.new()
 var _laser_snd_t := 0.0
@@ -304,12 +305,22 @@ func _sync_entities(w: SimWorld, alpha: float, delta: float) -> void:
 	for d in w.decoys:
 		seen[d.id] = true
 		if not _decoy_views.has(d.id):
-			var v3 := B2Views.DecoyView.new()
-			add_child(v3)
-			v3.setup(d)
-			_decoy_views[d.id] = v3
+			if d.look == "holo":
+				# 全息诱饵：和主人一模一样的仓鼠
+				var vh := GadgetViews.HoloView.new()
+				add_child(vh)
+				vh.setup(d, d.team == mv.local_team)
+				_decoy_views[d.id] = vh
+			else:
+				var v3 := B2Views.DecoyView.new()
+				add_child(v3)
+				v3.setup(d)
+				_decoy_views[d.id] = v3
 		var dmk := mv.vis_mask(d)
-		(_decoy_views[d.id] as B2Views.DecoyView).sync(d, delta, dmk != 0)
+		if _decoy_views[d.id] is GadgetViews.HoloView:
+			(_decoy_views[d.id] as GadgetViews.HoloView).sync(d, alpha, delta, dmk != 0)
+		else:
+			(_decoy_views[d.id] as B2Views.DecoyView).sync(d, delta, dmk != 0)
 		MatchView.apply_mask(_decoy_views[d.id], dmk)
 		MatchView.apply_lit(_decoy_views[d.id], mv.reveal_mask(d) != 0, delta)
 	for id in _decoy_views.keys():
@@ -335,11 +346,38 @@ func _sync_entities(w: SimWorld, alpha: float, delta: float) -> void:
 		if not seen.has(id):
 			(_sentry_views[id] as Node).queue_free()
 			_sentry_views.erase(id)
+	# 道具部署物：摄像头、捕鼠夹、掩体、再生力场、哨戒炮、反射器
+	seen.clear()
+	for s in w.structs:
+		if s.kind != "dep" or s.dead:
+			continue
+		seen[s.id] = true
+		if not _dep_views.has(s.id):
+			var v5 := GadgetViews.DepView.new()
+			add_child(v5)
+			v5.setup(s, s.team == mv.local_team)
+			_dep_views[s.id] = v5
+		var qmk := mv.vis_mask(s)
+		var alert := s.dep == "cam" and w.t - s.alert_t < 1.0
+		(_dep_views[s.id] as GadgetViews.DepView).sync(s, delta, qmk != 0, alert)
+		MatchView.apply_mask(_dep_views[s.id], qmk)
+		MatchView.apply_lit(_dep_views[s.id], mv.reveal_mask(s) != 0, delta)
+	for id in _dep_views.keys():
+		if not seen.has(id):
+			(_dep_views[id] as Node).queue_free()
+			_dep_views.erase(id)
 
 
 func sentry_fired(id: int) -> void:
 	if _sentry_views.has(id):
 		(_sentry_views[id] as B2Views.SentryView).on_fire()
+	elif _dep_views.has(id):
+		(_dep_views[id] as GadgetViews.DepView).on_fire()
+
+
+func dep_hit(id: int) -> void:
+	if _dep_views.has(id):
+		(_dep_views[id] as GadgetViews.DepView).on_hit()
 
 
 func pet_pecked(id: int) -> void:

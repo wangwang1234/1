@@ -1,5 +1,5 @@
 """全套图标（ART_BIBLE 第 9 节：从 3D 模型直接渲染，统一 3/4 视角、带描边、透明底）。不导出模型，只出 PNG：
-  game/assets/icons/gad_<道具>.png（13）、pet_<宠物>.png（3）、abl_<强化>.png（23）、tal_<天赋>.png（12）、
+  game/assets/icons/gad_<道具>.png（13 + 2026-10-12 新增 13，模型在 gadget_kit2）、gup_<道具通用升级>.png（2）、pet_<宠物>.png（3）、abl_<强化>.png（23）、tal_<天赋>.png（12）、
   evo_<配件类>_<a|b|c>.png（8 类 × 3 路线色 = 24；54 条进化路线按 evolutions.json 的 attachmentType 对应到这些图）。
 武器图标 wpn_<武器>.png 由各武器脚本自己渲染（weapon_kit.previews）。
 道具、宠物、配件、强化挂件直接复用对应资产脚本里的造型函数；没有模型的强化和天赋在这里做小徽记。
@@ -321,8 +321,41 @@ def em_infinity():
 
 # =========================================================================== 组装
 
+def em_stopwatch():
+    """道具冷却缩短：秒表 + 向下的箭头。"""
+    P = [
+        shapes.cylinder("case", (0, 0, 0), 0.085, None, 0.03, "Y", 28, 0.008, "gun_light", M),
+        shapes.cylinder("face", (0, 0.016, 0), 0.072, None, 0.004, "Y", 28, 0.0, "white", F),
+        shapes.cylinder("crown", (0, 0, 0.1), 0.014, None, 0.02, "Z", 12, 0.003, "gun_steel", M),
+        shapes.rounded_box("button", (0, 0, 0.118), (0.034, 0.016, 0.012), 0.004, 1, "label_red", T),
+        shapes.rounded_box("hand", (0.02, 0.02, 0.016), (0.008, 0.004, 0.05), 0.002, 1, "gun_darker", F, rot=(0, deg(-40), 0)),
+        shapes.cylinder("pivot", (0, 0.021, 0), 0.008, None, 0.004, "Y", 10, 0.0, "gun_darker", F),
+    ]
+    # 已经走过的一块（紫色扇形，表示“少等一段”）
+    for i in range(5):
+        a = deg(-90 + i * 18)
+        P.append(shapes.rounded_box(f"wedge{i}", (math.cos(a) * 0.04, 0.019, math.sin(a) * 0.04), (0.03, 0.002, 0.02), 0.0, 1, "path_c", F, rot=(0, -a, 0)))
+    P.append(shapes.extrude_profile("arrow", [(-0.03, 0.0), (0.03, 0.0), (0.03, -0.04), (0.055, -0.04), (0.0, -0.09), (-0.055, -0.04), (-0.03, -0.04)], 0.02,
+             center=(0.085, 0.02, -0.06), plane="XZ", color="sticker_mint", mat=T))
+    return shapes.join(P, "stopwatch")
+
+
+def em_charges(gk):
+    """道具携带上限 +1：三格充能电池（两格亮、一格是新加的）+ 正面的绿色加号。"""
+    P = []
+    for i in range(3):
+        x = (i - 1) * 0.06
+        P.append(shapes.rounded_box(f"cell{i}", (x, 0, 0.0), (0.05, 0.05, 0.12), 0.012, 2, "gun_dark", M))
+        P.append(shapes.rounded_box(f"fill{i}", (x, 0.026, -0.01), (0.036, 0.004, 0.08), 0.003, 1, "sticker_mint" if i < 2 else "gun_light", F))
+        P.append(shapes.cylinder(f"cap{i}", (x, 0, 0.068), 0.012, None, 0.014, "Z", 12, 0.002, "gun_steel", M))
+    for name, size in (("pv", (0.03, 0.03, 0.1)), ("ph", (0.1, 0.03, 0.03))):
+        P.append(shapes.rounded_box(name, (0.14, 0.03, 0.07), size, 0.006, 2, "sticker_mint", T))
+    return shapes.join(P, "charges")
+
+
 def build(ctx):
     gk = _load("props", "gadget_kit")
+    gk2 = _load("props", "gadget_kit2")
     pk = _load("props", "prop_kit")
     mk = _load("units", "mob_kit")
     ak = _load("attachments", "att_kit")
@@ -338,6 +371,15 @@ def build(ctx):
            "flare": gk.flare, "decoy": gk.decoy, "jetpack": gk.jetpack, "medkit": gk.medkit, "freeze": gk.freeze, "beacon": gk.beacon}
     for k, fn in gad.items():
         add("gad_" + k, fn(), yaw=deg(180) if k == "jetpack" else 0.0)
+    # Q / E 双槽新道具（2026-10-12）
+    gad2 = {"cam": gk2.cam, "trap": gk2.trap, "cover": gk2.cover, "regen": gk2.regen, "holo": gk2.holo, "guardgun": gk2.guardgun, "signal": gk2.signal,
+            "reflector": gk2.reflector, "adren": gk2.adren, "bubble": gk2.bubble, "warp": gk2.warp, "goggles": gk2.goggles, "sonar": gk2.sonar}
+    yaw2 = {"cam": deg(-35), "trap": deg(-20), "cover": deg(180), "guardgun": deg(-30), "goggles": deg(-25), "warp": deg(-20), "adren": deg(-30)}
+    tilt2 = {"trap": deg(-50), "cover": deg(10)}
+    for k, fn in gad2.items():
+        add("gad_" + k, fn(), yaw=yaw2.get(k, 0.0), tilt=tilt2.get(k, 0.0))
+    add("gup_gcdx", em_stopwatch())
+    add("gup_gcap", em_charges(gk))
     for k, fn in (("chick", mk.chick), ("firefly", mk.firefly), ("hedgehog", mk.hedgehog)):
         add("pet_" + k, fn())
     # 进化配件：8 类 × 3 路线色

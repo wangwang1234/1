@@ -277,7 +277,7 @@ static func prologue(w: SimWorld, h: SimHamster, extra: bool) -> Dictionary:
 	var base_rate := float(W.rate)
 	if W.has("spinup"):
 		base_rate = float(W.spinBase) + (float(W.rate) - float(W.spinBase)) * h.spin
-	var rate := base_rate * float(st.rate) * float(P.rate) * (1.3 if berserk else 1.0)
+	var rate := base_rate * float(st.rate) * float(P.rate) * (1.3 if berserk else 1.0) * SimGadgets.rate_mul(h)
 	if h.haste_t > 0.0:
 		rate *= float(Data.rule("combat.hasteRate", 1.3))
 	if h.sk_rate_t > 0.0:

@@ -18,7 +18,9 @@ static func start_roll(h: SimHamster, rules: Dictionary) -> void :
 
 
 static func velocity(h: SimHamster, rules: Dictionary, dt: float) -> void :
-	var speed: = float(h.st.speed) * (float(rules.slowMul) if h.slow_t > 0.0 else 1.0) * SimWeapons.move_mul(h)
+	var speed: = float(h.st.speed) * (float(rules.slowMul) if h.slow_t > 0.0 else 1.0) * SimWeapons.move_mul(h) * SimGadgets.move_mul(h)
+	if h.root_t > 0.0:
+		speed = 0.0     # 被捕鼠夹夹住
 	if h.roll_t > 0.0:
 		h.roll_t -= dt
 		var k: = maxf(0.0, h.roll_t / float(rules.rollTime))

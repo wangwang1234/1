@@ -55,7 +55,7 @@ static func lights_for(w: SimWorld, team: String) -> Array:
 	for h in w.hams:
 		if not h.alive or h.team != team:
 			continue
-		var nv := float(h.st.get("nvg", 0.0))
+		var nv := maxf(float(h.st.get("nvg", 0.0)), h.nvg_r if h.nvg_t > 0.0 else 0.0)     # 夜视仪强化 / 夜视仪道具
 		var tal_nv := h.tal.has("nightvision")
 		var nr := maxf(float(V.nightvisionRadius) if tal_nv else float(V.selfRadius), nv) + h.r
 		L.append({"x": h.x, "y": h.y, "r": nr, "los": not (nv > 0.0 or tal_nv)})
@@ -68,6 +68,10 @@ static func lights_for(w: SimWorld, team: String) -> Array:
 		if s.dead or s.team != team:
 			continue
 		var rr := float(V.baseRadius) if s.kind == "base" else (s.range_ + float(V.turretExtra) if s.kind == "turret" else float(V.sentryRadius))
+		if s.kind == "dep":
+			rr = float(s.cfg.get("light", 0))     # 部署物自己的视野（摄像头大、捕鼠夹 / 掩体没有）
+			if rr <= 0.0:
+				continue
 		L.append({"x": s.x, "y": s.y, "r": rr, "los": true})
 	for m in w.minions:
 		if not m.dead and m.team == team:
@@ -80,22 +84,22 @@ static func compute(w: SimWorld) -> void:
 		var VS := {}
 		var L := lights_for(w, team)
 		for h in w.hams:
-			if h.alive and h.team != team and (h.invis_t <= 0.0 or h.reveal_t > 0.0):
-				if h.reveal_t > 0.0 or (h.mark_team == team and w.t < h.mark_until) or _lit_by(w, L, h):
+			if h.alive and h.team != team and (h.invis_t <= 0.0 or h.reveal_t > 0.0 or _pinged(w, h, team)):
+				if h.reveal_t > 0.0 or (h.mark_team == team and w.t < h.mark_until) or _pinged(w, h, team) or _lit_by(w, L, h):
 					VS[h.id] = true
 		for m in w.minions:
 			if not m.dead and m.team != team:
-				if m.reveal_t > 0.0 or (m.mark_team == team and w.t < m.mark_until) or _lit_by(w, L, m):
+				if m.reveal_t > 0.0 or (m.mark_team == team and w.t < m.mark_until) or _pinged(w, m, team) or _lit_by(w, L, m):
 					VS[m.id] = true
 		for e in w.mobs:
 			if not e.dead:
-				if e.reveal_t > 0.0 or (e.mark_team == team and w.t < e.mark_until) or _lit_by(w, L, e):
+				if e.reveal_t > 0.0 or (e.mark_team == team and w.t < e.mark_until) or _pinged(w, e, team) or _lit_by(w, L, e):
 					VS[e.id] = true
 		for d in w.decoys:
-			if not d.dead and d.team != team and _lit_by(w, L, d):
+			if not d.dead and d.team != team and (_pinged(w, d, team) or _lit_by(w, L, d)):
 				VS[d.id] = true
 		for s in w.structs:
-			if not s.dead and s.kind == "sentry" and s.team != team and _lit_by(w, L, s):
+			if not s.dead and (s.kind == "sentry" or s.kind == "dep") and s.team != team and _dep_visible(w, s, team) and _lit_by(w, L, s):
 				VS[s.id] = true
 		var MR := float(w.R.gadgets.mine.visR)
 		var probe := SimEntity.new()
@@ -108,6 +112,24 @@ static func compute(w: SimWorld) -> void:
 					VS["mine_%d" % int(m.id)] = true
 		w.vis[team] = VS
 		w.seen[team] = _dim_seen(w, team, VS)
+
+
+static func _pinged(w: SimWorld, e: SimEntity, team: String) -> bool:
+	## 声呐脉冲扫到：穿墙显示轮廓
+	return e.ping_team == team and w.t < e.ping_until
+
+
+static func _dep_visible(w: SimWorld, s: SimStructure, team: String) -> bool:
+	## 隐蔽的部署物（捕鼠夹：cfg.hidden）只有敌方仓鼠走到这么近才看得见
+	if s.kind != "dep":
+		return true
+	var hid := float(s.cfg.get("hidden", 0))
+	if hid <= 0.0:
+		return true
+	for h in w.hams:
+		if h.alive and h.team == team and Vector2(h.x - s.x, h.y - s.y).length() < hid:
+			return true
+	return false
 
 
 static func _dim_seen(w: SimWorld, team: String, VS: Dictionary) -> Dictionary:
@@ -133,7 +155,7 @@ static func _dim_seen(w: SimWorld, team: String, VS: Dictionary) -> Dictionary:
 		if not d.dead and d.team != team:
 			cands.append(d)
 	for s in w.structs:
-		if not s.dead and s.kind == "sentry" and s.team != team:
+		if not s.dead and (s.kind == "sentry" or s.kind == "dep") and s.team != team and _dep_visible(w, s, team):
 			cands.append(s)
 	for e in cands:
 		if out.has(e.id):

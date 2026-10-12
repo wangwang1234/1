@@ -35,6 +35,8 @@ var dazzle_until := 0.0
 var frozen_until := 0.0
 var shield_hit := 0.0
 var burn_spread_until := 0.0
+var ping_team := ""        # 声呐脉冲：对这一队显示轮廓（穿墙）到 ping_until
+var ping_until := 0.0
 
 
 func is_alive() -> bool:

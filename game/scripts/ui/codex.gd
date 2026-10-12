@@ -153,11 +153,21 @@ static func entries(key: String) -> Array:
 				out.append({"name": w.get("name", id), "desc": ("开局默认武器，不能升级，升级时会优先给你换武器。" if id == "pistol" else "") + String(w.get("desc", "")), "stats": st, "paths": paths, "path_tips": path_tips,
 					"icon": "res://assets/icons/wpn_%s.png" % id, "snap": "res://assets/models/weapons/wpn_%s.glb" % id, "yaw": -PI * 0.5})
 		"gadget":
-			for id in Data.gadgets():
-				var g: Dictionary = Data.gadgets()[id]
-				var model := "res://assets/models/props/prop_frag.glb" if id == "frag" else "res://assets/models/props/gad_%s.glb" % id
-				out.append({"name": g.get("name", id), "desc": String(g.get("desc", "")) + ("。开局默认道具" if id == "frag" else ""),
-					"stats": ["冷却 %s 秒" % _num(g.get("cd", 0)), "用升级卡可以升级：冷却更短、效果更强"], "snap": model})
+			# Q 战术道具、E 强化道具：开局池 + 升级池（收起的道具不列），最后是两种通用升级卡
+			for slot: String in ["q", "e"]:
+				var SL: Dictionary = Data.gadgets().slots[slot]
+				for pool in ["start", "upgrade"]:
+					for id in Data.gadget_pool(slot, pool):
+						var g := Data.gadget(id)
+						var model := "res://assets/models/props/prop_frag.glb" if id == "frag" else "res://assets/models/props/gad_%s.glb" % id
+						var st: Array = ["%s · %s 键" % [String(SL.name), slot.to_upper()], "冷却 %s 秒 · 带 %d 次" % [_num(g.get("cd", 0)), int(g.get("charges", 1))],
+							"开局默认装备" if pool == "start" else "升级时以新道具卡出现，只替换%s" % String(SL.name)]
+						out.append({"name": g.get("name", id), "rar": String(SL.short), "rar_col": Color(String(SL.color)), "desc": String(g.get("desc", "")),
+							"stats": st, "snap": model, "icon": "res://assets/icons/gad_%s.png" % id})
+			var U: Dictionary = Data.gadgets().upgrades
+			for uid in ["gcdx", "gcap"]:
+				out.append({"name": String(U[uid].name), "rar": "通用", "rar_col": Color("#e7a6ff"), "desc": String(U[uid].desc),
+					"stats": ["一张卡同时作用于 Q 和 E", "最多 %d 张，换道具后保留" % int(U[uid].max)], "badge": "速" if uid == "gcdx" else "+", "badge_col": Color("#e7a6ff"), "badge_icon": "gup_" + uid})
 		"abil":
 			for id in Data.abilities():
 				var a: Dictionary = Data.abilities()[id]
@@ -168,7 +178,7 @@ static func entries(key: String) -> Array:
 			var lv_txt := "、".join(lv.map(func(x: Variant) -> String: return str(int(x))))
 			for id in Data.talents():
 				var t: Dictionary = Data.talents()[id]
-				out.append({"name": t.get("name", id), "rar": "天赋", "rar_col": Color("#ff6fd0"), "desc": t.get("desc", ""), "stats": ["第 %s 级三选一" % lv_txt],
+				out.append({"name": t.get("name", id), "rar": "天赋", "rar_col": Color("#ff6fd0"), "desc": t.get("desc", ""), "stats": ["第 %s 级解锁" % lv_txt],
 					"badge": String(t.get("name", "?")).left(1), "badge_col": Color("#ff6fd0"), "badge_icon": "tal_" + String(id)})
 		"pet":
 			for id in Data.pets():

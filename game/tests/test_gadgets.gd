@@ -1,11 +1,11 @@
 extends "res://tests/test_case.gd"
-## 批次 2 战术道具：13 种道具逐个使用，检查效果。
+## 批次 2 的 13 种旧道具逐个使用，检查效果（2026-10-12 起分 Q / E 槽，效果不变）。新道具和双槽规则见 test_gadget_slots.gd。
 
 
 func _solo(gadget: String) -> SimWorld:
 	var w := make_world("full", 9, 0, 0, [{"team": "blue", "ctl": "player", "name": "测"}])
 	var h := w.hams[0]
-	h.gadget = {"id": gadget, "lvl": 1, "cd": 0.0}
+	h.gad[String(Data.gadget(gadget).slot)] = SimGadgets.new_slot(gadget, h)
 	h.x = 2520.0
 	h.y = 1548.0
 	h.aim = 0.0
@@ -28,8 +28,12 @@ func _foe(w: SimWorld, x: float, y: float, ctl: String = "player") -> SimHamster
 	return f
 
 
-func _use(w: SimWorld) -> void:
-	w.hams[0].inp.gadget = true
+func _use(w: SimWorld, id: String = "") -> void:
+	var h := w.hams[0]
+	if id.is_empty() or String(Data.gadget(id).slot) == "q":
+		h.inp.gadget = true
+	else:
+		h.inp.gadget2 = true
 	w.step(1.0 / 60.0)
 
 
@@ -97,7 +101,7 @@ func test_sentry_fires() -> void:
 func test_eshield_absorbs() -> void:
 	var w := _solo("eshield")
 	var h := w.hams[0]
-	_use(w)
+	_use(w, "eshield")
 	check(h.eshield > 0.0, "获得护盾")
 	var hp0 := h.hp
 	w.deal_dmg(h, 30.0, {"team": "red", "owner": null, "x": h.x, "y": h.y})
@@ -160,7 +164,7 @@ func test_jetpack() -> void:
 	var w := _solo("jetpack")
 	var h := w.hams[0]
 	var x0 := h.x
-	_use(w)
+	_use(w, "jetpack")
 	check(not h.air.is_empty(), "起飞")
 	_step(w, 0.8)
 	check(h.air.is_empty() and h.x > x0 + 100.0, "飞过去落地")
@@ -170,7 +174,7 @@ func test_medkit_heals() -> void:
 	var w := _solo("medkit")
 	var h := w.hams[0]
 	h.hp = 30.0
-	_use(w)
+	_use(w, "medkit")
 	_step(w, 3.1)
 	check(h.hp > 60.0, "急救包回血（%.1f）" % h.hp)
 
@@ -186,17 +190,19 @@ func test_freeze() -> void:
 func test_beacon_teleport() -> void:
 	var w := _solo("beacon")
 	var h := w.hams[0]
-	_use(w)
+	_use(w, "beacon")
 	check(not h.beacon.is_empty(), "插下信标")
 	h.x += 400.0
-	h.gadget.cd = 0.0
-	_use(w)
+	h.beacon.arm = 0.0
+	eq(int(h.gad.e.ch), 0, "插信标用掉一格充能")
+	_use(w, "beacon")
 	near(h.x, 2520.0, 2.0, "传送回信标")
 
 
-func test_gadget_levels_cd() -> void:
+func test_legacy_cd_with_upgrades() -> void:
+	## 道具等级已取消：冷却缩短升级卡 3 张 = −45%
 	var w := _solo("frag")
 	var h := w.hams[0]
-	h.gadget.lvl = 4
+	h.gup = {"gcdx": 3}
 	_use(w)
-	near(float(h.gadget.cd), 7.0 * 0.55, 0.01, "4 级道具冷却 -45%")
+	near(float(h.gad.q.cd), 7.0 * 0.55, 0.05, "3 张冷却缩短：冷却 −45%")

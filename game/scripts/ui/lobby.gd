@@ -1,6 +1,7 @@
 class_name Lobby
 extends PanelContainer
-## 开局大厅（GDD 第 16 节）：模式（单人 / 双人同屏）、地图、AI 难度、玩家队伍和形象、2P 操作方式、两队 AI 补位人数、初始武器（测试用）。
+## 开局大厅（GDD 第 16 节）：模式（单人 / 双人同屏）、地图、AI 难度、玩家队伍和形象、2P 操作方式、两队 AI 补位人数、初始武器（测试用）、
+## 开局道具（gadgets.json 某个槽的开局池有 2 个以上道具时才出现这一行，按钮点选，手机也能点）。
 ## 选择记在 Settings.lobby 里，下次打开保持上次的设置。
 
 signal start_requested(opts: Dictionary)
@@ -93,6 +94,21 @@ func _ready() -> void:
 		Audio.play2d("ui_click", -8.0))
 	wr.add_child(weapon_pick)
 	wr.add_child(UiTheme.label("测试用：正式规则是手枪起步", 17, UiTheme.SUB, false, 0))
+	# 开局道具：开局池里有 2 个以上道具的槽才让玩家选（Q 战术 / E 强化）；双人时两个玩家各选各的
+	for slot: String in ["q", "e"]:
+		var pool := Data.gadget_pool(slot, "start")
+		if pool.size() < 2:
+			continue
+		var gopts: Array = []
+		for id in pool:
+			gopts.append([id, String(Data.gadget(id).name)])
+		var key := "g" + slot
+		if not pool.has(String(o.get(key, ""))):
+			o[key] = pool[0]
+		rows[key] = _seg(v, "开局%s（%s）" % [Data.gadgets().slots[slot].name, slot.to_upper()], key, gopts)
+		if not pool.has(String(o.get("p2_" + key, ""))):
+			o["p2_" + key] = pool[0]
+		rows["p2_" + key] = _seg(v, "玩家2 %s（%s）" % [Data.gadgets().slots[slot].name, slot.to_upper()], "p2_" + key, gopts)
 	help = UiTheme.label("", 18, UiTheme.SUB, false, 0)
 	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	help.custom_minimum_size = Vector2(760, 0)
@@ -173,8 +189,9 @@ func _refresh() -> void:
 	for sb in seg_btns:
 		(sb[2] as Button).set_pressed_no_signal(o.get(sb[0]) == sb[1])
 	var duo := bool(o.duo)
-	for k in ["p2_team", "p2_input", "skin2"]:
-		(rows[k] as Control).visible = duo
+	for k in ["p2_team", "p2_input", "skin2", "p2_gq", "p2_ge"]:
+		if rows.has(k):
+			(rows[k] as Control).visible = duo
 	((rows.p1_team as HBoxContainer).get_meta("label") as Label).text = "玩家1 队伍" if duo else "队伍"
 	((rows.skin as HBoxContainer).get_meta("label") as Label).text = "玩家1 形象" if duo else "形象"
 	var humans := {"blue": 0, "red": 0}
@@ -190,15 +207,15 @@ func _refresh() -> void:
 		(ai_labels[team] as Label).text = str(int(o["ai_" + team]))
 	var t := ""
 	if not duo:
-		t = "WASD 移动 · 鼠标瞄准、左键射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选卡 · Esc 暂停\n接上手柄按一下就能切换到手柄操作"
+		t = "WASD 移动 · 鼠标瞄准、左键射击、右键技能 · 空格翻滚 · R 换弹 · Q 战术道具 · E 强化道具 · 1/2/3/4 选卡 · Esc 暂停\n接上手柄按一下就能切换到手柄操作"
 	else:
-		t = "玩家1：WASD 移动 · 鼠标瞄准射击 · 空格翻滚 · R 换弹 · Q 道具 · 1/2/3 选卡\n"
+		t = "玩家1：WASD 移动 · 鼠标瞄准射击、右键技能 · 空格翻滚 · R 换弹 · Q 战术道具 · E 强化道具 · 1/2/3/4 选卡\n"
 		if String(o.p2_input) == "pad":
-			t += "玩家2（手柄）：左摇杆移动 · 右摇杆瞄准（不推时自动瞄准）· RT 射击 · A 翻滚 · X 换弹 · LB 道具 · X/Y/B 选卡"
+			t += "玩家2（手柄）：左摇杆移动 · 右摇杆瞄准（不推时自动瞄准）· RT 射击 · LT 技能 · A 翻滚 · X 换弹 · LB 战术道具 · RB 强化道具 · 十字键选卡"
 			if Input.get_connected_joypads().is_empty():
 				t += "\n还没检测到手柄：开局后先用方向键操作，接上手柄会自动切换"
 		else:
-			t += "玩家2（方向键）：方向键移动（自动瞄准）· 回车射击 · 右 Shift 翻滚 · / 换弹 · . 道具 · 8/9/0 选卡"
+			t += "玩家2（方向键）：方向键移动（自动瞄准）· 回车射击 · 右 Shift 翻滚 · / 换弹 · . 战术道具 · ; 强化道具 · , 技能 · 8/9/0/- 选卡"
 	var nb := int(o.ai_blue) + (1 if String(o.p1_team) == "blue" else 0) + (1 if duo and String(o.p2_team) == "blue" else 0)
 	var nr := int(o.ai_red) + (1 if String(o.p1_team) == "red" else 0) + (1 if duo and String(o.p2_team) == "red" else 0)
 	var DL: Dictionary = Data.difficulty().levels

@@ -134,7 +134,8 @@ func test_full_match_5min_everything() -> void:
 	for h in w.hams:
 		lv = maxi(lv, h.lvl)
 		pets += h.pet_list.size()
-		gads[h.gadget.id] = true
+		gads[h.gad.q.id] = true
+		gads[h.gad.e.id] = true
 	check(seen.has("boss_spawn"), "鼠王出现过")
 	check(seen.has("gadget") or seen.has("throw"), "用过道具")
 	check(lv >= 8, "有人升到 8 级以上（%d）" % lv)

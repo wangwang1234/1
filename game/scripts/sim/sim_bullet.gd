@@ -39,6 +39,7 @@ var home_tgt := 0          # 追踪目标 id
 var split_at := 0.0        # 飞出这么远后分裂
 var wr := 1.0              # 剑气宽度
 var big := false
+var reflected := false     # 被榴弹反射器弹回过（不会再被弹）
 var dead := false
 var id := 0
 
@@ -46,7 +47,7 @@ var id := 0
 func clone() -> SimBullet:
 	var b := SimBullet.new()
 	for p in ["kind", "team", "by", "owner", "x", "y", "h", "px", "py", "vx", "vy", "dmg", "r", "life", "pierce", "kb", "aoe", "aoe_dmg",
-			"bounce", "bounce_k", "wall_pierce", "x0", "y0", "eff", "min_f", "max_d", "fx", "weapon", "home", "home_after", "home_t", "home_tgt", "split_at", "wr", "big"]:
+			"bounce", "bounce_k", "wall_pierce", "x0", "y0", "eff", "min_f", "max_d", "fx", "weapon", "home", "home_after", "home_t", "home_tgt", "split_at", "wr", "big", "reflected"]:
 		b.set(p, get(p))
 	b.hit = hit.duplicate()
 	return b
