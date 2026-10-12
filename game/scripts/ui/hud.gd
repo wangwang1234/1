@@ -14,6 +14,8 @@ const PET_ICON := {"chick": "鸡", "firefly": "萤", "hedgehog": "刺"}
 
 var mv: MatchView
 var me: SimHamster              # 这块界面属于哪只仓鼠（分屏时各有一块）
+var kill_banner: StreakBannerUI
+var minimap_bottom: float = 0.0
 var cam: GameCamera
 var pin: PlayerInput
 var split := false
@@ -266,7 +268,8 @@ func draw_all(c: Control) -> void:
 		_draw_cards(c, s, h)
 		if not h.alive:
 			var txt := "%d 秒后复活" % ceili(h.respawn_t)
-			UiTheme.draw_text_outline(c, UiTheme.display_font, Vector2(0, root.size.y * 0.42), "被打倒了…", int(44 * s), Color("#ff8a7a"), HORIZONTAL_ALIGNMENT_CENTER, 10, root.size.x)
+			if kill_banner == null or not kill_banner.has_death:
+				UiTheme.draw_text_outline(c, UiTheme.display_font, Vector2(0, root.size.y * 0.42), "你被击败", int(44 * s), Color("#ff8a7a"), HORIZONTAL_ALIGNMENT_CENTER, 10, root.size.x)
 			UiTheme.draw_text_outline(c, UiTheme.body_font, Vector2(0, root.size.y * 0.42 + 50 * s), txt, int(26 * s), UiTheme.CREAM, HORIZONTAL_ALIGNMENT_CENTER, 8, root.size.x)
 	if white > 0.0:
 		c.draw_rect(Rect2(Vector2.ZERO, root.size), Color(1, 1, 1, clampf(white, 0.0, 1.0)))
@@ -470,15 +473,27 @@ func _draw_gadget_slots(c: Control, s: float, h: SimHamster, x: float, y: float)
 		if not touch_mode:
 			slot_rects[slot] = r
 	if touch_mode:
-		var bs := 128.0 * s
-		var gap := 26.0 * s
-		var bx := root.size.x - 2.0 * bs - gap - 40.0 * s
-		var by := root.size.y - bs - 200.0 * s
 		for i in SimGadgets.SLOTS.size():
 			var slot2: String = SimGadgets.SLOTS[i]
-			var rb := Rect2(bx + i * (bs + gap), by + (0.0 if i == 1 else 50.0 * s), bs, bs)
+			var rb := _touch_gadget_rect(i)
 			slot_rects[slot2] = rb
 			_draw_gadget_slot(c, s, h, slot2, rb, true)
+
+
+func _touch_gadget_rect(index: int) -> Rect2:
+	# 绘制、点击与播报避让共用当前视口几何，避免读取上一帧的桌面按钮位置。
+	var s := _s()
+	var bs := 128.0 * s
+	var gap := 26.0 * s
+	var bx := root.size.x - 2.0 * bs - gap - 40.0 * s
+	var by := root.size.y - bs - 200.0 * s
+	return Rect2(bx + index * (bs + gap), by + (0.0 if index == 1 else 50.0 * s), bs, bs)
+
+
+func touch_exclusion_top() -> float:
+	if not touch_mode:
+		return 0.0
+	return minf(_touch_gadget_rect(0).position.y, _touch_gadget_rect(1).position.y)
 
 
 func _slot_status(h: SimHamster, slot: String) -> String:
@@ -759,6 +774,7 @@ func _draw_minimap(c: Control, s: float) -> void:
 	var mh := mw * (m.max_y - m.min_y) / (m.max_x - m.min_x)
 	var x0 := root.size.x - mw - 18 * s
 	var y0 := 16.0 * s
+	minimap_bottom = y0 + mh
 	var k := mw / (m.max_x - m.min_x)
 	_panel(c, Rect2(x0 - 8 * s, y0 - 8 * s, mw + 16 * s, mh + 16 * s), 12 * s, 0.82)
 	var to := func(px: float, py: float) -> Vector2: return Vector2(x0 + (px - m.min_x) * k, y0 + (py - m.min_y) * k)
@@ -847,6 +863,8 @@ func _draw_minimap(c: Control, s: float) -> void:
 
 
 func _draw_feed(c: Control, s: float) -> void:
+	if kill_banner != null:
+		return # 非玩家目标通知走 toast，结构化玩家信息条由 KillFeedUI 绘制。
 	var y := 16.0 * s + (260.0 if split else 360.0) * s * (mv.world.map.max_y - mv.world.map.min_y) / (mv.world.map.max_x - mv.world.map.min_x) + 40 * s
 	for f in feeds:
 		var a := clampf((6.0 - float(f.t)) * 2.0, 0.0, 1.0)

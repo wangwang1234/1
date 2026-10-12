@@ -5,6 +5,7 @@ extends RefCounted
 var event_id: int = 0
 var killer_id: int = -1
 var victim_id: int = -1
+var victim_death_count: int = 0
 var method: String = "normal"
 var assists: Array = []
 var killer_reward: int = 0
@@ -19,7 +20,7 @@ var debug: Dictionary = {}
 
 
 func to_dict() -> Dictionary:
-	return {"t": "kill_event", "event_id": event_id, "killer_id": killer_id, "victim_id": victim_id, "method": method,
+	return {"t": "kill_event", "event_id": event_id, "killer_id": killer_id, "victim_id": victim_id, "victim_death_count": victim_death_count, "method": method,
 		"assists": assists.duplicate(true), "killer_reward": killer_reward, "killer_streak": killer_streak,
 		"victim_streak_before": victim_streak_before, "is_first_kill": is_first_kill, "is_shutdown": is_shutdown,
 		"killer_connected": killer_connected, "identities": identities.duplicate(true), "victim_position": victim_position,

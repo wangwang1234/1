@@ -1,0 +1,22 @@
+Godot Engine v4.6.3.stable.official.7d41c59c4 - https://godotengine.org
+Vulkan 1.4.305 - Forward+ - Using Device #0: Unknown - llvmpipe (LLVM 19.1.7, 256 bits)
+
+[audio] 载入 84 种音效
+[motion] depth-aware velocity blur compiled
+[kill_preview] captured 01_four
+[kill_preview] captured 02_five
+[kill_preview] captured 03_unstoppable
+[kill_preview] captured 04_twenty_seven
+[kill_preview] captured 05_feed_methods
+[kill_preview] captured 06_mobile_clearance
+[motion] depth-aware velocity blur compiled
+[motion] depth-aware velocity blur compiled
+[kill_preview] captured 07_split_independent
+[kill_preview] captured 08_split_assist
+[kill_preview] captured 09_split_defeated
+[kill_preview] captured 10_no_killer
+[kill_preview] 完成 (done)
+WARNING: ObjectDB instances leaked at exit (run with --verbose for details).
+   at: cleanup (core/object/object.cpp:2663)
+ERROR: 4 resources still in use at exit (run with --verbose for details).
+   at: clear (core/io/resource.cpp:810)

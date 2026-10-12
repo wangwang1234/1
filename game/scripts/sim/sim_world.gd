@@ -910,13 +910,7 @@ func kill_ent(tg: SimEntity, src: Dictionary) -> void:
 			th.hp = 0.0
 			th.deaths += 1
 			th.respawn_t = minf(float(R.hamster.respawnMax), float(R.hamster.respawnBase) + th.lvl * float(R.hamster.respawnPerLevel))
-			if killer != null:
-				add_feed("%s 击败了 %s" % [killer.name, th.name], _tcol(killer.team))
-				if bool(kill_event.killer_connected):
-					toast(killer, "击败 %s！+%d" % [th.name, int(kill_event.killer_reward)], "#ffd166", 1.5)
-			else:
-				add_feed("%s 倒下了" % th.name, "#cfc6d8")
-			toast(th, "你被击败", "#ff8a7a", 2.0)
+			# 玩家播报统一消费同帧KillEvent；旧文本feed/toast会重复展示且缺失助攻与方式。
 			emit({"t": "kill", "id": th.id, "kind": "ham", "x": th.x, "y": th.y, "team": th.team, "killer": killer.id if killer != null else -1})
 		"minion":
 			tg.dead = true

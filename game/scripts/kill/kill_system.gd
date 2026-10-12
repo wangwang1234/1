@@ -125,6 +125,7 @@ func settle(w: SimWorld, victim: SimHamster, src: Dictionary) -> Dictionary:
 	event.event_id = sequence
 	event.killer_id = killer.id if killer != null else -1
 	event.victim_id = victim.id
+	event.victim_death_count = victim.deaths + 1
 	event.method = String(resolution.method)
 	event.victim_streak_before = before
 	event.is_shutdown = killer != null and before >= config.shutdown_min

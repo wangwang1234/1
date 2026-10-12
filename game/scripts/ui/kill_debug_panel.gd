@@ -11,6 +11,13 @@ var presets: OptionButton
 var scenarios: OptionButton
 var streak_input: SpinBox
 var source_world: SimWorld
+var preview_player_ids: Array[int] = []
+var preview_owner: OptionButton
+var preview_role: OptionButton
+var preview_method: OptionButton
+var preview_first: CheckBox
+var preview_shutdown: CheckBox
+var standalone_ui: KillPresentationUI
 var _events: Array[Dictionary] = []
 
 
@@ -21,6 +28,12 @@ func _ready() -> void:
 		root.hide()
 	else:
 		_run_scenario(1)
+		standalone_ui = KillPresentationUI.new()
+		add_child(standalone_ui)
+		standalone_ui.setup(_config())
+		standalone_ui.attach(self, 1)
+		preview_requested.connect(standalone_ui.preview)
+		configure_preview_players([1])
 
 
 func _build() -> void:
@@ -41,11 +54,11 @@ func _build() -> void:
 	body.add_theme_constant_override("separation", 12)
 	margin.add_child(body)
 	var title := Label.new()
-	title.text = "击败 / 助攻 / 赏金 · 第一阶段调试"
+	title.text = "击败 / 助攻 / 赏金 · 第二阶段调试"
 	title.add_theme_font_size_override("font_size", 28)
 	body.add_child(title)
 	var hint := Label.new()
-	hint.text = "沙盒测试不影响当前对局。实战事件在下方保留；第一阶段只展示文字与数值。"
+	hint.text = "沙盒测试不影响当前对局；预览占位播报后按 F8 返回。正式美术、动画和音效在后续阶段交付。"
 	body.add_child(hint)
 	var controls := HBoxContainer.new()
 	body.add_child(controls)
@@ -71,6 +84,12 @@ func _build() -> void:
 	var label := Label.new()
 	label.text = "个人播报预览 · 连续击败"
 	row.add_child(label)
+	preview_owner = OptionButton.new()
+	row.add_child(preview_owner)
+	preview_role = OptionButton.new()
+	for role in ["击败者", "助攻者", "受害者"]:
+		preview_role.add_item(role)
+	row.add_child(preview_role)
 	streak_input = SpinBox.new()
 	streak_input.min_value = 1
 	streak_input.max_value = _config().debug_preview_streak_max
@@ -80,8 +99,24 @@ func _build() -> void:
 	trigger.text = "触发预览"
 	trigger.pressed.connect(_preview)
 	row.add_child(trigger)
+	var clear := Button.new()
+	clear.text = "阵亡清空"
+	clear.pressed.connect(func() -> void: _preview(true))
+	row.add_child(clear)
+	var tags := HBoxContainer.new()
+	body.add_child(tags)
+	preview_first = CheckBox.new()
+	preview_first.text = "首次击败"
+	tags.add_child(preview_first)
+	preview_shutdown = CheckBox.new()
+	preview_shutdown.text = "终结（对方4连）"
+	tags.add_child(preview_shutdown)
+	preview_method = OptionButton.new()
+	for method in ["普通", "爆炸", "灼烧", "刀斩", "弹反"]:
+		preview_method.add_item(method)
+	tags.add_child(preview_method)
 	preview = Label.new()
-	preview.text = "第一阶段不播放动画；此入口将在第二阶段接入占位播报。"
+	preview.text = "当前预览：占位瓜子排、文字、信息条和全场横幅。"
 	body.add_child(preview)
 	output = RichTextLabel.new()
 	output.size_flags_vertical = Control.SIZE_EXPAND_FILL
@@ -119,6 +154,9 @@ func observe(event: Dictionary) -> void:
 		_events.pop_front()
 	var d: Dictionary = event.debug
 	var text := "事件 #%d   击败者 %d → 受害者 %d   方式 %s   连续击败 %d\n" % [event.event_id, event.killer_id, event.victim_id, event.method, event.killer_streak]
+	if not d.has("victim_seeds"):
+		output.append_text(text + "展示预览：没有服务器赏金调试快照。\n")
+		return
 	text += "S_v=%.1f  n=%d  P=%.4f  F=%.4f  M=%.4f   首次=%s  终结=%s\n" % [d.victim_seeds, d.previous_deaths, d.P, d.F, d.M, event.is_first_kill, event.is_shutdown]
 	if int(event.killer_id) < 0:
 		text += "无人归属：本次不发放赏金\n"
@@ -130,16 +168,50 @@ func observe(event: Dictionary) -> void:
 		output.text = text
 
 
-func _preview() -> void:
+func configure_preview_players(ids: Array) -> void:
+	preview_player_ids.assign(ids)
+	preview_owner.clear()
+	for id in preview_player_ids:
+		var h := source_world.ham_by_id(id) if source_world != null else null
+		preview_owner.add_item(h.name if h != null else "本地预览", id)
+	if preview_player_ids.is_empty():
+		preview_player_ids.append(1)
+		preview_owner.add_item("旁观预览", 1)
+
+
+func _preview(force_death: bool = false) -> void:
 	var count := int(streak_input.value)
-	var names := ["", "击败", "双重击败", "三重击败", "四重击败", "五重击败"]
-	var title: String = names[count] if count < names.size() else "鼠向披靡 %d" % count
 	var config := _config()
-	preview.text = "%s  ·  金瓜子 %d / 普通瓜子 %d（预览不发放赏金）" % [title, count / config.gold_seed_value, count % config.gold_seed_value]
+	preview.text = "%s %d（占位预览不发放赏金）" % [KillUIStyle.title(count, config), count]
 	var event := KillEvent.new()
-	event.killer_id = source_world.hams[0].id if source_world != null and not source_world.hams.is_empty() else 1
+	var owner := preview_player_ids[preview_owner.selected]
+	var role := 2 if force_death else preview_role.selected
+	event.killer_id = owner if role == 0 else -10
+	event.victim_id = owner if role == 2 else -11
+	event.method = ["normal", "explosion", "burn", "slash", "reflect"][preview_method.selected]
+	var sample: Dictionary = KillDebugScenarios.run(1, config)[0]
+	event.killer_reward = int(sample.killer_reward)
+	event.victim_death_count = -1 # 展示沙盒没有真实死亡快照。
 	event.killer_streak = count
 	event.killer_connected = true
+	event.is_first_kill = preview_first.button_pressed
+	event.is_shutdown = preview_shutdown.button_pressed
+	event.victim_streak_before = config.shutdown_min if event.is_shutdown else 0
+	if role == 1:
+		event.assists = [{"player_id": owner, "reward": int(sample.assists[0].reward), "connected": true}]
+	event.identities = {owner: {"name": "本地预览", "team": "blue", "connected": true}, -10: {"name": "对手", "team": "red", "connected": true}, -11: {"name": "受害者", "team": "red", "connected": true}}
+	if source_world != null:
+		var hamster := source_world.ham_by_id(owner)
+		if hamster != null:
+			event.identities[owner] = {"name": hamster.name, "team": hamster.team, "connected": true}
+	# 虚拟角色必须是有效玩家ID；负ID仅用于不显示的开发身份。
+	if event.killer_id == -10:
+		event.killer_id = config.debug_preview_streak_max + 1
+		event.identities[event.killer_id] = event.identities[-10]
+	if event.victim_id == -11:
+		event.victim_id = config.debug_preview_streak_max + 2
+		event.identities[event.victim_id] = event.identities[-11]
 	var packet := event.to_dict()
 	packet.debug_preview = true
 	preview_requested.emit(packet)
+	root.hide()
