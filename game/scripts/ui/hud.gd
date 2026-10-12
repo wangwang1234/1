@@ -1066,7 +1066,7 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 	var n := h.choices.size()
 	var gap := 16.0 * s
 	var cw := minf(300.0 * s, (root.size.x - 40.0 * s - (n - 1) * gap) / maxf(1.0, n))
-	var ch := 178.0 * s
+	var ch := 200.0 * s
 	var tw := n * cw + (n - 1) * gap
 	var x0 := root.size.x * 0.5 - tw * 0.5
 	var y0 := root.size.y - ch - 40 * s
@@ -1147,8 +1147,10 @@ func _draw_cards(c: Control, s: float, h: SimHamster) -> void:
 			var sc: Color = UiTheme.SLOT_COLORS[String(L.slot)]
 			c.draw_circle(ic_c + Vector2(26, 26) * s, 13 * s, sc)
 			_txt(c, ic_c + Vector2(13, 33) * s, String(L.slot).to_upper(), 17 * s, UiTheme.INK, HORIZONTAL_ALIGNMENT_CENTER, true, 26 * s, 0)
-		for li in mini(3, lines.size()):
+		for li in mini(3 if L.has("foot") else 4, lines.size()):
 			_txt(c, Vector2(tx, r.position.y + 110 * s + li * 24 * s), lines[li], 17 * s, Color(1, 0.95, 0.88, 0.82), HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
+		if L.has("foot"):
+			_txt(c, Vector2(r.position.x + 18 * s, r.end.y - 14 * s), String(L.foot), 14 * s, UiTheme.SLOT_COLORS.get(String(L.get("slot", "")), Color("#e7a6ff")), HORIZONTAL_ALIGNMENT_LEFT, false, -1, 4)
 		if L.has("pathColor"):
 			c.draw_rect(Rect2(r.position + Vector2(18, ch - 20) * s, Vector2(40, 6) * s), col)
 		if String(cd.t) == "weap":

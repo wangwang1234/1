@@ -193,14 +193,14 @@ static func label(h: SimHamster, c: Dictionary) -> Dictionary:
 			var slot := String(G.slot)
 			var SL: Dictionary = Data.gadgets().slots[slot]
 			var cur := String(Data.gadget(String(h.gad[slot].id)).get("name", ""))
-			return {"type": String(SL.name), "name": G.name, "badge": "换 " + slot.to_upper(), "desc": "%s（替换 %s）" % [G.desc, cur], "slot": slot, "gadget": c.id}
+			return {"type": String(SL.name), "name": G.name, "badge": "", "desc": String(G.desc), "foot": "替换 %s · %s 键" % [cur, slot.to_upper()], "slot": slot, "gadget": c.id}
 		"gup":
 			var U: Dictionary = Data.gadgets().upgrades[c.id]
 			var n := int(h.gup.get(c.id, 0))
 			var now := ""
 			if n > 0:
 				now = "（已 −%d%%）" % roundi(-100.0 * float(U.per) * n) if c.id == "gcdx" else "（已 +%d）" % (int(U.per) * n)
-			return {"type": "道具升级", "name": U.name, "badge": "Q+E", "desc": String(U.desc) + now, "gup": c.id}
+			return {"type": "道具升级", "name": U.name, "badge": "", "desc": String(U.desc), "foot": "Q + E 同时生效" + now, "gup": c.id}
 		"abil":
 			var A: Dictionary = Data.abilities()[c.id]
 			var l := int(h.ab.get(c.id, 0)) + 1
