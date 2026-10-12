@@ -1503,7 +1503,9 @@ func _qe() -> void:
 		m.py = m.y
 		m.hp = 9999.0
 		m.max_hp = 9999.0
-	await _steps(50)
+	await _steps(44)
+	place.call()
+	await _steps(6)
 	await shot("qe_deploy_all")
 	hud.visible = false
 	await _steps(2)

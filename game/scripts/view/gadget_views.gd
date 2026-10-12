@@ -2,7 +2,7 @@ class_name GadgetViews
 extends RefCounted
 ## Q / E 双槽新道具的表现（2026-10-12）：
 ## - DepView：道具部署物（SimStructure kind = dep）。模型 res://assets/models/props/gad_<道具>.glb（tools/blender/assets/props/gadget_kit2.py），
-##   底座有队伍色灯圈 + 队伍色小灯；按功能件加范围指示（再生力场的绿圈、反射器的半透明罩、己方摄像头的视野圈）。
+##   底座有队伍色灯圈 + 队伍色小灯；按功能件加范围指示（再生力场的绿圈、反射器的青圈、己方摄像头的视野圈）。
 ## - HoloView：全息诱饵 = 一只和主人一模一样的 HamsterView（同皮肤、同武器、同挂件）；只有己方看得出是全息影像（青色闪烁）。
 ## - SnapFx：捕鼠夹夹住的瞬间，在受害者脚下摆一个合上的夹子，定身时间到就消失。
 
@@ -45,7 +45,6 @@ class DepView:
 	var head: Node3D
 	var light: OmniLight3D
 	var field: MeshInstance3D       # 范围指示（环）
-	var dome: MeshInstance3D        # 反射器的半透明罩
 	var _t := 0.0
 	var _vis := 0.0
 	var _recoil := 0.0
@@ -80,17 +79,6 @@ class DepView:
 			field = GadgetViews._ring_mesh(float(P.heal.r) * 0.01, 0.05, GadgetViews.FIELD_COL.regen, 0.55)
 		elif P.has("reflect"):
 			field = GadgetViews._ring_mesh(float(P.reflect.r) * 0.01, 0.03, GadgetViews.FIELD_COL.reflector, 0.5)
-			dome = MeshInstance3D.new()
-			var sm := SphereMesh.new()
-			sm.radius = float(P.reflect.r) * 0.01
-			sm.height = sm.radius
-			sm.is_hemisphere = true
-			sm.radial_segments = 32
-			sm.rings = 8
-			dome.mesh = sm
-			dome.material_override = GadgetViews._glow_mat(GadgetViews.FIELD_COL.reflector, 0.06)
-			dome.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			add_child(dome)
 		elif P.has("watch") and own:
 			field = GadgetViews._ring_mesh(float(P.watch.r) * 0.01, 0.02, tc.lightened(0.3), 0.35)
 		if field:
@@ -124,8 +112,6 @@ class DepView:
 		if field:
 			var pulse := 1.0 + 0.04 * sin(_t * 4.0)
 			field.scale = Vector3(pulse, 0.05, pulse)
-		if dome:
-			(dome.material_override as StandardMaterial3D).albedo_color.a = 0.05 + 0.03 * sin(_t * 3.0) + _flash * 0.3
 
 	func on_fire() -> void:
 		_recoil = 0.05
