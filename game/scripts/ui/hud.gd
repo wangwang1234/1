@@ -890,8 +890,8 @@ func _draw_world_ui(c: Control, s: float) -> void:
 	var proj := func(x: float, y: float, hgt: float) -> Vector2:
 		return cam.unproject_position(Vector3(x * 0.01, hgt, y * 0.01))
 	for st in w.structs:
-		if st.dead:
-			continue
+		if st.dead or (st.kind != "base" and st.kind != "turret"):
+			continue     # 哨戒炮 / 道具部署物在下面单独画小血条
 		var hgt := 2.85 if st.kind == "base" else 1.35
 		var p: Vector2 = proj.call(st.x, st.y, hgt)
 		var bw := (150.0 if st.kind == "base" else 84.0) * s
