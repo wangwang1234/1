@@ -19,6 +19,9 @@ if check_log "$LOG"; then echo "表现层冒烟：通过"; else echo "表现层�
 echo "== 表现层冒烟：18 把武器 × 进化、13 种道具、野怪鼠王宠物、双人分屏 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 res://tests/view_smoke.tscn >"$LOG" 2>&1 || true
 if check_log "$LOG" && grep -q "view_smoke\] 完成 (done)" "$LOG"; then echo "武器 / 道具 / 分屏冒烟：通过"; else echo "武器 / 道具 / 分屏冒烟：失败"; cat "$LOG" | grep -A3 "SCRIPT ERROR" | head -40; exit 1; fi
+echo "== 击败展示：身份隔离、连续事件、阵亡、快照与分屏 =="
+"$GODOT" --headless --path "$ROOT/game" res://tests/kill_ui_smoke.tscn >"$LOG" 2>&1 || true
+if check_log "$LOG" && grep -q 'KILL_UI_RESULT.*"ok":true' "$LOG"; then echo "击败展示冒烟：通过"; else echo "击败展示冒烟：失败"; cat "$LOG"; exit 1; fi
 echo "== 主菜单冒烟 =="
 "$GODOT" --headless --path "$ROOT/game" --fixed-fps 60 -- --quit-after 5 >"$LOG" 2>&1 || true
 if check_log "$LOG"; then echo "主菜单冒烟：通过"; else echo "主菜单冒烟：失败"; exit 1; fi

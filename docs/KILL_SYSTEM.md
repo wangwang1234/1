@@ -12,7 +12,7 @@
 
 服务器死亡链路只结算一次，先冻结归属/份额，再发放原额经验并生成KillEvent。外部控制器不要自己调用give_xp来额外发放PvP击败经验。`give_xp(..., false)` 跳过经验倍率，并在满级继续增加累计S。
 
-客户端在MatchView的kill_event分发分支消费事件。第二阶段将接入KillFeedUI、每视口StreakBannerUI和GlobalBannerUI；依据killer_connected和各assist.connected控制个人提示，依据身份快照给断线名字置灰。调试面板preview_requested只用于本地预览，不发送网络消息，不修改服务器状态。
+客户端在MatchView的kill_event分发分支消费事件。第二阶段已接入KillPresentationUI、KillFeedUI、每视口StreakBannerUI和GlobalBannerUI；依据killer_connected和各assist.connected控制个人提示，依据身份快照给断线名字置灰。调试面板preview_requested只用于本地预览，不发送网络消息，不修改服务器状态。
 
 测试：tools/test.sh；python3 tools/test_kill_rpc.py；python3 tools/test_lan_resume.py。独立调试场景为res://scenes/dev/kill_debug.tscn，局内F8打开面板。
 
@@ -20,3 +20,15 @@
 
 
 已同步主线Q/E道具：声呐、摄像头、捕鼠夹、再生力场、哨戒炮、反射器和信号弹召唤小兵接入上述服务器接口。部署物/召唤物保留 `owner_contributor_id`；捕鼠夹的 `trap_controls` 只保存token和结束时刻，根控提前解除也停止记录。当前护盾展开器仅自盾，无支援助攻；仓鼠球及队友护盾玩法仍需提供控制器。
+
+## 第二阶段展示接入
+
+`KillPresentationUI`每局一个，信息条与全场横幅模型各客户端共享，分别绘制在各视口；`StreakBannerUI`只绑定所属本地仓鼠。所有Control设为忽略输入。客户端只消费服务器连续数和奖励，重复event_id不重复播报。
+
+KillEvent的`victim_death_count`是服务端死亡次序快照，避免旧alive快照抹掉新死亡提示。复活事件与对应死亡次数的alive快照均能清除提示。重连清除旧展示，不修改服务器状态。
+
+新增布局和停留参数在`kill_config*.tres`；`bottom_exclusion`可传入视口内触控区域最上边界，保证瓜子排留出配置中的净空。当前接入Q/E触控按钮，未来双摇杆也须提供相同边界。
+
+按导演确认：全场横幅含首次击败、5连、每段6连和终结；超过四颗金瓜子合并为一颗×总数；无击败者信息条为“方式图标+受害者名+被击败”。同时触发的标签在同一个横幅中展示，后续事件排队。
+
+独立视觉预览：`res://scenes/dev/kill_preview.tscn`；场景验证：`res://tests/kill_ui_smoke.tscn`，已接入`tools/test.sh`。图标为程序占位；完整Tween动画、音效和正式部件按后续阶段替换。

@@ -14,6 +14,7 @@ var saw_takeover := false
 var resumes := 0
 var failed: Array[String] = []
 var local_id_before := -1
+var kill_ui: KillPresentationUI
 
 
 func _ready() -> void:
@@ -42,6 +43,11 @@ func _begin(cfg: Dictionary) -> void:
 	w.setup(cfg)
 	LanSession.attach(w)
 	local_id_before = LanSession.peer_hams[LanSession.local_id()].id
+	if kill_ui == null:
+		kill_ui = KillPresentationUI.new()
+		add_child(kill_ui)
+		kill_ui.setup(w.kill_system.config)
+		kill_ui.attach(self, local_id_before)
 	if role == "host":
 		for h in w.hams:
 			h.ctl = "player"
@@ -100,10 +106,15 @@ func _physics_process(dt: float) -> void:
 		else:
 			for event: Dictionary in LanSession.drain_events():
 				if event.get("t") == "kill_event":
+					kill_ui.receive(event)
 					_check(event.killer_reward == 81, "network reward81")
 					_check(event.assists.size() == 2, "two assists")
 					_check(event.assists[0].reward == 18 and event.assists[1].reward == 9, "network assists18/9")
 					_check(w.kill_system.history.is_empty(), "client did not calculate rewards")
+					_check(kill_ui.feed.rows.size() == 1, "network event renders exactly one feed row")
+					_check(kill_ui.views[0].banner.has_death, "network victim sees defeat prompt")
+					_check(kill_ui.views[0].banner.current_streak == 0, "network victim cannot see killer private seeds")
+					_check(event.victim_death_count == 1, "server death counter survives reliable RPC")
 					_ack.rpc_id(1, "reward")
 					_finish()
 

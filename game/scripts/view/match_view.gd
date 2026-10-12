@@ -64,6 +64,7 @@ var _network_time: = 0.0
 var _prediction_offset: = Vector2.ZERO
 var _finished_sent: = false
 var kill_debug: KillDebugPanel
+var kill_ui: KillPresentationUI
 
 
 func start(cfg: Dictionary) -> void:
@@ -177,6 +178,15 @@ func start(cfg: Dictionary) -> void:
 	kill_debug = KillDebugPanel.new()
 	kill_debug.source_world = world
 	add_child(kill_debug)
+	kill_ui = KillPresentationUI.new()
+	add_child(kill_ui)
+	kill_ui.setup(world.kill_system.config)
+	for pl in players:
+		kill_ui.attach(pl.vp if split else self, pl.ham.id, pl.hud)
+	if players.is_empty():
+		kill_ui.attach(self, -1, hud)
+	kill_debug.configure_preview_players(players.map(func(pl: LocalPlayer) -> int: return pl.ham.id))
+	kill_debug.preview_requested.connect(kill_ui.preview)
 
 
 	if networked:
@@ -450,6 +460,8 @@ func _reset_network_display() -> void:
 	prediction.reset(local)
 	render_buffer = NetRenderBuffer.new()
 	_prediction_offset = Vector2.ZERO
+	if kill_ui != null:
+		kill_ui.reset_display()
 
 
 func _receive_snapshot(packet: Dictionary) -> void :
@@ -646,6 +658,8 @@ func _dispatch(events: Array) -> void:
 			"kill_event":
 				if kill_debug != null:
 					kill_debug.observe(ev)
+				if kill_ui != null:
+					kill_ui.receive(ev)
 			"fire":
 				_on_fire(ev)
 			"minion_fire":
@@ -814,6 +828,8 @@ func _dispatch(events: Array) -> void:
 			"prop_respawn":
 				pass
 			"respawn":
+				if kill_ui != null:
+					kill_ui.respawned(int(ev.id))
 				var hv8: HamsterView = ham_views.get(ev.id)
 				if hv8:
 					hv8.on_event(ev)
@@ -827,9 +843,9 @@ func _dispatch(events: Array) -> void:
 					hud.toast(int(ev.id), String(ev.text), Color(String(ev.color)), float(ev.dur))
 			"feed":
 				for pl in players:
-					pl.hud.feed(String(ev.text), Color(String(ev.color)))
+					pl.hud.toast(-1, String(ev.text), Color(String(ev.color)), world.kill_system.config.feed_stay)
 				if players.is_empty():
-					hud.feed(String(ev.text), Color(String(ev.color)))
+					hud.toast(-1, String(ev.text), Color(String(ev.color)), world.kill_system.config.feed_stay)
 			"pop":
 				fx.number(_wpos(float(ev.x), float(ev.y), float(ev.h)), String(ev.text), Color(String(ev.color)), float(ev.get("size", 15)) / 15.0)
 			"shield_block":

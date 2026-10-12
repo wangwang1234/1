@@ -1,0 +1,31 @@
+{
+  "date": "2026-10-12",
+  "engine": "Godot 4.6.3 stable",
+  "stage": 2,
+  "base_commit": "a57d492",
+  "full_sim_tests": 203,
+  "full_sim_failures": 0,
+  "ui_checks": 41,
+  "ui_failures": 0,
+  "smoke_checks": [
+    "AI view 2 minutes",
+    "weapons/gadgets/split",
+    "kill presentation",
+    "main menu"
+  ],
+  "smoke_all_passed": true,
+  "kill_rpc_receipts": 4,
+  "kill_rpc_all_passed": true,
+  "capture": {
+    "renderer": "Forward+",
+    "device": "CPU Vulkan llvmpipe",
+    "images": 10,
+    "width": 1600,
+    "height": 900,
+    "engine_rendered": true
+  },
+  "formal_art": "pending stage 3",
+  "formal_animation_and_audio": "pending stage 4",
+  "real_wifi_three_devices": "pending stage 5",
+  "real_phone_finger_occlusion": "pending stage 5"
+}
